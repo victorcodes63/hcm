@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -21,20 +20,12 @@ function MicrosoftIcon({ className }: { className?: string }) {
   );
 }
 
-export default function StaffLoginPage() {
+function StaffLoginContent({ initialError }: { initialError: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const oauthError = searchParams.get('error');
-  const [error, setError] = useState(() => {
-    if (oauthError === 'domain') return 'Use your @eaglehr.co.ke Microsoft account to sign in.';
-    if (oauthError === 'no_account') return 'No active staff account exists for this email. Ask an admin to add you.';
-    if (oauthError === 'inactive') return 'Your staff account is inactive. Contact an administrator.';
-    if (oauthError === 'oauth') return 'Microsoft sign-in failed. Please try again.';
-    return '';
-  });
+  const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -216,5 +207,25 @@ export default function StaffLoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+function StaffLoginWithSearchParams() {
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get('error');
+  let initialError = '';
+  if (oauthError === 'domain') initialError = 'Use your @eaglehr.co.ke Microsoft account to sign in.';
+  else if (oauthError === 'no_account') initialError = 'No active staff account exists for this email. Ask an admin to add you.';
+  else if (oauthError === 'inactive') initialError = 'Your staff account is inactive. Contact an administrator.';
+  else if (oauthError === 'oauth') initialError = 'Microsoft sign-in failed. Please try again.';
+
+  return <StaffLoginContent initialError={initialError} />;
+}
+
+export default function StaffLoginPage() {
+  return (
+    <Suspense fallback={<StaffLoginContent initialError="" />}>
+      <StaffLoginWithSearchParams />
+    </Suspense>
   );
 }
