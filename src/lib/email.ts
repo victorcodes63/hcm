@@ -1,11 +1,11 @@
 /**
  * Shared email sending for applicant and staff notifications.
- * Uses SMTP (e.g. recruitment@eaglehr.co.ke or Microsoft 365).
- * Set SMTP_USER and SMTP_PASS to enable; if unset, sending is a no-op.
+ * Primary provider on Vercel: Microsoft Graph API over HTTPS.
+ * Fallback provider: SMTP via Nodemailer.
  */
 
 import nodemailer from 'nodemailer';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 const FROM_NAME = process.env.SMTP_FROM_NAME || 'Eagle HR Recruitment';
@@ -24,9 +24,20 @@ export type EmailSendResult =
   | { sent: true; messageId?: string }
   | {
       sent: false;
-      reason: 'smtp_not_configured' | 'from_email_missing' | 'smtp_error';
+      reason:
+        | 'graph_not_configured'
+        | 'graph_auth_error'
+        | 'graph_send_error'
+        | 'smtp_not_configured'
+        | 'from_email_missing'
+        | 'smtp_error';
       error: string;
       diagnostics?: {
+        provider?: 'graph' | 'smtp';
+        graphMailbox?: string;
+        hasTenantId?: boolean;
+        hasClientId?: boolean;
+        hasClientSecret?: boolean;
         host: string;
         port: number;
         secure: boolean;
@@ -36,7 +47,7 @@ export type EmailSendResult =
       };
     };
 
-function getLogoEmailAsset(): {
+function getSmtpLogoAsset(): {
   src: string;
   attachments?: Array<{ filename: string; path: string; cid: string }>;
 } {
@@ -48,6 +59,29 @@ function getLogoEmailAsset(): {
           filename: 'eaglehr-logo.png',
           path: LOGO_FILE_PATH,
           cid: LOGO_CID,
+        },
+      ],
+    };
+  }
+  return { src: LOGO_URL };
+}
+
+function getGraphLogoAsset(): {
+  src: string;
+  attachments?: Array<Record<string, unknown>>;
+} {
+  if (existsSync(LOGO_FILE_PATH)) {
+    const contentBytes = readFileSync(LOGO_FILE_PATH).toString('base64');
+    return {
+      src: `cid:${LOGO_CID}`,
+      attachments: [
+        {
+          '@odata.type': '#microsoft.graph.fileAttachment',
+          name: 'eaglehr-logo.png',
+          contentType: 'image/png',
+          contentId: LOGO_CID,
+          isInline: true,
+          contentBytes,
         },
       ],
     };
@@ -84,9 +118,141 @@ function getSmtpDiagnostics() {
   };
 }
 
+function getGraphConfig() {
+  const tenantId = process.env.MS_TENANT_ID?.trim() || '';
+  const clientId = process.env.MS_CLIENT_ID?.trim() || '';
+  const clientSecret = process.env.MS_CLIENT_SECRET?.trim() || '';
+  const mailbox =
+    process.env.MS_GRAPH_MAILBOX?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    process.env.SMTP_FROM_EMAIL?.trim() ||
+    '';
+  return {
+    tenantId,
+    clientId,
+    clientSecret,
+    mailbox,
+    enabled: Boolean(tenantId && clientId && clientSecret && mailbox),
+  };
+}
+
+async function sendViaMicrosoftGraph(params: {
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: Array<Record<string, unknown>>;
+}): Promise<EmailSendResult> {
+  const graph = getGraphConfig();
+  if (!graph.enabled) {
+    return {
+      sent: false,
+      reason: 'graph_not_configured',
+      error: 'MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, or MS_GRAPH_MAILBOX missing.',
+      diagnostics: {
+        provider: 'graph',
+        graphMailbox: graph.mailbox || undefined,
+        hasTenantId: Boolean(graph.tenantId),
+        hasClientId: Boolean(graph.clientId),
+        hasClientSecret: Boolean(graph.clientSecret),
+        ...getSmtpDiagnostics(),
+      },
+    };
+  }
+
+  const tokenRes = await fetch(
+    `https://login.microsoftonline.com/${graph.tenantId}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: graph.clientId,
+        client_secret: graph.clientSecret,
+        grant_type: 'client_credentials',
+        scope: 'https://graph.microsoft.com/.default',
+      }).toString(),
+    }
+  );
+
+  if (!tokenRes.ok) {
+    const body = await tokenRes.text().catch(() => '');
+    return {
+      sent: false,
+      reason: 'graph_auth_error',
+      error: `Graph token request failed (${tokenRes.status}): ${body.slice(0, 300)}`,
+      diagnostics: {
+        provider: 'graph',
+        graphMailbox: graph.mailbox,
+        hasTenantId: true,
+        hasClientId: true,
+        hasClientSecret: true,
+        ...getSmtpDiagnostics(),
+      },
+    };
+  }
+
+  const tokenData = (await tokenRes.json()) as { access_token?: string };
+  if (!tokenData.access_token) {
+    return {
+      sent: false,
+      reason: 'graph_auth_error',
+      error: 'Graph token response missing access_token.',
+      diagnostics: {
+        provider: 'graph',
+        graphMailbox: graph.mailbox,
+        hasTenantId: true,
+        hasClientId: true,
+        hasClientSecret: true,
+        ...getSmtpDiagnostics(),
+      },
+    };
+  }
+
+  const sendRes = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(graph.mailbox)}/sendMail`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          subject: params.subject,
+          body: { contentType: 'HTML', content: params.html },
+          from: {
+            emailAddress: { address: graph.mailbox, name: FROM_NAME },
+          },
+          toRecipients: [{ emailAddress: { address: params.to } }],
+          ...(params.attachments?.length ? { attachments: params.attachments } : {}),
+        },
+        saveToSentItems: true,
+      }),
+    }
+  );
+
+  if (!sendRes.ok) {
+    const body = await sendRes.text().catch(() => '');
+    return {
+      sent: false,
+      reason: 'graph_send_error',
+      error: `Graph sendMail failed (${sendRes.status}): ${body.slice(0, 300)}`,
+      diagnostics: {
+        provider: 'graph',
+        graphMailbox: graph.mailbox,
+        hasTenantId: true,
+        hasClientId: true,
+        hasClientSecret: true,
+        ...getSmtpDiagnostics(),
+      },
+    };
+  }
+
+  return { sent: true, messageId: 'graph-sendmail-accepted' };
+}
+
 /**
  * Send "application received" confirmation to the applicant (and your records).
- * No-op if SMTP is not configured.
+ * Provider order: Microsoft Graph (recommended on Vercel) -> SMTP fallback.
  */
 export async function sendApplicationReceivedEmail(params: {
   to: string;
@@ -95,35 +261,18 @@ export async function sendApplicationReceivedEmail(params: {
   companyName: string;
   applicationId?: string;
 }): Promise<EmailSendResult> {
-  const transporter = getTransporter();
-  if (!transporter) {
-    return {
-      sent: false,
-      reason: 'smtp_not_configured',
-      error: 'SMTP_USER or SMTP_PASS is missing.',
-      diagnostics: getSmtpDiagnostics(),
-    };
-  }
-  if (!FROM_EMAIL) {
-    return {
-      sent: false,
-      reason: 'from_email_missing',
-      error: 'From email is missing. Set SMTP_USER or SMTP_FROM_EMAIL.',
-      diagnostics: getSmtpDiagnostics(),
-    };
-  }
-
   const { to, applicantFirstName, jobTitle } = params;
   const subject = `Application received – ${jobTitle} at Eagle HR Consultants`;
   const applicant = applicantFirstName || 'Applicant';
-  const logoAsset = getLogoEmailAsset();
+  const smtpLogoAsset = getSmtpLogoAsset();
+  const graphLogoAsset = getGraphLogoAsset();
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px;">
         <tr>
           <td style="padding: 24px 0 32px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-            <img src="${logoAsset.src}" alt="Eagle HR Consultants" width="180" style="display: inline-block; max-width: 180px; height: auto;" />
+            <img src="${graphLogoAsset.src}" alt="Eagle HR Consultants" width="180" style="display: inline-block; max-width: 180px; height: auto;" />
           </td>
         </tr>
         <tr>
@@ -147,23 +296,49 @@ export async function sendApplicationReceivedEmail(params: {
     </div>
   `;
 
+  const graphResult = await sendViaMicrosoftGraph({
+    to,
+    subject,
+    html,
+    attachments: graphLogoAsset.attachments,
+  });
+  if (graphResult.sent) return graphResult;
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    return graphResult;
+  }
+  if (!FROM_EMAIL) {
+    return {
+      sent: false,
+      reason: 'from_email_missing',
+      error: 'From email is missing. Set SMTP_USER or SMTP_FROM_EMAIL.',
+      diagnostics: {
+        provider: 'smtp',
+        ...getSmtpDiagnostics(),
+      },
+    };
+  }
+
   try {
-    const info = await transporter.sendMail({
+    const info = (await transporter.sendMail({
       from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
       to,
       subject,
       html,
-      attachments: logoAsset.attachments,
-    });
+      attachments: smtpLogoAsset.attachments,
+    })) as { messageId?: string };
     return { sent: true, messageId: info.messageId };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('Send application-received email error:', message);
     return {
       sent: false,
       reason: 'smtp_error',
       error: message,
-      diagnostics: getSmtpDiagnostics(),
+      diagnostics: {
+        provider: 'smtp',
+        ...getSmtpDiagnostics(),
+      },
     };
   }
 }
