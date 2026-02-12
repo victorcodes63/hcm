@@ -11,6 +11,12 @@ function jobToSummary(job: {
   category: string;
   postedDate: Date;
   isActive: boolean;
+  clientId?: string | null;
+  clientName?: string | null;
+  minYearsExperience?: number | null;
+  educationLevel?: string | null;
+  educationQualification?: string | null;
+  requiredCertifications?: string | null;
 }) {
   return {
     id: job.id,
@@ -21,6 +27,12 @@ function jobToSummary(job: {
     category: job.category,
     postedDate: job.postedDate.toISOString(),
     isActive: job.isActive,
+    clientId: job.clientId ?? null,
+    clientName: job.clientName ?? null,
+    minYearsExperience: job.minYearsExperience ?? null,
+    educationLevel: job.educationLevel ?? null,
+    educationQualification: job.educationQualification ?? null,
+    requiredCertifications: job.requiredCertifications ?? null,
   };
 }
 
@@ -35,7 +47,7 @@ export async function GET() {
         application: {
           include: {
             candidate: true,
-            job: true,
+            job: { include: { client: true } },
           },
         },
       },
@@ -63,9 +75,6 @@ export async function GET() {
           location: i.application.candidate.location,
           experience: i.application.candidate.experience,
           education: i.application.candidate.education,
-          skills: (Array.isArray(i.application.candidate.skills)
-            ? i.application.candidate.skills
-            : []) as string[],
           resumePath: i.application.candidate.resumePath,
           createdAt: i.application.candidate.createdAt.toISOString(),
         },
@@ -78,6 +87,12 @@ export async function GET() {
           category: i.application.job.category,
           postedDate: i.application.job.postedDate,
           isActive: i.application.job.isActive,
+          clientId: i.application.job.clientId ?? null,
+          clientName: i.application.job.client?.name ?? null,
+          minYearsExperience: i.application.job.minYearsExperience ?? null,
+          educationLevel: i.application.job.educationLevel ?? null,
+          educationQualification: i.application.job.educationQualification ?? null,
+          requiredCertifications: i.application.job.requiredCertifications ?? null,
         }),
       },
     }));
@@ -142,7 +157,7 @@ export async function POST(request: NextRequest) {
         application: {
           include: {
             candidate: true,
-            job: true,
+            job: { include: { client: true } },
           },
         },
       },
@@ -170,9 +185,6 @@ export async function POST(request: NextRequest) {
           location: interview.application.candidate.location,
           experience: interview.application.candidate.experience,
           education: interview.application.candidate.education,
-          skills: (Array.isArray(interview.application.candidate.skills)
-            ? interview.application.candidate.skills
-            : []) as string[],
           resumePath: interview.application.candidate.resumePath,
           createdAt: interview.application.candidate.createdAt.toISOString(),
         },
@@ -185,6 +197,12 @@ export async function POST(request: NextRequest) {
           category: interview.application.job.category,
           postedDate: interview.application.job.postedDate,
           isActive: interview.application.job.isActive,
+          clientId: interview.application.job.clientId ?? null,
+          clientName: interview.application.job.client?.name ?? null,
+          minYearsExperience: interview.application.job.minYearsExperience ?? null,
+          educationLevel: interview.application.job.educationLevel ?? null,
+          educationQualification: interview.application.job.educationQualification ?? null,
+          requiredCertifications: interview.application.job.requiredCertifications ?? null,
         }),
       },
     };

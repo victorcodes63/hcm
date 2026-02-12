@@ -45,7 +45,6 @@ export interface Candidate {
   phone: string;
   location: string;
   experience: number;
-  skills: string[];
   resumeUrl?: string;
   profilePicture?: string;
   createdAt: string;

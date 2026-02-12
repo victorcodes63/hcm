@@ -206,7 +206,7 @@ const StickyAboutSection = () => {
                   
                   <div className="space-y-3 mb-6">
                     <p className="text-sm md:text-base lg:text-lg text-neutral-700 leading-relaxed">
-                      Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya's rapidly expanding business landscape.
+                      Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.
                     </p>
                     
                     <p className="text-sm md:text-base lg:text-lg text-neutral-700 leading-relaxed">
@@ -349,7 +349,7 @@ const StickyAboutSection = () => {
                 
                 <div className="space-y-4 mb-8">
                   <p className="text-base md:text-lg text-neutral-700 leading-relaxed">
-                    Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya's rapidly expanding business landscape.
+                    Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.
                   </p>
                   
                   <p className="text-base md:text-lg text-neutral-700 leading-relaxed">

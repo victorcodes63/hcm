@@ -21,7 +21,6 @@ function ensureCandidate(candidate: ApplicationWithDetails['candidate']): Applic
       homeCounty: candidate.homeCounty ?? existing.homeCounty,
       experience: candidate.experience,
       education: candidate.education ?? existing.education,
-      skills: candidate.skills ?? existing.skills,
       resumePath: candidate.resumePath ?? existing.resumePath,
     };
     candidatesMap.set(candidate.email, updated);
@@ -43,6 +42,7 @@ export function createInMemoryApplication(params: {
   candidate: ApplicationWithDetails['candidate'];
   coverLetter?: string | null;
   resumePath?: string | null;
+  salaryExpectations?: string | null;
   formData?: ApplicationWithDetails['formData'];
 }): ApplicationWithDetails {
   const candidate = ensureCandidate({
@@ -59,6 +59,7 @@ export function createInMemoryApplication(params: {
     appliedDate: now,
     coverLetter: params.coverLetter ?? null,
     resumePath: params.resumePath ?? candidate.resumePath ?? null,
+    salaryExpectations: params.salaryExpectations ?? null,
     notes: null,
     formData: params.formData ?? null,
     createdAt: now,
@@ -77,7 +78,10 @@ export function getInMemoryApplications(filters?: {
   nationality?: string;
   homeCounty?: string;
   educationLevel?: string;
+  discipline?: string;
   employmentType?: string;
+  certificate?: string;
+  membership?: string;
 }): ApplicationWithDetails[] {
   let list = [...applications];
   if (filters?.jobId) list = list.filter((a) => a.jobId === filters.jobId);
@@ -98,11 +102,39 @@ export function getInMemoryApplications(filters?: {
         a.formData?.education?.some((e) => e.level === level) ?? false
     );
   }
+  if (filters?.discipline?.trim()) {
+    const q = filters.discipline.trim().toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.formData?.education?.some((e) => (e.discipline ?? '').toLowerCase().includes(q)) ?? false
+    );
+  }
   if (filters?.employmentType?.trim()) {
     const type = filters.employmentType.trim();
     list = list.filter(
       (a) =>
         a.formData?.employmentHistory?.some((e) => e.employmentType === type) ?? false
+    );
+  }
+  if (filters?.certificate?.trim()) {
+    const q = filters.certificate.trim().toLowerCase();
+    list = list.filter((a) => {
+      const fd = a.formData;
+      if (!fd) return false;
+      const fromList = fd.professionalCertificationsList?.some((c) =>
+        (c.name ?? '').toLowerCase().includes(q)
+      );
+      const fromLegacy = (fd.professionalCertifications ?? '').toLowerCase().includes(q);
+      return Boolean(fromList || fromLegacy);
+    });
+  }
+  if (filters?.membership?.trim()) {
+    const q = filters.membership.trim().toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.formData?.professionalMemberships?.some((m) =>
+          (m.name ?? '').toLowerCase().includes(q)
+        ) ?? false
     );
   }
   return list.sort(
@@ -125,12 +157,22 @@ export function updateInMemoryApplicationStatus(
   return app;
 }
 
+export function updateInMemoryApplicationNotes(
+  id: string,
+  notes: string | null
+): ApplicationWithDetails | null {
+  const app = applications.find((a) => a.id === id);
+  if (!app) return null;
+  app.notes = notes;
+  app.updatedAt = new Date().toISOString();
+  return app;
+}
+
 export function getInMemoryCandidates(filters?: {
   jobId?: string;
   minExperience?: number;
   maxExperience?: number;
   education?: string;
-  skills?: string[];
   search?: string;
 }): ApplicationWithDetails['candidate'][] {
   const seen = new Map<string, ApplicationWithDetails['candidate']>();
@@ -150,19 +192,12 @@ export function getInMemoryCandidates(filters?: {
       (c) => c.education?.toLowerCase().includes(q)
     );
   }
-  if (filters?.skills?.length) {
-    const set = new Set(filters.skills.map((s) => s.toLowerCase()));
-    candidates = candidates.filter((c) =>
-      (c.skills ?? []).some((s) => set.has(String(s).toLowerCase()))
-    );
-  }
   if (filters?.search?.trim()) {
     const q = filters.search.toLowerCase();
     candidates = candidates.filter(
       (c) =>
         `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        (c.skills ?? []).some((s) => String(s).toLowerCase().includes(q))
+        c.email.toLowerCase().includes(q)
     );
   }
   return candidates.sort(

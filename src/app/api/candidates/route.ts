@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const minExperience = searchParams.get('minExperience');
   const maxExperience = searchParams.get('maxExperience');
   const education = searchParams.get('education') || undefined;
-  const skillsParam = searchParams.get('skills');
   const search = searchParams.get('search') || undefined;
 
   const minExp = minExperience !== null && minExperience !== undefined && minExperience !== ''
@@ -17,9 +16,6 @@ export async function GET(request: NextRequest) {
     : undefined;
   const maxExp = maxExperience !== null && maxExperience !== undefined && maxExperience !== ''
     ? parseInt(maxExperience, 10)
-    : undefined;
-  const skills = skillsParam
-    ? skillsParam.split(',').map((s) => s.trim()).filter(Boolean)
     : undefined;
 
   try {
@@ -65,8 +61,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
       });
 
-      // Filter by skills in memory (Prisma JSON array contains is trickier)
-      let list = candidates.map((c): CandidateSummary => ({
+      const list: CandidateSummary[] = candidates.map((c) => ({
         id: c.id,
         firstName: c.firstName,
         lastName: c.lastName,
@@ -77,17 +72,9 @@ export async function GET(request: NextRequest) {
         homeCounty: c.homeCounty ?? null,
         experience: c.experience,
         education: c.education,
-        skills: (Array.isArray(c.skills) ? c.skills : []) as string[],
         resumePath: c.resumePath,
         createdAt: c.createdAt.toISOString(),
       }));
-
-      if (skills?.length) {
-        const set = new Set(skills.map((s) => s.toLowerCase()));
-        list = list.filter((c) =>
-          c.skills.some((s) => set.has(String(s).toLowerCase()))
-        );
-      }
 
       return NextResponse.json(list);
     }
@@ -100,7 +87,6 @@ export async function GET(request: NextRequest) {
     minExperience: minExp,
     maxExperience: maxExp,
     education,
-    skills,
     search,
   });
   return NextResponse.json(list);

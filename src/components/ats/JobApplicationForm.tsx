@@ -27,13 +27,27 @@ import type {
   EducationLevel,
   EmploymentEntry,
   EmploymentType,
+  ProfessionalCertificationEntry,
+  ProfessionalMembershipEntry,
 } from '@/types/dashboard';
 
-const EDUCATION_LEVELS: { value: EducationLevel; label: string }[] = [
+const EDUCATION_LEVELS_SINGLE: { value: EducationLevel; label: string }[] = [
   { value: 'high_school', label: 'High School' },
+  { value: 'certificate', label: 'Certificate' },
   { value: 'diploma', label: 'Diploma' },
+];
+const EDUCATION_LEVELS_MULTI: { value: EducationLevel; label: string }[] = [
   { value: 'undergraduate', label: 'Undergraduate' },
   { value: 'masters', label: 'Masters' },
+  { value: 'phd', label: 'PhD / Doctorate' },
+];
+
+const GENDER_OPTIONS = [
+  { value: '', label: 'Select gender' },
+  { value: 'Male', label: 'Male' },
+  { value: 'Female', label: 'Female' },
+  { value: 'Other', label: 'Other' },
+  { value: 'Prefer not to say', label: 'Prefer not to say' },
 ];
 
 const EMPLOYMENT_TYPES: EmploymentType[] = ['Full-time', 'Contract', 'Freelance'];
@@ -67,12 +81,9 @@ const NATIONALITIES = [
   'Other',
 ];
 
-const EMPTY_EDUCATION: EducationEntry = {
-  level: 'high_school',
-  institution: '',
-  grade: '',
-  certificatePath: undefined,
-};
+function emptyEducation(level: EducationLevel): EducationEntry {
+  return { level, institution: '', grade: '', discipline: '', certificatePath: undefined };
+}
 
 const EMPTY_EMPLOYMENT: EmploymentEntry = {
   jobTitle: '',
@@ -81,7 +92,23 @@ const EMPTY_EMPLOYMENT: EmploymentEntry = {
   employmentType: 'Full-time',
   startDate: '',
   endDate: '',
+  isCurrentJob: false,
 };
+
+const EMPTY_PROF_CERT: ProfessionalCertificationEntry = { name: '' };
+const EMPTY_MEMBERSHIP: ProfessionalMembershipEntry = { name: '', membershipNo: '' };
+
+/** Format digits as number with comma every 3 digits (e.g. 80000 -> "80,000"). */
+function formatSalaryDisplay(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits === '') return '';
+  return Number(digits).toLocaleString();
+}
+
+/** Strip non-digits and return numeric string for submission. */
+function parseSalaryForSubmit(value: string): string {
+  return value.replace(/\D/g, '');
+}
 
 interface JobApplicationFormProps {
   job: JobListing;
@@ -104,18 +131,18 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     phone: '',
     nationality: '',
     homeCounty: '',
+    salaryExpectations: '',
+    gender: '',
   });
 
-  // Stage 2: Education (one block per level)
-  const [education, setEducation] = useState<EducationEntry[]>(
-    EDUCATION_LEVELS.map((l) => ({ ...EMPTY_EDUCATION, level: l.value }))
-  );
-  const [educationFiles, setEducationFiles] = useState<Record<EducationLevel, File | null>>({
-    high_school: null,
-    diploma: null,
-    undergraduate: null,
-    masters: null,
-  });
+  // Stage 2: Education (high_school, certificate, diploma single; undergrad, masters, phd multiple)
+  const [education, setEducation] = useState<EducationEntry[]>(() => [
+    emptyEducation('high_school'),
+    emptyEducation('certificate'),
+    emptyEducation('diploma'),
+    emptyEducation('undergraduate'),
+  ]);
+  const [educationFiles, setEducationFiles] = useState<(File | null)[]>(() => [null, null, null, null]);
 
   // Stage 3: Employment (up to 5)
   const [employment, setEmployment] = useState<EmploymentEntry[]>([
@@ -124,8 +151,10 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
   const employmentMax = 5;
 
   // Stage 4: Attachments
-  const [professionalCertifications, setProfessionalCertifications] = useState('');
-  const [professionalCertFile, setProfessionalCertFile] = useState<File | null>(null);
+  const [professionalCertificationsList, setProfessionalCertificationsList] = useState<ProfessionalCertificationEntry[]>(() => [{ ...EMPTY_PROF_CERT }]);
+  const [professionalCertFiles, setProfessionalCertFiles] = useState<(File | null)[]>(() => [null]);
+  const [professionalMemberships, setProfessionalMemberships] = useState<ProfessionalMembershipEntry[]>(() => [{ ...EMPTY_MEMBERSHIP }]);
+  const [professionalMembershipFiles, setProfessionalMembershipFiles] = useState<(File | null)[]>(() => [null]);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvPath, setCvPath] = useState('');
 
@@ -151,13 +180,61 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
 
   const validateStage1 = () => {
     const e: Record<string, string> = {};
-    if (!profile.firstName.trim()) e.firstName = 'First name is required';
-    if (!profile.lastName.trim()) e.lastName = 'Last name is required';
+    const first = profile.firstName.trim();
+    const last = profile.lastName.trim();
+    if (!first) e.firstName = 'First name is required';
+    else if (first.length < 2) e.firstName = 'First name must be at least 2 characters';
+    if (!last) e.lastName = 'Last name is required';
+    else if (last.length < 2) e.lastName = 'Last name must be at least 2 characters';
     if (!profile.email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(profile.email)) e.email = 'Email is invalid';
+    else if (!/\S+@\S+\.\S+/.test(profile.email)) e.email = 'Please enter a valid email address';
+    else if (profile.email.length > 254) e.email = 'Email is too long';
+    const phoneDigits = (profile.phone || '').replace(/\D/g, '');
     if (!profile.phone.trim()) e.phone = 'Phone number is required';
+    else if (phoneDigits.length < 9) e.phone = 'Phone number must have at least 9 digits';
     if (!profile.nationality.trim()) e.nationality = 'Nationality is required';
-    if (!profile.homeCounty.trim()) e.homeCounty = 'Home county is required';
+    const homeCounty = profile.homeCounty.trim();
+    if (!homeCounty) e.homeCounty = 'Home county is required';
+    else if (homeCounty.length < 2) e.homeCounty = 'Home county must be at least 2 characters';
+    if (!profile.gender.trim()) e.gender = 'Gender is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validateStage2 = () => {
+    const e: Record<string, string> = {};
+    education.forEach((entry, i) => {
+      const hasContent = entry.institution.trim() || entry.grade.trim() || (entry.discipline ?? '').trim();
+      if (hasContent && !educationFiles[i]) {
+        e[`edu_cert_${i}`] = `Certificate is required when institution or grade is filled`;
+      }
+    });
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validateStage3 = () => {
+    const e: Record<string, string> = {};
+    const salaryDigits = parseSalaryForSubmit(profile.salaryExpectations);
+    if (!salaryDigits) e.salaryExpectations = 'Minimum expected salary is required';
+    else if (!/^\d+$/.test(salaryDigits) || parseInt(salaryDigits, 10) < 1) {
+      e.salaryExpectations = 'Please enter a valid amount (numbers only)';
+    } else if (salaryDigits.length > 12) {
+      e.salaryExpectations = 'Please enter a reasonable amount';
+    }
+    employment.forEach((entry, i) => {
+      const hasAny = entry.jobTitle.trim() || entry.companyName.trim() || entry.industry.trim() || entry.endDate;
+      if (hasAny && !entry.isCurrentJob && !entry.startDate.trim()) {
+        e[`emp_start_${i}`] = 'Start date is required when employment details are provided';
+      }
+      if (hasAny && !entry.isCurrentJob && entry.startDate.trim() && entry.endDate.trim()) {
+        const start = new Date(entry.startDate);
+        const end = new Date(entry.endDate);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end < start) {
+          e[`emp_dates_${i}`] = 'End date must be on or after start date';
+        }
+      }
+    });
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -165,6 +242,17 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
   const validateStage4 = () => {
     const e: Record<string, string> = {};
     if (!cvFile && !cvPath) e.cv = 'CV is required';
+    professionalCertificationsList.forEach((entry, i) => {
+      if (entry.name.trim() && !professionalCertFiles[i]) {
+        e[`prof_cert_${i}`] = 'Certificate is required when certification name is filled';
+      }
+    });
+    professionalMemberships.forEach((entry, i) => {
+      const hasContent = entry.name.trim() || entry.membershipNo.trim();
+      if (hasContent && !professionalMembershipFiles[i]) {
+        e[`prof_mem_${i}`] = 'Certificate is required when membership details are filled';
+      }
+    });
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -182,6 +270,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
   const handleNext = () => {
     setErrors({});
     if (step === 1 && !validateStage1()) return;
+    if (step === 2 && !validateStage2()) return;
+    if (step === 3 && !validateStage3()) return;
     if (step === 4 && !validateStage4()) return;
     if (step === 5 && !validateStage5()) return;
     if (step < 6) setStep((s) => s + 1);
@@ -195,10 +285,11 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    if (!validateStage1() || !validateStage4() || !validateStage5()) {
-      setStep(1);
-      return;
-    }
+    if (!validateStage1()) { setStep(1); return; }
+    if (!validateStage2()) { setStep(2); return; }
+    if (!validateStage3()) { setStep(3); return; }
+    if (!validateStage4()) { setStep(4); return; }
+    if (!validateStage5()) { setStep(5); return; }
 
     setLoading(true);
     try {
@@ -213,26 +304,41 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
         }
       }
 
-      const certPaths: Partial<Record<EducationLevel, string>> = {};
-      for (const level of EDUCATION_LEVELS) {
-        const file = educationFiles[level.value];
+      const certPaths: (string | undefined)[] = [];
+      for (let i = 0; i < educationFiles.length; i++) {
+        const file = educationFiles[i];
         if (file) {
           const path = await uploadDocument(file);
-          if (path) certPaths[level.value] = path;
+          certPaths[i] = path ?? undefined;
+        } else {
+          certPaths[i] = undefined;
         }
       }
 
-      let professionalCertPath: string | undefined;
-      if (professionalCertFile) {
-        professionalCertPath = (await uploadDocument(professionalCertFile)) ?? undefined;
-      }
-
-      const educationPayload = education.map((entry) => ({
+      const educationPayload = education.map((entry, i) => ({
         level: entry.level,
         institution: entry.institution.trim(),
         grade: entry.grade.trim(),
-        certificatePath: certPaths[entry.level] ?? entry.certificatePath,
+        discipline: (entry.discipline ?? '').trim() || undefined,
+        certificatePath: certPaths[i] ?? entry.certificatePath,
       }));
+
+      const profCertPaths: string[] = [];
+      for (let i = 0; i < professionalCertFiles.length; i++) {
+        const file = professionalCertFiles[i];
+        if (file) {
+          const path = await uploadDocument(file);
+          if (path) profCertPaths[i] = path;
+        }
+      }
+      const memPaths: string[] = [];
+      for (let i = 0; i < professionalMembershipFiles.length; i++) {
+        const file = professionalMembershipFiles[i];
+        if (file) {
+          const path = await uploadDocument(file);
+          if (path) memPaths[i] = path;
+        }
+      }
 
       const employmentPayload = employment
         .filter(
@@ -249,17 +355,35 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
           industry: e.industry.trim(),
           employmentType: e.employmentType,
           startDate: e.startDate,
-          endDate: e.endDate,
+          endDate: e.isCurrentJob ? 'Present' : e.endDate,
+          isCurrentJob: e.isCurrentJob ?? false,
         }));
 
+      const professionalCertificationsListPayload = professionalCertificationsList
+        .map((c, i) => ({
+          name: c.name.trim(),
+          certificatePath: profCertPaths[i] ?? undefined,
+        }))
+        .filter((c) => c.name);
+
+      const professionalMembershipsPayload = professionalMemberships
+        .map((m, i) => ({
+          name: m.name.trim(),
+          membershipNo: m.membershipNo.trim(),
+          certificatePath: memPaths[i] ?? undefined,
+        }))
+        .filter((m) => m.name || m.membershipNo);
+
       const formData: ApplicationFormData = {
+        gender: profile.gender.trim() || undefined,
         education: educationPayload,
         employmentHistory: employmentPayload,
-        professionalCertifications: professionalCertifications.trim() || undefined,
-        professionalCertificationsPath: professionalCertPath,
+        professionalCertificationsList: professionalCertificationsListPayload.length ? professionalCertificationsListPayload : undefined,
+        professionalMemberships: professionalMembershipsPayload.length ? professionalMembershipsPayload : undefined,
         declarations,
       };
 
+      const salaryValue = parseSalaryForSubmit(profile.salaryExpectations);
       const application = await submitApplicationFull({
         jobId: job.id,
         candidate: {
@@ -270,6 +394,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
           nationality: profile.nationality.trim(),
           homeCounty: profile.homeCounty.trim(),
         },
+        salaryExpectations: salaryValue ? formatSalaryDisplay(salaryValue) : '',
         resumePath: resumePath || undefined,
         formData,
       });
@@ -296,7 +421,26 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     });
   };
 
-  const setEmploymentEntry = (index: number, field: keyof EmploymentEntry, value: string | EmploymentType) => {
+  const addEducationEntry = (level: EducationLevel) => {
+    setEducation((prev) => [...prev, emptyEducation(level)]);
+    setEducationFiles((prev) => [...prev, null]);
+  };
+
+  const removeEducationEntry = (index: number) => {
+    setEducation((prev) => prev.filter((_, i) => i !== index));
+    setEducationFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const setEducationFile = (index: number, file: File | null) => {
+    setEducationFiles((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push(null);
+      next[index] = file;
+      return next;
+    });
+  };
+
+  const setEmploymentEntry = (index: number, field: keyof EmploymentEntry, value: string | EmploymentType | boolean) => {
     setEmployment((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -314,6 +458,52 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     if (employment.length > 1) {
       setEmployment((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const setProfCertEntry = (index: number, field: keyof ProfessionalCertificationEntry, value: string) => {
+    setProfessionalCertificationsList((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+  const addProfCert = () => setProfessionalCertificationsList((prev) => [...prev, { ...EMPTY_PROF_CERT }]);
+  const removeProfCert = (index: number) => {
+    if (professionalCertificationsList.length > 1) {
+      setProfessionalCertificationsList((prev) => prev.filter((_, i) => i !== index));
+      setProfessionalCertFiles((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+  const setProfCertFile = (index: number, file: File | null) => {
+    setProfessionalCertFiles((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push(null);
+      next[index] = file;
+      return next;
+    });
+  };
+
+  const setMembershipEntry = (index: number, field: keyof ProfessionalMembershipEntry, value: string) => {
+    setProfessionalMemberships((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+  const addMembership = () => setProfessionalMemberships((prev) => [...prev, { ...EMPTY_MEMBERSHIP }]);
+  const removeMembership = (index: number) => {
+    if (professionalMemberships.length > 1) {
+      setProfessionalMemberships((prev) => prev.filter((_, i) => i !== index));
+      setProfessionalMembershipFiles((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+  const setMembershipFile = (index: number, file: File | null) => {
+    setProfessionalMembershipFiles((prev) => {
+      const next = [...prev];
+      while (next.length <= index) next.push(null);
+      next[index] = file;
+      return next;
+    });
   };
 
   const allowedFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
@@ -413,6 +603,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       onChange={(e) => setProfile((p) => ({ ...p, firstName: e.target.value }))}
                       className={inputClass('firstName')}
                       placeholder="First name"
+                      maxLength={100}
+                      autoComplete="given-name"
                     />
                     {showError('firstName')}
                   </div>
@@ -424,9 +616,27 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       onChange={(e) => setProfile((p) => ({ ...p, lastName: e.target.value }))}
                       className={inputClass('lastName')}
                       placeholder="Last name"
+                      maxLength={100}
+                      autoComplete="family-name"
                     />
                     {showError('lastName')}
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Gender *</label>
+                  <select
+                    value={profile.gender}
+                    onChange={(e) => setProfile((p) => ({ ...p, gender: e.target.value }))}
+                    className={inputClass('gender')}
+                    aria-label="Gender"
+                  >
+                    {GENDER_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  {showError('gender')}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Email *</label>
@@ -436,6 +646,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                     onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
                     className={inputClass('email')}
                     placeholder="email@example.com"
+                    maxLength={254}
+                    autoComplete="email"
                   />
                   {showError('email')}
                 </div>
@@ -447,6 +659,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                     onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
                     className={inputClass('phone')}
                     placeholder="+254..."
+                    maxLength={30}
+                    autoComplete="tel"
                   />
                   {showError('phone')}
                 </div>
@@ -476,6 +690,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       onChange={(e) => setProfile((p) => ({ ...p, homeCounty: e.target.value }))}
                       className={inputClass('homeCounty')}
                       placeholder="e.g. Nairobi"
+                      maxLength={100}
+                      autoComplete="address-level2"
                     />
                     {showError('homeCounty')}
                   </div>
@@ -495,9 +711,9 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   <GraduationCap className="w-5 h-5" />
                   Education
                 </h3>
-                <p className="text-sm text-neutral-600">Add institution and grade. If filled, attach certificate.</p>
-                {EDUCATION_LEVELS.map(({ value, label }, idx) => (
-                  <div key={value} className="border border-neutral-200 rounded-lg p-4 space-y-3">
+                <p className="text-sm text-neutral-600">Add institution, grade, and discipline. Certificate is required when you fill any field.</p>
+                {EDUCATION_LEVELS_SINGLE.map(({ value, label }, idx) => (
+                  <div key={`${value}-${idx}`} className="border border-neutral-200 rounded-lg p-4 space-y-3">
                     <h4 className="text-sm font-medium text-neutral-800">{label}</h4>
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
@@ -522,25 +738,116 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-neutral-600 mb-1">Certificate (if filled)</label>
+                      <label className="block text-xs text-neutral-600 mb-1">Discipline</label>
+                      <input
+                        type="text"
+                        value={education[idx]?.discipline ?? ''}
+                        onChange={(e) => setEducationEntry(idx, 'discipline', e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                        placeholder="e.g. Sciences, Commerce, Nursing, Engineering"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                       <input
                         type="file"
                         accept=".pdf,.doc,.docx,image/jpeg,image/png"
                         onChange={(e) =>
                           handleFile(
                             e.target.files?.[0] ?? null,
-                            (f) => setEducationFiles((prev) => ({ ...prev, [value]: f })),
-                            `edu_${value}`
+                            (f) => setEducationFile(idx, f),
+                            `edu_cert_${idx}`
                           )
                         }
                         className="w-full text-sm"
                       />
-                      {educationFiles[value] && (
-                        <p className="text-xs text-neutral-500 mt-1">{educationFiles[value]?.name}</p>
+                      {educationFiles[idx] && (
+                        <p className="text-xs text-neutral-500 mt-1">{educationFiles[idx]?.name}</p>
                       )}
+                      {showError(`edu_cert_${idx}`)}
                     </div>
                   </div>
                 ))}
+                {EDUCATION_LEVELS_MULTI.map(({ value, label }) => {
+                  const indices = education.map((e, i) => (e.level === value ? i : -1)).filter((i) => i >= 0);
+                  return (
+                    <div key={value} className="border border-neutral-200 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-sm font-medium text-neutral-800">{label}</h4>
+                        <button
+                          type="button"
+                          onClick={() => addEducationEntry(value)}
+                          className="text-sm text-primary-600 hover:underline"
+                        >
+                          + Add entry
+                        </button>
+                      </div>
+                      {indices.map((idx, subIdx) => {
+                        return (
+                          <div key={idx} className="bg-neutral-50 rounded-lg p-3 space-y-2 border border-neutral-100">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-medium text-neutral-600">Entry {subIdx + 1}</span>
+                              {indices.length > 1 && (
+                                <button type="button" onClick={() => removeEducationEntry(idx)} className="text-xs text-red-600 hover:underline">
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs text-neutral-600 mb-1">Institution</label>
+                                <input
+                                  type="text"
+                                  value={education[idx]?.institution ?? ''}
+                                  onChange={(e) => setEducationEntry(idx, 'institution', e.target.value)}
+                                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                                  placeholder="Institution name"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-neutral-600 mb-1">Grade</label>
+                                <input
+                                  type="text"
+                                  value={education[idx]?.grade ?? ''}
+                                  onChange={(e) => setEducationEntry(idx, 'grade', e.target.value)}
+                                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                                  placeholder="Grade / class"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-neutral-600 mb-1">Discipline</label>
+                              <input
+                                type="text"
+                                value={education[idx]?.discipline ?? ''}
+                                onChange={(e) => setEducationEntry(idx, 'discipline', e.target.value)}
+                                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                                placeholder="e.g. Sciences, Commerce, Nursing, Engineering"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,image/jpeg,image/png"
+                                onChange={(e) =>
+                                  handleFile(
+                                    e.target.files?.[0] ?? null,
+                                    (f) => setEducationFile(idx, f),
+                                    `edu_cert_${idx}`
+                                  )
+                                }
+                                className="w-full text-sm"
+                              />
+                              {educationFiles[idx] && <p className="text-xs text-neutral-500 mt-1">{educationFiles[idx]?.name}</p>}
+                              {showError(`edu_cert_${idx}`)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </motion.div>
             )}
 
@@ -557,6 +864,22 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   Employment history
                 </h3>
                 <p className="text-sm text-neutral-600">Up to 5 entries. Add job title, company, industry, type, and dates.</p>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum expected salary *</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={profile.salaryExpectations}
+                    onChange={(e) => {
+                      const formatted = formatSalaryDisplay(e.target.value);
+                      setProfile((p) => ({ ...p, salaryExpectations: formatted }));
+                    }}
+                    className={inputClass('salaryExpectations')}
+                    placeholder="e.g. 80,000"
+                    maxLength={18}
+                  />
+                  {showError('salaryExpectations')}
+                </div>
                 {employment.map((entry, idx) => (
                   <div key={idx} className="border border-neutral-200 rounded-lg p-4 space-y-3">
                     <div className="flex justify-between items-center">
@@ -635,12 +958,31 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                         <label className="block text-xs text-neutral-600 mb-1">End date</label>
                         <input
                           type="month"
-                          value={entry.endDate}
+                          value={entry.isCurrentJob ? '' : entry.endDate}
                           onChange={(e) => setEmploymentEntry(idx, 'endDate', e.target.value)}
-                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                          disabled={entry.isCurrentJob}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm disabled:bg-neutral-100 disabled:text-neutral-500"
                         />
+                        {entry.isCurrentJob && (
+                          <p className="text-xs text-neutral-500 mt-0.5">Current job — end date shown as Present</p>
+                        )}
                       </div>
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                      <input
+                        type="checkbox"
+                        checked={entry.isCurrentJob ?? false}
+                        onChange={(e) => setEmploymentEntry(idx, 'isCurrentJob', e.target.checked)}
+                        className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-neutral-700">This is my current job</span>
+                    </label>
+                    {(errors[`emp_start_${idx}`] || errors[`emp_dates_${idx}`]) && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
+                        {errors[`emp_start_${idx}`] ?? errors[`emp_dates_${idx}`]}
+                      </p>
+                    )}
                   </div>
                 ))}
                 {employment.length < employmentMax && (
@@ -692,34 +1034,97 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   {showError('cv')}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Professional certifications (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={professionalCertifications}
-                    onChange={(e) => setProfessionalCertifications(e.target.value)}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm"
-                    placeholder="List certifications"
-                  />
-                  <div className="mt-2">
-                    <label className="block text-xs text-neutral-600 mb-1">Attach proof (optional)</label>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                      onChange={(e) =>
-                        handleFile(
-                          e.target.files?.[0] ?? null,
-                          setProfessionalCertFile,
-                          'professionalCert'
-                        )
-                      }
-                      className="w-full text-sm"
-                    />
-                    {professionalCertFile && (
-                      <p className="text-xs text-neutral-500 mt-1">{professionalCertFile.name}</p>
-                    )}
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-neutral-700">
+                      Professional certifications
+                    </label>
+                    <button type="button" onClick={addProfCert} className="text-sm text-primary-600 hover:underline">
+                      + Add certification
+                    </button>
                   </div>
+                  <p className="text-xs text-neutral-600 mb-2">Certificate is required when you enter a certification name.</p>
+                  {professionalCertificationsList.map((entry, i) => (
+                    <div key={i} className="border border-neutral-200 rounded-lg p-3 mb-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-neutral-600">Certification {i + 1}</span>
+                        {professionalCertificationsList.length > 1 && (
+                          <button type="button" onClick={() => removeProfCert(i)} className="text-xs text-red-600 hover:underline">
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={entry.name}
+                        onChange={(e) => setProfCertEntry(i, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                        placeholder="e.g. CPA, PMP"
+                      />
+                      <div>
+                        <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,image/jpeg,image/png"
+                          onChange={(e) =>
+                            handleFile(e.target.files?.[0] ?? null, (f) => setProfCertFile(i, f), `prof_cert_${i}`)
+                          }
+                          className="w-full text-sm"
+                        />
+                        {professionalCertFiles[i] && <p className="text-xs text-neutral-500 mt-1">{professionalCertFiles[i]?.name}</p>}
+                        {showError(`prof_cert_${i}`)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-neutral-700">
+                      Professional memberships
+                    </label>
+                    <button type="button" onClick={addMembership} className="text-sm text-primary-600 hover:underline">
+                      + Add membership
+                    </button>
+                  </div>
+                  <p className="text-xs text-neutral-600 mb-2">Membership number and certificate are required when you fill any field.</p>
+                  {professionalMemberships.map((entry, i) => (
+                    <div key={i} className="border border-neutral-200 rounded-lg p-3 mb-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-neutral-600">Membership {i + 1}</span>
+                        {professionalMemberships.length > 1 && (
+                          <button type="button" onClick={() => removeMembership(i)} className="text-xs text-red-600 hover:underline">
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={entry.name}
+                        onChange={(e) => setMembershipEntry(i, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm mb-2"
+                        placeholder="e.g. Institute of Certified Public Accountants"
+                      />
+                      <input
+                        type="text"
+                        value={entry.membershipNo}
+                        onChange={(e) => setMembershipEntry(i, 'membershipNo', e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                        placeholder="Membership number"
+                      />
+                      <div>
+                        <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,image/jpeg,image/png"
+                          onChange={(e) =>
+                            handleFile(e.target.files?.[0] ?? null, (f) => setMembershipFile(i, f), `prof_mem_${i}`)
+                          }
+                          className="w-full text-sm"
+                        />
+                        {professionalMembershipFiles[i] && <p className="text-xs text-neutral-500 mt-1">{professionalMembershipFiles[i]?.name}</p>}
+                        {showError(`prof_mem_${i}`)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -795,18 +1200,19 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                     </p>
                     <p className="text-neutral-600">
                       {profile.nationality} · {profile.homeCounty}
+                      {profile.gender && ` · ${profile.gender}`}
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-neutral-800">Education</p>
-                    {education.map(
-                      (e, i) =>
-                        (e.institution || e.grade) && (
-                          <p key={i} className="text-neutral-600">
-                            {EDUCATION_LEVELS[i]?.label}: {e.institution} {e.grade}
-                          </p>
-                        )
-                    )}
+                    {education
+                      .filter((e) => e.institution || e.grade || (e.discipline ?? '').trim())
+                      .map((e, i) => (
+                        <p key={i} className="text-neutral-600">
+                          {e.level.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}: {e.institution} {e.grade}
+                          {(e.discipline ?? '').trim() && ` · ${e.discipline}`}
+                        </p>
+                      ))}
                   </div>
                   <div>
                     <p className="font-medium text-neutral-800">Employment</p>
@@ -817,7 +1223,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       )
                       .map((e, i) => (
                         <p key={i} className="text-neutral-600">
-                          {e.jobTitle} at {e.companyName} ({e.employmentType}) · {e.startDate} – {e.endDate}
+                          {e.jobTitle} at {e.companyName} ({e.employmentType}) · {e.startDate} – {e.isCurrentJob ? 'Present' : e.endDate}
                         </p>
                       ))}
                   </div>
@@ -825,8 +1231,17 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                     <p className="font-medium text-neutral-800">Attachments</p>
                     <p className="text-neutral-600">
                       CV: {cvFile?.name ?? (cvPath ? 'Uploaded' : '—')}
-                      {professionalCertifications && ` · Certifications: ${professionalCertifications}`}
                     </p>
+                    {professionalCertificationsList.some((c) => c.name.trim()) && (
+                      <p className="text-neutral-600">
+                        Certifications: {professionalCertificationsList.filter((c) => c.name.trim()).map((c) => c.name).join(', ')}
+                      </p>
+                    )}
+                    {professionalMemberships.some((m) => m.name.trim() || m.membershipNo.trim()) && (
+                      <p className="text-neutral-600">
+                        Memberships: {professionalMemberships.filter((m) => m.name.trim() || m.membershipNo.trim()).map((m) => `${m.name} (${m.membershipNo})`).join('; ')}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {errors.general && (

@@ -24,6 +24,7 @@ type StoredJob = {
   minYearsExperience?: number | null;
   educationLevel?: string | null;
   educationQualification?: string | null;
+  requiredCertifications?: string | null;
   skills: string[];
   isActive: boolean;
   applicationCount: number;
@@ -116,6 +117,10 @@ export function getInMemoryJobSummary(id: string): JobSummary | null {
     isActive: j.isActive,
     clientId: j.clientId ?? null,
     clientName: client?.name ?? null,
+    minYearsExperience: j.minYearsExperience ?? null,
+    educationLevel: j.educationLevel ?? null,
+    educationQualification: j.educationQualification ?? null,
+    requiredCertifications: j.requiredCertifications ?? null,
   };
 }
 
@@ -147,6 +152,7 @@ export function updateInMemoryJob(id: string, input: UpdateJobInput): JobListing
     ...(input.minYearsExperience !== undefined && { minYearsExperience: input.minYearsExperience }),
     ...(input.educationLevel !== undefined && { educationLevel: input.educationLevel }),
     ...(input.educationQualification !== undefined && { educationQualification: input.educationQualification }),
+    ...(input.requiredCertifications !== undefined && { requiredCertifications: input.requiredCertifications }),
     ...(input.skills !== undefined && { skills: input.skills }),
     ...(input.clientId !== undefined && { clientId: input.clientId }),
     ...(input.concealCompany !== undefined && { concealCompany: input.concealCompany }),
@@ -173,6 +179,7 @@ export interface CreateJobInput {
   minYearsExperience?: number | null;
   educationLevel?: string | null;
   educationQualification?: string | null;
+  requiredCertifications?: string | null;
   skills?: string[];
   clientId?: string;
   concealCompany?: boolean;
@@ -206,6 +213,7 @@ export function createInMemoryJob(input: CreateJobInput): JobListing {
     minYearsExperience: input.minYearsExperience ?? null,
     educationLevel: input.educationLevel ?? null,
     educationQualification: input.educationQualification ?? null,
+    requiredCertifications: input.requiredCertifications ?? null,
     skills: input.skills ?? [],
     isActive: true,
     applicationCount: 0,

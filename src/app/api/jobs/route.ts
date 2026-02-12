@@ -246,6 +246,7 @@ export async function POST(request: NextRequest) {
         : undefined;
   const educationLevel = typeof b.educationLevel === 'string' ? b.educationLevel.trim() || undefined : undefined;
   const educationQualification = typeof b.educationQualification === 'string' ? b.educationQualification.trim() || undefined : undefined;
+  const requiredCertifications = typeof b.requiredCertifications === 'string' ? b.requiredCertifications.trim() || undefined : undefined;
   const skills = Array.isArray(b.skills)
     ? (b.skills as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
     : [];
@@ -275,6 +276,7 @@ export async function POST(request: NextRequest) {
     minYearsExperience: minYearsExperience != null && !Number.isNaN(minYearsExperience) ? minYearsExperience : undefined,
     educationLevel,
     educationQualification,
+    requiredCertifications,
     skills: skills.length ? skills : undefined,
     clientId: resolvedClientId,
     concealCompany,
@@ -315,6 +317,7 @@ export async function POST(request: NextRequest) {
           minYearsExperience: input.minYearsExperience ?? null,
           educationLevel: input.educationLevel ?? null,
           educationQualification: input.educationQualification ?? null,
+          requiredCertifications: input.requiredCertifications ?? null,
           skills: input.skills ?? [],
           clientId: resolvedClientId ?? null,
           concealCompany: input.concealCompany ?? false,

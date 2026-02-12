@@ -5,6 +5,8 @@ import {
   getInMemoryApplications,
 } from '@/lib/applications-store';
 import { getInMemoryJobSummary } from '@/lib/jobs-store';
+import { sendApplicationReceivedEmail } from '@/lib/email';
+import { reportApiError } from '@/lib/monitoring';
 import type { ApplicationWithDetails } from '@/types/dashboard';
 
 function jobToSummary(job: {
@@ -18,6 +20,10 @@ function jobToSummary(job: {
   isActive: boolean;
   clientId?: string | null;
   clientName?: string | null;
+  minYearsExperience?: number | null;
+  educationLevel?: string | null;
+  educationQualification?: string | null;
+  requiredCertifications?: string | null;
 }) {
   return {
     id: job.id,
@@ -30,6 +36,10 @@ function jobToSummary(job: {
     isActive: job.isActive,
     clientId: job.clientId ?? null,
     clientName: job.clientName ?? null,
+    minYearsExperience: job.minYearsExperience ?? null,
+    educationLevel: job.educationLevel ?? null,
+    educationQualification: job.educationQualification ?? null,
+    requiredCertifications: job.requiredCertifications ?? null,
   };
 }
 
@@ -41,7 +51,10 @@ export async function GET(request: NextRequest) {
   const nationality = searchParams.get('nationality') || undefined;
   const homeCounty = searchParams.get('homeCounty') || undefined;
   const educationLevel = searchParams.get('educationLevel') || undefined;
+  const educationDiscipline = searchParams.get('discipline') || undefined;
   const employmentType = searchParams.get('employmentType') || undefined;
+  const certificate = searchParams.get('certificate') || undefined;
+  const membership = searchParams.get('membership') || undefined;
 
   try {
     if (process.env.DATABASE_URL) {
@@ -77,11 +90,42 @@ export async function GET(request: NextRequest) {
           return fd?.education?.some((e) => e.level === level) ?? false;
         });
       }
+      if (educationDiscipline?.trim()) {
+        const q = educationDiscipline.trim().toLowerCase();
+        filtered = filtered.filter((a) => {
+          const fd = a.formData as { education?: { discipline?: string }[] } | null;
+          return fd?.education?.some((e) => (e.discipline ?? '').toLowerCase().includes(q)) ?? false;
+        });
+      }
       if (employmentType?.trim()) {
         const type = employmentType.trim();
         filtered = filtered.filter((a) => {
           const fd = a.formData as { employmentHistory?: { employmentType: string }[] } | null;
           return fd?.employmentHistory?.some((e) => e.employmentType === type) ?? false;
+        });
+      }
+      if (certificate?.trim()) {
+        const q = certificate.trim().toLowerCase();
+        filtered = filtered.filter((a) => {
+          const fd = a.formData as {
+            professionalCertificationsList?: { name: string }[];
+            professionalCertifications?: string;
+          } | null;
+          if (!fd) return false;
+          const fromList = fd.professionalCertificationsList?.some((c) =>
+            (c.name ?? '').toLowerCase().includes(q)
+          );
+          const fromLegacy = (fd.professionalCertifications ?? '').toLowerCase().includes(q);
+          return Boolean(fromList || fromLegacy);
+        });
+      }
+      if (membership?.trim()) {
+        const q = membership.trim().toLowerCase();
+        filtered = filtered.filter((a) => {
+          const fd = a.formData as { professionalMemberships?: { name: string }[] } | null;
+          return fd?.professionalMemberships?.some((m) =>
+            (m.name ?? '').toLowerCase().includes(q)
+          ) ?? false;
         });
       }
       const list: ApplicationWithDetails[] = filtered.map((a) => ({
@@ -92,6 +136,7 @@ export async function GET(request: NextRequest) {
         appliedDate: a.appliedDate.toISOString(),
         coverLetter: a.coverLetter,
         resumePath: a.resumePath,
+        salaryExpectations: a.salaryExpectations ?? null,
         notes: a.notes,
         formData: a.formData as ApplicationWithDetails['formData'],
         createdAt: a.createdAt.toISOString(),
@@ -107,7 +152,6 @@ export async function GET(request: NextRequest) {
           homeCounty: a.candidate.homeCounty ?? null,
           experience: a.candidate.experience,
           education: a.candidate.education,
-          skills: (Array.isArray(a.candidate.skills) ? a.candidate.skills : []) as string[],
           resumePath: a.candidate.resumePath,
           createdAt: a.candidate.createdAt.toISOString(),
         },
@@ -122,6 +166,10 @@ export async function GET(request: NextRequest) {
           isActive: a.job.isActive,
           clientId: a.job.clientId ?? null,
           clientName: a.job.client?.name ?? null,
+          minYearsExperience: a.job.minYearsExperience ?? null,
+          educationLevel: a.job.educationLevel ?? null,
+          educationQualification: a.job.educationQualification ?? null,
+          requiredCertifications: a.job.requiredCertifications ?? null,
         }),
       }));
       return NextResponse.json(list);
@@ -137,7 +185,10 @@ export async function GET(request: NextRequest) {
     nationality: nationality?.trim() || undefined,
     homeCounty: homeCounty?.trim() || undefined,
     educationLevel: educationLevel?.trim() || undefined,
+    discipline: educationDiscipline?.trim() || undefined,
     employmentType: employmentType?.trim() || undefined,
+    certificate: certificate?.trim() || undefined,
+    membership: membership?.trim() || undefined,
   });
   return NextResponse.json(list);
 }
@@ -154,6 +205,7 @@ export async function POST(request: NextRequest) {
   const jobId = typeof b.jobId === 'string' ? b.jobId.trim() : '';
   const coverLetter = typeof b.coverLetter === 'string' ? b.coverLetter.trim() || undefined : undefined;
   const resumePath = typeof b.resumePath === 'string' ? b.resumePath.trim() || undefined : undefined;
+  const salaryExpectations = typeof b.salaryExpectations === 'string' ? b.salaryExpectations.trim() || null : null;
   const formDataRaw = b.formData;
 
   const cand = b.candidate as Record<string, unknown> | undefined;
@@ -170,9 +222,6 @@ export async function POST(request: NextRequest) {
   const homeCounty = typeof cand.homeCounty === 'string' ? cand.homeCounty.trim() || undefined : undefined;
   const experience = typeof cand.experience === 'number' ? cand.experience : Number(cand.experience) || 0;
   const education = typeof cand.education === 'string' ? cand.education.trim() || undefined : undefined;
-  const skills = Array.isArray(cand.skills)
-    ? (cand.skills as unknown[]).map((s) => (typeof s === 'string' ? s.trim() : String(s))).filter(Boolean)
-    : [];
 
   if (!jobId) {
     return NextResponse.json({ error: 'jobId is required.' }, { status: 400 });
@@ -180,12 +229,92 @@ export async function POST(request: NextRequest) {
   if (!firstName || !lastName) {
     return NextResponse.json({ error: 'Candidate first name and last name are required.' }, { status: 400 });
   }
+  if (firstName.length < 2) {
+    return NextResponse.json({ error: 'First name must be at least 2 characters.' }, { status: 400 });
+  }
+  if (lastName.length < 2) {
+    return NextResponse.json({ error: 'Last name must be at least 2 characters.' }, { status: 400 });
+  }
+  if (!/\S+@\S+\.\S+/.test(email)) {
+    return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
+  }
+  if (email.length > 254) {
+    return NextResponse.json({ error: 'Email is too long.' }, { status: 400 });
+  }
+  if (!phone) {
+    return NextResponse.json({ error: 'Phone number is required.' }, { status: 400 });
+  }
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (phoneDigits.length < 9) {
+    return NextResponse.json({ error: 'Phone number must have at least 9 digits.' }, { status: 400 });
+  }
+  if (!nationality || !nationality.trim()) {
+    return NextResponse.json({ error: 'Nationality is required.' }, { status: 400 });
+  }
+  if (!homeCounty || homeCounty.length < 2) {
+    return NextResponse.json({ error: 'Home county is required and must be at least 2 characters.' }, { status: 400 });
+  }
+  const formDataObj = formDataRaw && typeof formDataRaw === 'object' && formDataRaw !== null ? (formDataRaw as { gender?: string }) : null;
+  if (formDataObj?.gender !== undefined && !String(formDataObj.gender ?? '').trim()) {
+    return NextResponse.json({ error: 'Gender is required.' }, { status: 400 });
+  }
+  if (!salaryExpectations) {
+    return NextResponse.json({ error: 'Minimum expected salary is required.' }, { status: 400 });
+  }
+  const salaryDigits = salaryExpectations.replace(/\D/g, '');
+  if (!salaryDigits || parseInt(salaryDigits, 10) < 1) {
+    return NextResponse.json(
+      { error: 'Minimum expected salary must be a valid amount (numbers only).' },
+      { status: 400 }
+    );
+  }
+  if (salaryDigits.length > 12) {
+    return NextResponse.json(
+      { error: 'Please enter a reasonable salary amount.' },
+      { status: 400 }
+    );
+  }
 
   try {
     if (process.env.DATABASE_URL) {
       const job = await prisma.job.findUnique({ where: { id: jobId } });
       if (!job) {
         return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
+      }
+
+      const existingApplication = await prisma.application.findFirst({
+        where: {
+          jobId,
+          candidate: {
+            email,
+          },
+        },
+        select: { id: true, status: true },
+      });
+      if (existingApplication) {
+        return NextResponse.json(
+          { error: 'You have already submitted an application for this job.' },
+          { status: 409 }
+        );
+      }
+
+      if (phone) {
+        const duplicatePhoneCandidate = await prisma.candidate.findFirst({
+          where: {
+            phone,
+            NOT: { email },
+          },
+          select: { email: true },
+        });
+        if (duplicatePhoneCandidate) {
+          return NextResponse.json(
+            {
+              error:
+                'An applicant with this phone number already exists under a different email. Please use the original email or contact support.',
+            },
+            { status: 409 }
+          );
+        }
       }
 
       const candidate = await prisma.candidate.upsert({
@@ -200,7 +329,6 @@ export async function POST(request: NextRequest) {
           homeCounty: homeCounty ?? null,
           experience,
           education: education ?? null,
-          skills,
           resumePath: resumePath ?? null,
         },
         update: {
@@ -212,7 +340,6 @@ export async function POST(request: NextRequest) {
           homeCounty: homeCounty ?? undefined,
           experience,
           education: education ?? undefined,
-          skills,
           ...(resumePath !== undefined && { resumePath: resumePath ?? null }),
         },
       });
@@ -228,6 +355,7 @@ export async function POST(request: NextRequest) {
           candidateId: candidate.id,
           coverLetter: coverLetter ?? null,
           resumePath: resumePath ?? candidate.resumePath,
+          salaryExpectations: salaryExpectations ?? null,
           formData: formData ?? undefined,
         },
         include: { candidate: true, job: { include: { client: true } } },
@@ -241,6 +369,7 @@ export async function POST(request: NextRequest) {
         appliedDate: application.appliedDate.toISOString(),
         coverLetter: application.coverLetter,
         resumePath: application.resumePath,
+        salaryExpectations: application.salaryExpectations ?? null,
         notes: application.notes,
         formData: (application.formData as ApplicationWithDetails['formData']) ?? null,
         createdAt: application.createdAt.toISOString(),
@@ -256,7 +385,6 @@ export async function POST(request: NextRequest) {
           homeCounty: application.candidate.homeCounty ?? null,
           experience: application.candidate.experience,
           education: application.candidate.education,
-          skills: (Array.isArray(application.candidate.skills) ? application.candidate.skills : []) as string[],
           resumePath: application.candidate.resumePath,
           createdAt: application.candidate.createdAt.toISOString(),
         },
@@ -271,12 +399,29 @@ export async function POST(request: NextRequest) {
           isActive: application.job.isActive,
           clientId: application.job.clientId ?? null,
           clientName: application.job.client?.name ?? null,
+          minYearsExperience: application.job.minYearsExperience ?? null,
+          educationLevel: application.job.educationLevel ?? null,
+          educationQualification: application.job.educationQualification ?? null,
+          requiredCertifications: application.job.requiredCertifications ?? null,
         }),
       };
+
+      sendApplicationReceivedEmail({
+        to: application.candidate.email,
+        applicantFirstName: application.candidate.firstName,
+        jobTitle: application.job.title,
+        companyName: application.job.company,
+        applicationId: application.id,
+      }).catch((err) => console.error('Application confirmation email failed:', err));
+
       return NextResponse.json(result);
     }
   } catch (e) {
-    console.error('POST /api/applications error:', e);
+    await reportApiError({
+      route: 'POST /api/applications',
+      message: e instanceof Error ? e.message : String(e),
+      context: { jobId, email },
+    });
     return NextResponse.json({ error: 'Failed to create application.' }, { status: 500 });
   }
 
@@ -286,10 +431,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
   }
 
+  const existingInMemoryApplication = getInMemoryApplications({ jobId }).find(
+    (a) => a.candidate.email.toLowerCase() === email.toLowerCase()
+  );
+  if (existingInMemoryApplication) {
+    return NextResponse.json(
+      { error: 'You have already submitted an application for this job.' },
+      { status: 409 }
+    );
+  }
+  if (phone) {
+    const duplicatePhoneInMemory = getInMemoryApplications().find(
+      (a) =>
+        (a.candidate.phone ?? '').trim() === phone.trim() &&
+        a.candidate.email.toLowerCase() !== email.toLowerCase()
+    );
+    if (duplicatePhoneInMemory) {
+      return NextResponse.json(
+        {
+          error:
+            'An applicant with this phone number already exists under a different email. Please use the original email or contact support.',
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const app = createInMemoryApplication({
     jobId,
     job: jobSummary,
-    candidate: {
+        candidate: {
       id: '',
       firstName,
       lastName,
@@ -300,13 +471,22 @@ export async function POST(request: NextRequest) {
       homeCounty: homeCounty ?? null,
       experience,
       education: education ?? null,
-      skills,
       resumePath: resumePath ?? null,
       createdAt: new Date().toISOString(),
     },
     coverLetter,
     resumePath,
+    salaryExpectations: salaryExpectations ?? null,
     formData: formData as ApplicationWithDetails['formData'] | undefined,
   });
+
+  sendApplicationReceivedEmail({
+    to: app.candidate.email,
+    applicantFirstName: app.candidate.firstName,
+    jobTitle: app.job.title,
+    companyName: app.job.company,
+    applicationId: app.id,
+  }).catch((err) => console.error('Application confirmation email failed:', err));
+
   return NextResponse.json(app);
 }

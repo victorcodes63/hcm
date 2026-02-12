@@ -30,6 +30,7 @@ interface JobForEdit {
   minYearsExperience?: number | null;
   educationLevel?: string | null;
   educationQualification?: string | null;
+  requiredCertifications?: string | null;
 }
 
 const JOB_TYPES = ['Full Time', 'Part Time', 'Contract', 'Remote'] as const;
@@ -76,6 +77,7 @@ export default function EditJobPage() {
   const [minYearsExperience, setMinYearsExperience] = useState('');
   const [educationLevel, setEducationLevel] = useState('');
   const [educationQualification, setEducationQualification] = useState('');
+  const [requiredCertifications, setRequiredCertifications] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -114,6 +116,7 @@ export default function EditJobPage() {
       setMinYearsExperience(job.minYearsExperience != null ? String(job.minYearsExperience) : '');
       setEducationLevel(job.educationLevel ?? '');
       setEducationQualification(job.educationQualification ?? '');
+      setRequiredCertifications(job.requiredCertifications ?? '');
       setClients(Array.isArray(clientsData) ? clientsData : []);
       const merged = Array.isArray(categoriesData)
         ? [...new Set([...CATEGORIES, ...categoriesData])].sort((a, b) => a.localeCompare(b))
@@ -223,6 +226,7 @@ export default function EditJobPage() {
           minYearsExperience: minYearsExperience.trim() ? parseInt(minYearsExperience, 10) : null,
           educationLevel: educationLevel.trim() || null,
           educationQualification: educationQualification.trim() || null,
+          requiredCertifications: requiredCertifications.trim() || null,
         }),
       });
 
@@ -613,6 +617,7 @@ export default function EditJobPage() {
               >
                 <option value="">Any</option>
                 <option value="High School">High School</option>
+                <option value="Certificate">Certificate</option>
                 <option value="Bachelor">Bachelor</option>
                 <option value="Master">Master</option>
                 <option value="PhD">PhD</option>
@@ -633,6 +638,21 @@ export default function EditJobPage() {
               className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">Optional. Used to filter candidates by education keyword.</p>
+          </div>
+
+          <div>
+            <label htmlFor="requiredCertifications" className="block text-sm font-medium text-primary-900 mb-2">
+              Required professional certifications (for filtering)
+            </label>
+            <input
+              type="text"
+              id="requiredCertifications"
+              value={requiredCertifications}
+              onChange={(e) => setRequiredCertifications(e.target.value)}
+              placeholder="e.g. CPA, CFA, PMP, Nursing Council registration"
+              className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Optional. Shown on application sidebar so reviewers can compare candidate to role.</p>
           </div>
 
           <div>

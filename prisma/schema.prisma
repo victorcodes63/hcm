@@ -47,6 +47,7 @@ model Job {
   minYearsExperience Int?     // structured: filter candidates by experience >= this
   educationLevel    String?   // structured: e.g. "High School" | "Bachelor" | "Master" | "PhD" | "Any"
   educationQualification String?  @db.Text // specific degree for filtering: e.g. "MBA", "Bachelor of Commerce", "MSc Computer Science"
+  requiredCertifications String?  @db.Text // required professional certs for filtering: e.g. "CPA", "CFA", "PMP"
   skills            Json     // string[]
   isActive          Boolean  @default(true)
   applicationCount  Int      @default(0)
@@ -78,7 +79,6 @@ model Candidate {
   homeCounty   String?  // Stage 1: home county
   experience   Int      @default(0) // years
   education    String?  @db.Text
-  skills       Json     @default("[]") // string[]
   resumePath   String?  // server path or storage URL
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -98,10 +98,11 @@ model Application {
   candidateId String
   status      ApplicationStatus @default(pending)
   appliedDate DateTime @default(now())
-  coverLetter String?  @db.Text
-  resumePath  String?  // CV (Stage 4)
-  notes       String?  @db.Text // internal staff notes
-  formData    Json?    // Stage 2–5: education, employment, certifications, declarations
+  coverLetter         String?  @db.Text
+  resumePath          String?  // CV (Stage 4)
+  salaryExpectations  String?  @db.Text // required from candidate on application form
+  notes               String?  @db.Text // internal staff notes
+  formData            Json?    // Stage 2–5: education, employment, certifications, declarations
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

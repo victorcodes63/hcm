@@ -25,6 +25,15 @@ interface DynamicJobListingsProps {
   limit?: number;
 }
 
+const DEFAULT_CATEGORY_OPTIONS = [
+  'Executive',
+  'Sales & Marketing',
+  'Education & Training',
+  'Technology',
+  'Operations',
+  'Finance & Accounting',
+];
+
 const DynamicJobListings = ({ 
   initialFilters = {}, 
   showSearch = true, 
@@ -38,6 +47,7 @@ const DynamicJobListings = ({
   const [searchKeyword, setSearchKeyword] = useState(initialFilters.keyword || '');
   const [selectedLocation, setSelectedLocation] = useState(initialFilters.location || '');
   const [selectedCategory, setSelectedCategory] = useState(initialFilters.category || '');
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
   
   const { getJobListings } = useATS();
 
@@ -66,6 +76,32 @@ const DynamicJobListings = ({
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    // Keep component in sync when parent updates initial filters (e.g. category cards).
+    setFilters(initialFilters);
+    setSearchKeyword(initialFilters.keyword || '');
+    setSelectedLocation(initialFilters.location || '');
+    setSelectedCategory(initialFilters.category || '');
+  }, [initialFilters]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/jobs/categories')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          const merged = [...new Set([...DEFAULT_CATEGORY_OPTIONS, ...data])]
+            .filter(Boolean)
+            .sort((a, b) => String(a).localeCompare(String(b)));
+          setCategoryOptions(merged as string[]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryOptions(DEFAULT_CATEGORY_OPTIONS);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSearch = () => {
     setFilters(prev => ({
@@ -193,12 +229,9 @@ const DynamicJobListings = ({
                 className="pl-10 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
               >
                 <option value="">All Categories</option>
-                <option value="Executive">Executive</option>
-                <option value="Sales & Marketing">Sales & Marketing</option>
-                <option value="Education & Training">Education & Training</option>
-                <option value="Technology">Technology</option>
-                <option value="Operations">Operations</option>
-                <option value="Finance & Accounting">Finance & Accounting</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
             </div>
             

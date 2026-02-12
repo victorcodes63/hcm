@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { put } from '@vercel/blob';
 
 const ALLOWED_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+// Vercel serverless body limit is 4.5MB; keep under for server uploads to Blob
+const MAX_SIZE = 4.5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,19 +25,30 @@ export async function POST(request: NextRequest) {
       );
     }
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'File too large (max 5MB).' }, { status: 400 });
+      return NextResponse.json(
+        { error: `File too large (max ${Math.round(MAX_SIZE / 1024 / 1024)}MB).` },
+        { status: 400 }
+      );
     }
 
     const ext = path.extname(file.name) || '.pdf';
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+    const safeName = `resumes/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Use Vercel Blob when token is set (e.g. on Vercel); otherwise local disk (dev)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(safeName, buffer, {
+        access: 'public',
+        contentType: file.type,
+      });
+      return NextResponse.json({ url: blob.url, path: blob.url });
+    }
+
     const dir = path.join(process.cwd(), 'public', 'uploads', 'resumes');
     await mkdir(dir, { recursive: true });
-    const filePath = path.join(dir, safeName);
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const filePath = path.join(dir, path.basename(safeName));
     await writeFile(filePath, buffer);
-
-    // Public URL: served from /uploads/resumes/...
-    const url = `/uploads/resumes/${safeName}`;
+    const url = `/uploads/resumes/${path.basename(safeName)}`;
     return NextResponse.json({ url, path: url });
   } catch (err) {
     console.error('Resume upload error:', err);

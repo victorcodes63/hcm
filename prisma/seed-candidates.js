@@ -1,6 +1,7 @@
 /**
- * Seed 20 dummy candidates and applications for existing job openings.
- * Includes nationality, homeCounty, and formData (education, employment history, declarations).
+ * Remove all existing applicants, then seed 50 candidates with full application data.
+ * All fields an applicant can have are populated (education with discipline, employment with isCurrentJob,
+ * professionalCertificationsList, professionalMemberships). Same CV path used for all.
  * Run: node prisma/seed-candidates.js
  * Requires: DATABASE_URL set and migrations applied.
  */
@@ -8,87 +9,139 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const SAME_CV_PATH = '/uploads/resumes/CV%20Justin%20Ombui.pdf';
+
 const STATUSES = ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired'];
 
-const CANDIDATES = [
-  { firstName: 'Jane', lastName: 'Wanjiru', email: 'jane.wanjiru@example.com', phone: '+254 700 111 001', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 5, education: 'Bachelor of Commerce, University of Nairobi', skills: ['Accounting', 'Excel', 'Financial Reporting'] },
-  { firstName: 'John', lastName: 'Kamau', email: 'john.kamau@example.com', phone: '+254 722 222 002', location: 'Mombasa', nationality: 'Kenyan', homeCounty: 'Mombasa', experience: 3, education: 'Bachelor of Business Administration, Moi University', skills: ['Sales', 'Marketing', 'CRM'] },
-  { firstName: 'Grace', lastName: 'Wanjiku', email: 'grace.wanjiku@example.com', phone: '+254 711 333 003', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 8, education: 'MBA, Strathmore University', skills: ['Strategy', 'Leadership', 'Project Management'] },
-  { firstName: 'Peter', lastName: 'Ochieng', email: 'peter.ochieng@example.com', phone: '+254 733 444 004', location: 'Kisumu', nationality: 'Kenyan', homeCounty: 'Kisumu', experience: 2, education: 'Bachelor of Science in Computer Science, JKUAT', skills: ['JavaScript', 'React', 'Node.js'] },
-  { firstName: 'Mary', lastName: 'Akinyi', email: 'mary.akinyi@example.com', phone: '+254 700 555 005', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 6, education: 'Master of Science in Data Science, UoN', skills: ['Python', 'SQL', 'Machine Learning'] },
-  { firstName: 'James', lastName: 'Mutua', email: 'james.mutua@example.com', phone: null, location: 'Nakuru', nationality: 'Kenyan', homeCounty: 'Nakuru', experience: 4, education: 'Bachelor of Law, University of Nairobi', skills: ['Legal Research', 'Contract Drafting', 'Compliance'] },
-  { firstName: 'Lucy', lastName: 'Njeri', email: 'lucy.njeri@example.com', phone: '+254 722 777 007', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Kiambu', experience: 7, education: 'Bachelor of Commerce, CPA K', skills: ['Audit', 'Tax', 'IFRS'] },
-  { firstName: 'David', lastName: 'Kipchoge', email: 'david.kipchoge@example.com', phone: '+254 711 888 008', location: 'Eldoret', nationality: 'Kenyan', homeCounty: 'Uasin Gishu', experience: 1, education: 'Diploma in HR Management', skills: ['Recruitment', 'Onboarding', 'HRIS'] },
-  { firstName: 'Sarah', lastName: 'Muthoni', email: 'sarah.muthoni@example.com', phone: '+254 700 999 009', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nyeri', experience: 10, education: 'PhD in Economics, UoN', skills: ['Research', 'Econometrics', 'Policy'] },
-  { firstName: 'Michael', lastName: 'Odhiambo', email: 'michael.odhiambo@example.com', phone: '+254 733 101 010', location: 'Kisumu', nationality: 'Kenyan', homeCounty: 'Kisumu', experience: 3, education: 'Bachelor of Education, Kenyatta University', skills: ['Teaching', 'Curriculum', 'Assessment'] },
-  { firstName: 'Elizabeth', lastName: 'Chebet', email: 'elizabeth.chebet@example.com', phone: '+254 722 202 020', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 5, education: 'MBA, University of Nairobi', skills: ['Operations', 'Supply Chain', 'Logistics'] },
-  { firstName: 'Robert', lastName: 'Kariuki', email: 'robert.kariuki@example.com', phone: null, location: 'Thika', nationality: 'Kenyan', homeCounty: 'Kiambu', experience: 4, education: 'Bachelor of Engineering, UoN', skills: ['AutoCAD', 'Project Management', 'Quality'] },
-  { firstName: 'Anne', lastName: 'Achieng', email: 'anne.achieng@example.com', phone: '+254 711 303 030', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Kisumu', experience: 2, education: 'Bachelor of Arts in Communication', skills: ['Content', 'Social Media', 'PR'] },
-  { firstName: 'Joseph', lastName: 'Mwangi', email: 'joseph.mwangi@example.com', phone: '+254 700 404 040', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Murang\'a', experience: 6, education: 'Master of Public Health', skills: ['Health Programs', 'Data Analysis', 'Reporting'] },
-  { firstName: 'Faith', lastName: 'Nyambura', email: 'faith.nyambura@example.com', phone: '+254 722 505 050', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 3, education: 'Bachelor of Science in Nursing', skills: ['Patient Care', 'Clinical', 'BLS'] },
-  { firstName: 'Daniel', lastName: 'Koech', email: 'daniel.koech@example.com', phone: '+254 733 606 060', location: 'Eldoret', nationality: 'Kenyan', homeCounty: 'Uasin Gishu', experience: 5, education: 'Bachelor of Commerce, ACCA', skills: ['Finance', 'Budgeting', 'Treasury'] },
-  { firstName: 'Ruth', lastName: 'Wambui', email: 'ruth.wambui@example.com', phone: '+254 711 707 070', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 4, education: 'LLB, Kenya School of Law', skills: ['Litigation', 'Corporate Law', 'ADR'] },
-  { firstName: 'Kevin', lastName: 'Omondi', email: 'kevin.omondi@example.com', phone: null, location: 'Mombasa', nationality: 'Kenyan', homeCounty: 'Mombasa', experience: 2, education: 'Bachelor of Science in IT', skills: ['Networking', 'Cybersecurity', 'Support'] },
-  { firstName: 'Catherine', lastName: 'Wairimu', email: 'catherine.wairimu@example.com', phone: '+254 700 808 080', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nairobi', experience: 9, education: 'MBA, Bachelor of Commerce', skills: ['Strategy', 'Business Development', 'Partnerships'] },
-  { firstName: 'Brian', lastName: 'Kipruto', email: 'brian.kipruto@example.com', phone: '+254 722 909 090', location: 'Nairobi', nationality: 'Kenyan', homeCounty: 'Nakuru', experience: 4, education: 'Bachelor of Science in Actuarial Science', skills: ['Risk', 'Modelling', 'Insurance'] },
+const FIRST_NAMES = [
+  'Jane', 'John', 'Grace', 'Peter', 'Mary', 'James', 'Lucy', 'David', 'Sarah', 'Michael',
+  'Elizabeth', 'Robert', 'Anne', 'Joseph', 'Faith', 'Daniel', 'Ruth', 'Kevin', 'Catherine', 'Brian',
+  'Nancy', 'Paul', 'Susan', 'Mark', 'Margaret', 'Thomas', 'Dorothy', 'Charles', 'Helen', 'Christopher',
+  'Betty', 'George', 'Sandra', 'Edward', 'Ashley', 'Steven', 'Kimberly', 'Kenneth', 'Donna', 'Anthony',
+  'Carol', 'Matthew', 'Michelle', 'Donald', 'Laura', 'Andrew', 'Sharon', 'Joshua', 'Patricia', 'Ryan',
 ];
 
-const COVER_LETTERS = [
-  'I am very interested in this role and believe my experience aligns well with your requirements.',
-  'Having followed your organization for some time, I would be excited to contribute to your team.',
-  'My background in this field makes me a strong fit for the position. I look forward to discussing further.',
-  'I am writing to apply for this position. I have relevant experience and am eager to bring value.',
-  null,
-  'I would welcome the opportunity to join your team and contribute to your goals.',
-  null,
-  'Please find my application attached. I am available for an interview at your convenience.',
-  'I am confident that my skills and experience would be an asset to your organization.',
-  null,
+const LAST_NAMES = [
+  'Wanjiru', 'Kamau', 'Wanjiku', 'Ochieng', 'Akinyi', 'Mutua', 'Njeri', 'Kipchoge', 'Muthoni', 'Odhiambo',
+  'Chebet', 'Kariuki', 'Achieng', 'Mwangi', 'Nyambura', 'Koech', 'Wambui', 'Omondi', 'Wairimu', 'Kipruto',
+  'Otieno', 'Ouma', 'Adhiambo', 'Onyango', 'Aoko', 'Okoth', 'Atieno', 'Odongo', 'Anyango', 'Owiti',
+  'Oloo', 'Odero', 'Akinyi', 'Opiyo', 'Adongo', 'Ochieng', 'Apiyo', 'Omondi', 'Awuor', 'Oduor',
+  'Onyango', 'Otieno', 'Achieng', 'Okello', 'Adhiambo', 'Ouma', 'Onyango', 'Odhiambo', 'Akinyi', 'Ochieng',
 ];
 
-// Build formData for a candidate index (education + employment + declarations)
+const COUNTIES = [
+  'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Kiambu', 'Nyeri', 'Meru', 'Machakos',
+  'Uasin Gishu', 'Kakamega', 'Kisii', 'Kericho', 'Bungoma', 'Garissa', 'Kilifi', 'Murang\'a', 'Narok', 'Kitui',
+];
+
+const INSTITUTIONS = [
+  'University of Nairobi', 'Kenyatta University', 'Moi University', 'Strathmore University', 'JKUAT',
+  'Egerton University', 'Maseno University', 'Technical University of Kenya', 'Mount Kenya University', 'Daystar University',
+];
+
+const EDUCATION_LEVELS = ['high_school', 'certificate', 'diploma', 'undergraduate', 'masters', 'phd'];
+
+const DISCIPLINES = [
+  'Nursing', 'Commerce', 'Law', 'Engineering', 'Computer Science', 'Medicine', 'Education', 'Public Health',
+  'Economics', 'Accounting', 'Finance', 'HR Management', 'Communication', 'Data Science', 'Actuarial Science', 'Architecture',
+];
+
+const CERT_NAMES = [
+  'CPA K', 'ACCA', 'PMP', 'PRINCE2', 'BioHacking', 'Clinical Nursing', 'Health Informatics', 'Tax Practice',
+  'Legal Practice', 'Teaching Council', 'Engineering Board', 'Medical Board', 'HR Certification', 'Data Analytics',
+  'Cybersecurity', 'Project Management', 'Risk Management', 'Internal Audit', 'Financial Modelling', 'Digital Marketing',
+];
+
+const MEMBERSHIPS = [
+  { name: 'KPMDU', noPrefix: 'KPM' },
+  { name: 'ICPAK', noPrefix: 'ICP' },
+  { name: 'LSK', noPrefix: 'LSK' },
+  { name: 'Nursing Council', noPrefix: 'NC' },
+  { name: 'Engineers Board', noPrefix: 'EBK' },
+  { name: 'Medical Board', noPrefix: 'KMPDB' },
+  { name: 'IHRM', noPrefix: 'IHRM' },
+  { name: 'Marketing Society', noPrefix: 'MSK' },
+  { name: 'Actuarial Society', noPrefix: 'ASKE' },
+  { name: 'IT Association', noPrefix: 'ITA' },
+];
+
+const EMPLOYMENT_TEMPLATES = [
+  { jobTitle: 'Accountant', companyName: 'ABC Ltd', industry: 'Finance', employmentType: 'Full-time' },
+  { jobTitle: 'Sales Representative', companyName: 'Tech Solutions', industry: 'Technology', employmentType: 'Full-time' },
+  { jobTitle: 'Consultant', companyName: 'Freelance', industry: 'Consulting', employmentType: 'Freelance' },
+  { jobTitle: 'Project Manager', companyName: 'BuildCo', industry: 'Construction', employmentType: 'Contract' },
+  { jobTitle: 'HR Officer', companyName: 'HR Solutions Kenya', industry: 'HR', employmentType: 'Full-time' },
+  { jobTitle: 'Nurse', companyName: 'County Hospital', industry: 'Healthcare', employmentType: 'Full-time' },
+  { jobTitle: 'Legal Officer', companyName: 'Law Firm LLP', industry: 'Legal', employmentType: 'Contract' },
+  { jobTitle: 'Software Developer', companyName: 'DevHub', industry: 'Technology', employmentType: 'Full-time' },
+  { jobTitle: 'Finance Manager', companyName: 'Bank Ltd', industry: 'Finance', employmentType: 'Full-time' },
+  { jobTitle: 'Teacher', companyName: 'National School', industry: 'Education', employmentType: 'Full-time' },
+];
+
 function buildFormData(index) {
-  const educationLevels = [
-    { level: 'high_school', institution: 'National High School', grade: 'B+' },
-    { level: 'diploma', institution: 'Kenya Polytechnic', grade: 'Credit' },
-    { level: 'undergraduate', institution: 'University of Nairobi', grade: 'Second Class Upper' },
-    { level: 'masters', institution: 'Strathmore University', grade: 'Distinction' },
-  ];
-  // Vary how many education levels: 0–4
-  const numEdu = (index % 5);
-  const education = educationLevels.slice(0, numEdu).map(({ level, institution, grade }) => ({
-    level,
-    institution,
-    grade,
-  }));
+  const numEdu = 1 + (index % 4); // 1–4 education entries, varying levels
+  const education = [];
+  const usedLevels = new Set();
+  for (let i = 0; i < numEdu; i++) {
+    const level = EDUCATION_LEVELS[(index + i * 3) % EDUCATION_LEVELS.length];
+    if (usedLevels.has(level)) continue;
+    usedLevels.add(level);
+    const discipline = DISCIPLINES[(index + i * 2) % DISCIPLINES.length];
+    education.push({
+      level,
+      institution: INSTITUTIONS[(index + i) % INSTITUTIONS.length],
+      grade: i === 0 ? 'Second Class Upper' : (i === 1 ? 'Distinction' : 'Credit'),
+      discipline: level !== 'high_school' ? discipline : undefined,
+    });
+  }
 
-  const employmentTemplates = [
-    { jobTitle: 'Accountant', companyName: 'ABC Ltd', industry: 'Finance', employmentType: 'Full-time', startDate: '2019-01', endDate: '2022-06' },
-    { jobTitle: 'Sales Representative', companyName: 'Tech Solutions', industry: 'Technology', employmentType: 'Full-time', startDate: '2020-03', endDate: '2024-01' },
-    { jobTitle: 'Consultant', companyName: 'Freelance', industry: 'Consulting', employmentType: 'Freelance', startDate: '2021-01', endDate: '2023-12' },
-    { jobTitle: 'Project Manager', companyName: 'BuildCo', industry: 'Construction', employmentType: 'Contract', startDate: '2018-06', endDate: '2020-12' },
-    { jobTitle: 'HR Officer', companyName: 'HR Solutions Kenya', industry: 'HR', employmentType: 'Full-time', startDate: '2022-01', endDate: '2024-06' },
-  ];
-  const numEmp = 1 + (index % 3); // 1–3 employment entries
+  const numEmp = 1 + (index % 3);
   const employmentHistory = [];
   for (let i = 0; i < numEmp; i++) {
-    const t = employmentTemplates[(index + i) % employmentTemplates.length];
+    const t = EMPLOYMENT_TEMPLATES[(index + i) % EMPLOYMENT_TEMPLATES.length];
+    const startYear = 2018 + (index % 4);
+    const endYear = 2023 + (i === numEmp - 1 ? 1 : 0);
+    const isCurrent = i === numEmp - 1 && index % 2 === 0;
     employmentHistory.push({
       jobTitle: t.jobTitle,
       companyName: t.companyName,
       industry: t.industry,
       employmentType: t.employmentType,
-      startDate: t.startDate,
-      endDate: t.endDate,
+      startDate: `${startYear}-${String(1 + (i % 12)).padStart(2, '0')}`,
+      endDate: isCurrent ? '' : `${endYear}-${String(6 + (i % 6)).padStart(2, '0')}`,
+      isCurrentJob: isCurrent,
     });
   }
 
-  const professionalCertifications = index % 3 === 0 ? 'CPA K, ACCA Part II' : (index % 5 === 2 ? 'PMP, PRINCE2' : undefined);
+  const numCerts = 0 + (index % 3); // 0–2 certs
+  const professionalCertificationsList = [];
+  const usedCerts = new Set();
+  for (let i = 0; i < numCerts; i++) {
+    const name = CERT_NAMES[(index + i * 5) % CERT_NAMES.length];
+    if (usedCerts.has(name)) continue;
+    usedCerts.add(name);
+    professionalCertificationsList.push({ name });
+  }
+
+  const numMemberships = 0 + (index % 2); // 0–1 membership (some have 2)
+  const professionalMemberships = [];
+  const usedMemb = new Set();
+  for (let i = 0; i < (numMemberships === 0 && index % 3 === 0 ? 1 : numMemberships + (index % 2)); i++) {
+    const m = MEMBERSHIPS[(index + i * 2) % MEMBERSHIPS.length];
+    if (usedMemb.has(m.name)) continue;
+    usedMemb.add(m.name);
+    professionalMemberships.push({
+      name: m.name,
+      membershipNo: `${m.noPrefix}-${String(10000 + index * 37 + i * 11).slice(-6)}`,
+    });
+  }
 
   return {
+    gender: index % 2 === 0 ? 'Female' : 'Male',
     education,
     employmentHistory,
-    professionalCertifications,
+    professionalCertificationsList: professionalCertificationsList.length ? professionalCertificationsList : undefined,
+    professionalMemberships: professionalMemberships.length ? professionalMemberships : undefined,
     declarations: {
       accurate: true,
       dataProcessing: true,
@@ -99,8 +152,7 @@ function buildFormData(index) {
 }
 
 function pickStatus(index) {
-  const i = index % STATUSES.length;
-  return STATUSES[i];
+  return STATUSES[index % STATUSES.length];
 }
 
 function daysAgo(days) {
@@ -110,80 +162,73 @@ function daysAgo(days) {
 }
 
 async function main() {
-  const jobs = await prisma.job.findMany({ take: 20, orderBy: { postedDate: 'desc' } });
-  if (jobs.length === 0) {
+  const jobCount = await prisma.job.count();
+  if (jobCount === 0) {
     console.log('No job openings found. Create at least one job in Dashboard → Job openings, then run this seed again.');
     process.exit(1);
   }
 
-  console.log(`Found ${jobs.length} job(s). Creating ${CANDIDATES.length} candidates and applications...`);
+  const jobs = await prisma.job.findMany({ take: 50, orderBy: { postedDate: 'desc' } });
+
+  console.log('Removing all existing applications and candidates...');
+  await prisma.interview.deleteMany({});
+  await prisma.application.deleteMany({});
+  await prisma.candidate.deleteMany({});
+  console.log('Done. Seeding 50 candidates with full qualifications...');
 
   const created = [];
-  for (let i = 0; i < CANDIDATES.length; i++) {
-    const c = CANDIDATES[i];
-    const job = jobs[i % jobs.length];
-    const appliedDate = daysAgo(1 + (i % 14));
-
-    const candidate = await prisma.candidate.upsert({
-      where: { email: c.email },
-      create: {
-        firstName: c.firstName,
-        lastName: c.lastName,
-        email: c.email,
-        phone: c.phone,
-        location: c.location,
-        nationality: c.nationality,
-        homeCounty: c.homeCounty,
-        experience: c.experience,
-        education: c.education,
-        skills: c.skills,
-        resumePath: '/uploads/resumes/CV%20Justin%20Ombui.pdf',
-      },
-      update: {
-        firstName: c.firstName,
-        lastName: c.lastName,
-        phone: c.phone,
-        location: c.location,
-        nationality: c.nationality,
-        homeCounty: c.homeCounty,
-        experience: c.experience,
-        education: c.education,
-        skills: c.skills,
-        resumePath: '/uploads/resumes/CV%20Justin%20Ombui.pdf',
-      },
-    });
-
-    const status = pickStatus(i);
+  for (let i = 0; i < 50; i++) {
+    const firstName = FIRST_NAMES[i];
+    const lastName = LAST_NAMES[i];
+    const email = `seed.${String(i + 1).padStart(2, '0')}.${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/'/g, '')}@example.com`;
+    const phone = `+254 7${String(10 + (i % 3))} ${String(1000000 + i * 12345).slice(0, 3)} ${String(100 + i * 7).slice(-3)}`;
+    const county = COUNTIES[i % COUNTIES.length];
+    const experience = 1 + (i % 15);
     const formData = buildFormData(i);
-    const existingApp = await prisma.application.findFirst({
-      where: { candidateId: candidate.id, jobId: job.id },
-    });
-    if (!existingApp) {
-      await prisma.application.create({
-        data: {
-          jobId: job.id,
-          candidateId: candidate.id,
-          status,
-          appliedDate,
-          coverLetter: COVER_LETTERS[i % COVER_LETTERS.length],
-          resumePath: candidate.resumePath,
-          notes: status === 'shortlisted' ? 'Strong fit. Schedule interview.' : null,
-          formData,
-        },
-      });
-    } else if (existingApp.formData == null) {
-      await prisma.application.update({
-        where: { id: existingApp.id },
-        data: { formData },
-      });
-    }
+    const topLevel = formData.education && formData.education.length ? formData.education[formData.education.length - 1].level : 'undergraduate';
+    const topDiscipline = formData.education && formData.education.length && formData.education[formData.education.length - 1].discipline
+      ? formData.education[formData.education.length - 1].discipline
+      : 'General';
+    const educationLabel = `${topLevel.replace('_', ' ')} ${topDiscipline}`;
 
-    created.push({ candidate: `${c.firstName} ${c.lastName}`, job: job.title, status });
+    const candidate = await prisma.candidate.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        location: county,
+        nationality: 'Kenyan',
+        homeCounty: county,
+        experience,
+        education: educationLabel,
+        resumePath: SAME_CV_PATH,
+      },
+    });
+
+    const job = jobs[i % jobs.length];
+    const status = pickStatus(i);
+    const appliedDate = daysAgo(1 + (i % 21));
+
+    await prisma.application.create({
+      data: {
+        jobId: job.id,
+        candidateId: candidate.id,
+        status,
+        appliedDate,
+        coverLetter: i % 4 !== 0 ? `I am interested in the ${job.title} role and believe my experience is a strong match.` : null,
+        resumePath: SAME_CV_PATH,
+        notes: status === 'shortlisted' ? 'Strong fit. Schedule interview.' : null,
+        formData,
+      },
+    });
+
+    created.push({ name: `${firstName} ${lastName}`, job: job.title, status });
   }
 
-  console.log('Done. Created/updated candidates and applications:');
-  created.forEach((r, i) => console.log(`  ${i + 1}. ${r.candidate} → ${r.job} (${r.status})`));
-  console.log('\nYou can now test the Applications and Candidates tabs in the dashboard.');
+  console.log('\nSeeded 50 applicants (same CV for all):');
+  created.forEach((r, i) => console.log(`  ${i + 1}. ${r.name} → ${r.job} (${r.status})`));
+  console.log('\nYou can now test filtering by Education, Certificate, Membership and the Applications tab.');
 }
 
 main()

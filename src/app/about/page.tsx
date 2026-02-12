@@ -210,7 +210,7 @@ export default function AboutPage() {
               </p>
             </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-12 items-start lg:items-end">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -236,9 +236,9 @@ export default function AboutPage() {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: isMounted ? 0.2 : 0.4 }}
-              className="relative"
+              className="relative lg:self-end"
             >
-              <div className="bg-gradient-to-br from-primary-900 to-secondary-500 rounded-2xl p-8 text-white">
+              <div className="bg-white rounded-2xl p-8 shadow-xl border border-secondary-100/70">
                 <InteractiveStatsMatrix />
               </div>
             </motion.div>

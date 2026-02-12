@@ -52,6 +52,7 @@ export default function PostJobPage() {
   const [minYearsExperience, setMinYearsExperience] = useState('');
   const [educationLevel, setEducationLevel] = useState('');
   const [educationQualification, setEducationQualification] = useState('');
+  const [requiredCertifications, setRequiredCertifications] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +158,7 @@ export default function PostJobPage() {
           minYearsExperience: minYearsExperience.trim() ? parseInt(minYearsExperience, 10) : undefined,
           educationLevel: educationLevel.trim() || undefined,
           educationQualification: educationQualification.trim() || undefined,
+          requiredCertifications: requiredCertifications.trim() || undefined,
         }),
       });
 
@@ -514,6 +516,7 @@ export default function PostJobPage() {
               >
                 <option value="">Any</option>
                 <option value="High School">High School</option>
+                <option value="Certificate">Certificate</option>
                 <option value="Bachelor">Bachelor</option>
                 <option value="Master">Master</option>
                 <option value="PhD">PhD</option>
@@ -534,6 +537,21 @@ export default function PostJobPage() {
               className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">Optional. Used to filter candidates by education keyword.</p>
+          </div>
+
+          <div>
+            <label htmlFor="requiredCertifications" className="block text-sm font-medium text-primary-900 mb-2">
+              Required professional certifications (for filtering)
+            </label>
+            <input
+              type="text"
+              id="requiredCertifications"
+              value={requiredCertifications}
+              onChange={(e) => setRequiredCertifications(e.target.value)}
+              placeholder="e.g. CPA, CFA, PMP, Nursing Council registration"
+              className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Optional. Shown on application sidebar so reviewers can compare candidate to role.</p>
           </div>
 
           <div>

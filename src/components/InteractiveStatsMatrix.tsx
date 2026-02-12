@@ -40,12 +40,12 @@ const InteractiveStatsMatrix = () => {
     setIsMounted(true)
   }, [])
 
-  // Auto-rotate every 3 seconds when not hovered
+  // Auto-rotate slowly for a calmer carousel feel
   useEffect(() => {
     if (!isHovered && isMounted) {
       const interval = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % stats.length)
-      }, 3000)
+      }, 4200)
       return () => clearInterval(interval)
     }
   }, [isHovered, stats.length, isMounted])
@@ -60,15 +60,20 @@ const InteractiveStatsMatrix = () => {
   if (!isMounted) {
     return (
       <div className="relative">
-        <div className="relative h-48 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-800 to-primary-900">
+        <div className="relative h-56 md:h-72 flex items-center justify-center overflow-hidden rounded-xl bg-primary-50 border border-primary-100">
+          <img
+            src={stats[0].background}
+            alt={stats[0].label}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
           <div className="text-center relative z-10">
-            <div className="text-6xl md:text-7xl font-bold text-white mb-4">
+            <div className="text-5xl md:text-6xl font-bold text-primary-900 mb-3">
               {stats[0].number}
             </div>
-            <div className="text-xl font-semibold text-white mb-2">
+            <div className="text-lg md:text-xl font-semibold text-primary-900 mb-1">
               {stats[0].label}
             </div>
-            <div className="text-sm text-white/80">
+            <div className="text-xs md:text-sm text-primary-700">
               {stats[0].description}
             </div>
           </div>
@@ -78,7 +83,7 @@ const InteractiveStatsMatrix = () => {
             <div
               key={index}
               className={`w-3 h-3 rounded-full ${
-                index === 0 ? 'bg-white scale-125' : 'bg-white/50'
+                index === 0 ? 'bg-primary-600 scale-125' : 'bg-primary-200'
               }`}
             />
           ))}
@@ -94,7 +99,7 @@ const InteractiveStatsMatrix = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Main Display Area */}
-      <div className="relative h-48 flex items-center justify-center overflow-hidden rounded-xl">
+      <div className="relative h-56 md:h-72 flex items-center justify-center overflow-hidden rounded-xl">
         {/* Background Image */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -104,17 +109,14 @@ const InteractiveStatsMatrix = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="absolute inset-0"
-            style={{
-              backgroundImage: `url(${currentStat.background})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          />
+          >
+            <img
+              src={currentStat.background}
+              alt={currentStat.label}
+              className="h-full w-full object-cover"
+            />
+          </motion.div>
         </AnimatePresence>
-        
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/40" />
         
         {/* Content */}
         <AnimatePresence mode="wait">
@@ -130,7 +132,7 @@ const InteractiveStatsMatrix = () => {
               initial={{ y: 20 }}
               animate={{ y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-6xl md:text-7xl font-bold text-white mb-4"
+              className="text-5xl md:text-6xl font-bold text-white mb-3"
             >
               {currentStat.number}
             </motion.div>
@@ -138,7 +140,7 @@ const InteractiveStatsMatrix = () => {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.5 }}
-              className="text-xl font-semibold text-white mb-2"
+              className="text-lg md:text-xl font-semibold text-white mb-1"
             >
               {currentStat.label}
             </motion.div>
@@ -146,7 +148,7 @@ const InteractiveStatsMatrix = () => {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.5 }}
-              className="text-sm text-white/80"
+              className="text-xs md:text-sm text-white/80"
             >
               {currentStat.description}
             </motion.div>
@@ -162,56 +164,18 @@ const InteractiveStatsMatrix = () => {
             onClick={() => handleDotClick(index)}
             className={`w-3 h-3 rounded-full transition-all duration-300 ${
               index === currentIndex
-                ? 'bg-white scale-125'
-                : 'bg-white/50 hover:bg-white/75'
+                ? 'bg-secondary-500 scale-125'
+                : 'bg-secondary-200 hover:bg-secondary-300'
             }`}
           />
         ))}
       </div>
 
-      {/* Grid Preview */}
-      <div className="grid grid-cols-2 gap-4 mt-8 opacity-60">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={index}
-            className={`relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
-              index === currentIndex
-                ? 'border-white bg-white/20'
-                : 'border-white/30 hover:border-white/50'
-            }`}
-            onClick={() => handleDotClick(index)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {/* Background Image for Preview */}
-            <div 
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage: `url(${stat.background})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-              }}
-            />
-            <div className="absolute inset-0 bg-black/40" />
-            
-            <div className="relative z-10">
-              <div className="text-2xl font-bold text-white mb-1">
-                {stat.number}
-              </div>
-              <div className="text-xs text-white/80">
-                {stat.label}
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
       {/* Progress Bar */}
       <div className="mt-6">
-        <div className="w-full bg-white/20 rounded-full h-1">
+        <div className="w-full bg-secondary-100 rounded-full h-1">
           <motion.div
-            className="bg-white h-1 rounded-full"
+            className="bg-secondary-500 h-1 rounded-full"
             initial={{ width: "0%" }}
             animate={{ width: `${((currentIndex + 1) / stats.length) * 100}%` }}
             transition={{ duration: 0.3 }}

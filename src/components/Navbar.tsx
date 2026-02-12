@@ -275,7 +275,7 @@ const Navbar = () => {
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                 <Link
                   href="/contact"
-                  className="px-6 py-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-primary-900 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2"
+                  className="px-6 py-2 bg-secondary-500 text-white font-semibold rounded-lg shadow-md hover:bg-secondary-600 hover:shadow-lg transition-all duration-300 flex items-center gap-2"
                 >
                   <span>Partner With Us</span>
                   <ArrowRight className="w-4 h-4" />
@@ -752,7 +752,7 @@ const Navbar = () => {
                 <Link
                   href="/contact"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full bg-gradient-to-r from-secondary-500 to-secondary-600 text-primary-900 font-semibold rounded-lg py-3 px-4 text-center transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  className="block w-full bg-secondary-500 text-white font-semibold rounded-lg py-3 px-4 text-center transition-all duration-300 hover:bg-secondary-600 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Partner With Us
                 </Link>

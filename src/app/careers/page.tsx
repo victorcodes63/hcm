@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DynamicJobListings from '@/components/ats/DynamicJobListings';
@@ -15,22 +15,49 @@ import {
   CheckCircle,
   Building2,
   Star,
-  ExternalLink
+  ExternalLink,
+  LucideIcon
 } from 'lucide-react';
-import Link from 'next/link';
 
 // Metadata moved to layout.tsx
 
 export default function CareersPage() {
+  const [jobCategories, setJobCategories] = useState<{ name: string; count: number }[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
-  const jobCategories = [
-    { name: 'Executive', count: 12, icon: Users },
-    { name: 'Sales & Marketing', count: 28, icon: ArrowRight },
-    { name: 'Education & Training', count: 15, icon: BookOpen },
-    { name: 'Technology', count: 22, icon: Search },
-    { name: 'Operations', count: 18, icon: CheckCircle },
-    { name: 'Finance & Accounting', count: 14, icon: Building2 }
-  ];
+  const getCategoryIcon = (name: string): LucideIcon => {
+    const key = name.toLowerCase();
+    if (key.includes('executive')) return Users;
+    if (key.includes('sales') || key.includes('marketing')) return ArrowRight;
+    if (key.includes('education') || key.includes('training')) return BookOpen;
+    if (key.includes('technology') || key.includes('it')) return Search;
+    if (key.includes('operations')) return CheckCircle;
+    if (key.includes('finance') || key.includes('account')) return Building2;
+    return Briefcase;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/jobs?activeOnly=true')
+      .then((r) => r.json())
+      .then((jobs) => {
+        if (cancelled || !Array.isArray(jobs)) return;
+        const counts = new Map<string, number>();
+        jobs.forEach((j: { category?: string }) => {
+          const category = String(j.category || '').trim();
+          if (!category) return;
+          counts.set(category, (counts.get(category) || 0) + 1);
+        });
+        const categories = Array.from(counts.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        setJobCategories(categories);
+      })
+      .catch(() => {
+        if (!cancelled) setJobCategories([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <main className="min-h-screen">
@@ -198,7 +225,7 @@ export default function CareersPage() {
       </section>
 
       {/* Dynamic Job Listings */}
-      <section className="py-20 bg-white">
+      <section id="job-openings" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -216,7 +243,10 @@ export default function CareersPage() {
           </motion.div>
 
           {/* Dynamic Job Listings Component */}
-          <DynamicJobListings showSearch={true} />
+          <DynamicJobListings
+            showSearch={true}
+            initialFilters={selectedCategory ? { category: selectedCategory } : {}}
+          />
         </div>
       </section>
 
@@ -238,7 +268,10 @@ export default function CareersPage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {jobCategories.length === 0 ? (
+            <div className="text-center text-neutral-500">No categories available yet.</div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {jobCategories.map((category, index) => (
               <motion.div
                 key={category.name}
@@ -250,7 +283,10 @@ export default function CareersPage() {
               >
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mr-4">
-                    <category.icon className="w-6 h-6 text-primary-600" />
+                    {(() => {
+                      const Icon = getCategoryIcon(category.name);
+                      return <Icon className="w-6 h-6 text-primary-600" />;
+                    })()}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-primary-900">{category.name}</h3>
@@ -258,16 +294,21 @@ export default function CareersPage() {
                   </div>
                 </div>
 
-                <a
-                  href="#ats-system"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(category.name);
+                    document.getElementById('job-openings')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="inline-flex items-center text-primary-600 hover:text-secondary-500 font-medium transition-colors duration-300"
                 >
                   Browse Jobs
                   <ArrowRight className="ml-1 w-4 h-4" />
-                </a>
+                </button>
               </motion.div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       </section>
 

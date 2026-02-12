@@ -21,6 +21,7 @@ export default function DashboardStaffPage() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserSummary | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,14 +48,24 @@ export default function DashboardStaffPage() {
     setError(null);
     fetch('/api/users')
       .then((r) => {
+        if (r.status === 403) {
+          setForbidden(true);
+          throw new Error('forbidden');
+        }
         if (!r.ok) throw new Error('Failed to load');
         return r.json();
       })
       .then((data) => {
         if (!cancelled) setUsers(Array.isArray(data) ? data : []);
       })
-      .catch(() => {
-        if (!cancelled) setError('Failed to load staff.');
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(
+            err instanceof Error && err.message === 'forbidden'
+              ? 'Only admins can manage staff and user roles.'
+              : 'Failed to load staff.'
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -63,6 +74,7 @@ export default function DashboardStaffPage() {
   }, []);
 
   const handleOpenAdd = () => {
+    if (forbidden) return;
     setFormError(null);
     setAddForm({ email: '', name: '', password: '', role: 'staff' });
     setAddOpen(true);
@@ -195,6 +207,7 @@ export default function DashboardStaffPage() {
         <button
           type="button"
           onClick={handleOpenAdd}
+          disabled={forbidden}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 text-sm font-medium shrink-0"
         >
           <Plus className="w-4 h-4" />

@@ -157,7 +157,6 @@ class ATSApiClient {
           phone: candidate.phone,
           location: candidate.location,
           experience: candidate.experience,
-          skills: candidate.skills,
           resumeUrl: candidate.resumeUrl,
           profilePicture: candidate.profilePicture,
           createdAt: new Date().toISOString(),
@@ -190,7 +189,6 @@ class ATSApiClient {
         phone: candidate.phone,
         location: candidate.location,
         experience: candidate.experience,
-        skills: candidate.skills,
         resumeUrl: candidate.resumeUrl,
         profilePicture: candidate.profilePicture,
         createdAt: new Date().toISOString(),
@@ -322,8 +320,8 @@ class ATSApiClient {
       homeCounty?: string;
       experience?: number;
       education?: string;
-      skills?: string[];
     };
+    salaryExpectations: string;
     coverLetter?: string;
     resumePath?: string;
     formData?: import('@/types/dashboard').ApplicationFormData;

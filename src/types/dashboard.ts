@@ -18,7 +18,6 @@ export interface CandidateSummary {
   homeCounty: string | null;
   experience: number;
   education: string | null;
-  skills: string[];
   resumePath: string | null;
   createdAt: string;
 }
@@ -34,15 +33,20 @@ export interface JobSummary {
   isActive: boolean;
   clientId: string | null;
   clientName: string | null;
+  minYearsExperience: number | null;
+  educationLevel: string | null;
+  educationQualification: string | null;
+  requiredCertifications: string | null;
 }
 
 // Application form data (Stages 2–5) stored as JSON on Application
-export type EducationLevel = 'high_school' | 'diploma' | 'undergraduate' | 'masters';
+export type EducationLevel = 'high_school' | 'certificate' | 'diploma' | 'undergraduate' | 'masters' | 'phd';
 
 export interface EducationEntry {
   level: EducationLevel;
   institution: string;
   grade: string;
+  discipline?: string;
   certificatePath?: string;
 }
 
@@ -55,13 +59,30 @@ export interface EmploymentEntry {
   employmentType: EmploymentType;
   startDate: string;
   endDate: string;
+  isCurrentJob?: boolean;
+}
+
+export interface ProfessionalCertificationEntry {
+  name: string;
+  certificatePath?: string;
+}
+
+export interface ProfessionalMembershipEntry {
+  name: string;
+  membershipNo: string;
+  certificatePath?: string;
 }
 
 export interface ApplicationFormData {
+  gender?: string;
   education: EducationEntry[];
   employmentHistory: EmploymentEntry[];
+  /** @deprecated Use professionalCertificationsList */
   professionalCertifications?: string;
+  /** @deprecated Use professionalCertificationsList[].certificatePath */
   professionalCertificationsPath?: string;
+  professionalCertificationsList?: ProfessionalCertificationEntry[];
+  professionalMemberships?: ProfessionalMembershipEntry[];
   declarations: {
     accurate: boolean;
     dataProcessing: boolean;
@@ -78,6 +99,7 @@ export interface ApplicationWithDetails {
   appliedDate: string;
   coverLetter: string | null;
   resumePath: string | null;
+  salaryExpectations: string | null;
   notes: string | null;
   formData: ApplicationFormData | null;
   createdAt: string;

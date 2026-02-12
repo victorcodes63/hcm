@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { UserRole } from '@/types/dashboard';
 import {
   LayoutDashboard,
   Briefcase,
@@ -13,19 +14,24 @@ import {
   UserCog,
 } from 'lucide-react';
 
-const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/jobs', label: 'Job openings', icon: Briefcase },
-  { href: '/dashboard/clients', label: 'Clients', icon: Handshake },
-  { href: '/dashboard/candidates', label: 'Candidates', icon: Users },
-  { href: '/dashboard/applications', label: 'Applications', icon: FileCheck },
-  { href: '/dashboard/interviews', label: 'Interview Management', icon: CalendarCheck },
-  { href: '/dashboard/staff', label: 'Staff', icon: UserCog },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-];
+interface DashboardNavProps {
+  currentUserRole: UserRole | null;
+}
 
-export default function DashboardNav() {
+export default function DashboardNav({ currentUserRole }: DashboardNavProps) {
   const pathname = usePathname();
+  const navItems = [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/dashboard/jobs', label: 'Job openings', icon: Briefcase },
+    { href: '/dashboard/clients', label: 'Clients', icon: Handshake },
+    { href: '/dashboard/candidates', label: 'Candidates', icon: Users },
+    { href: '/dashboard/applications', label: 'Applications', icon: FileCheck },
+    { href: '/dashboard/interviews', label: 'Interview Management', icon: CalendarCheck },
+    ...(currentUserRole === 'admin'
+      ? [{ href: '/dashboard/staff', label: 'Staff', icon: UserCog }]
+      : []),
+    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  ];
 
   return (
     <nav className="flex-1 p-4 space-y-1">

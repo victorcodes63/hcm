@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import {
   getInMemoryApplicationById,
   updateInMemoryApplicationStatus,
+  updateInMemoryApplicationNotes,
 } from '@/lib/applications-store';
+import { reportApiError } from '@/lib/monitoring';
 import type { ApplicationWithDetails, ApplicationStatus } from '@/types/dashboard';
 
 function jobToSummary(job: {
@@ -17,6 +19,10 @@ function jobToSummary(job: {
   isActive: boolean;
   clientId?: string | null;
   clientName?: string | null;
+  minYearsExperience?: number | null;
+  educationLevel?: string | null;
+  educationQualification?: string | null;
+  requiredCertifications?: string | null;
 }) {
   return {
     id: job.id,
@@ -29,6 +35,10 @@ function jobToSummary(job: {
     isActive: job.isActive,
     clientId: job.clientId ?? null,
     clientName: job.clientName ?? null,
+    minYearsExperience: job.minYearsExperience ?? null,
+    educationLevel: job.educationLevel ?? null,
+    educationQualification: job.educationQualification ?? null,
+    requiredCertifications: job.requiredCertifications ?? null,
   };
 }
 
@@ -58,6 +68,7 @@ export async function GET(
         appliedDate: application.appliedDate.toISOString(),
         coverLetter: application.coverLetter,
         resumePath: application.resumePath,
+        salaryExpectations: application.salaryExpectations ?? null,
         notes: application.notes,
         formData: (application.formData as ApplicationWithDetails['formData']) ?? null,
         createdAt: application.createdAt.toISOString(),
@@ -73,7 +84,6 @@ export async function GET(
           homeCounty: application.candidate.homeCounty ?? null,
           experience: application.candidate.experience,
           education: application.candidate.education,
-          skills: (Array.isArray(application.candidate.skills) ? application.candidate.skills : []) as string[],
           resumePath: application.candidate.resumePath,
           createdAt: application.candidate.createdAt.toISOString(),
         },
@@ -88,6 +98,10 @@ export async function GET(
           isActive: application.job.isActive,
           clientId: application.job.clientId ?? null,
           clientName: application.job.client?.name ?? null,
+          minYearsExperience: application.job.minYearsExperience ?? null,
+          educationLevel: application.job.educationLevel ?? null,
+          educationQualification: application.job.educationQualification ?? null,
+          requiredCertifications: application.job.requiredCertifications ?? null,
         }),
       };
       return NextResponse.json(result);
@@ -146,6 +160,7 @@ export async function PATCH(
         appliedDate: application.appliedDate.toISOString(),
         coverLetter: application.coverLetter,
         resumePath: application.resumePath,
+        salaryExpectations: application.salaryExpectations ?? null,
         notes: application.notes,
         formData: (application.formData as ApplicationWithDetails['formData']) ?? null,
         createdAt: application.createdAt.toISOString(),
@@ -161,7 +176,6 @@ export async function PATCH(
           homeCounty: application.candidate.homeCounty ?? null,
           experience: application.candidate.experience,
           education: application.candidate.education,
-          skills: (Array.isArray(application.candidate.skills) ? application.candidate.skills : []) as string[],
           resumePath: application.candidate.resumePath,
           createdAt: application.candidate.createdAt.toISOString(),
         },
@@ -176,6 +190,10 @@ export async function PATCH(
           isActive: application.job.isActive,
           clientId: application.job.clientId ?? null,
           clientName: application.job.client?.name ?? null,
+          minYearsExperience: application.job.minYearsExperience ?? null,
+          educationLevel: application.job.educationLevel ?? null,
+          educationQualification: application.job.educationQualification ?? null,
+          requiredCertifications: application.job.requiredCertifications ?? null,
         }),
       };
       return NextResponse.json(result);
@@ -184,16 +202,27 @@ export async function PATCH(
     if ((e as { code?: string })?.code === 'P2025') {
       return NextResponse.json({ error: 'Application not found.' }, { status: 404 });
     }
-    console.error('PATCH /api/applications/[id] error:', e);
+    await reportApiError({
+      route: 'PATCH /api/applications/[id]',
+      message: e instanceof Error ? e.message : String(e),
+      context: { id, status, hasNotes: notes !== undefined },
+    });
     return NextResponse.json({ error: 'Failed to update application.' }, { status: 500 });
   }
 
-  if (!status) {
+  if (!status && notes === undefined) {
     return NextResponse.json({ error: 'status or notes required.' }, { status: 400 });
   }
-  const app = updateInMemoryApplicationStatus(id, status as ApplicationStatus);
-  if (!app) {
-    return NextResponse.json({ error: 'Application not found.' }, { status: 404 });
+  if (status) {
+    const app = updateInMemoryApplicationStatus(id, status as ApplicationStatus);
+    if (!app) return NextResponse.json({ error: 'Application not found.' }, { status: 404 });
+    if (notes !== undefined) {
+      app.notes = notes;
+      app.updatedAt = new Date().toISOString();
+    }
+    return NextResponse.json(app);
   }
+  const app = updateInMemoryApplicationNotes(id, notes ?? null);
+  if (!app) return NextResponse.json({ error: 'Application not found.' }, { status: 404 });
   return NextResponse.json(app);
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -22,10 +23,18 @@ function MicrosoftIcon({ className }: { className?: string }) {
 
 export default function StaffLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const oauthError = searchParams.get('error');
+  const [error, setError] = useState(() => {
+    if (oauthError === 'domain') return 'Use your @eaglehr.co.ke Microsoft account to sign in.';
+    if (oauthError === 'no_account') return 'No active staff account exists for this email. Ask an admin to add you.';
+    if (oauthError === 'inactive') return 'Your staff account is inactive. Contact an administrator.';
+    if (oauthError === 'oauth') return 'Microsoft sign-in failed. Please try again.';
+    return '';
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,8 +63,7 @@ export default function StaffLoginPage() {
   };
 
   const handleMicrosoftSignIn = () => {
-    // TODO: wire to Microsoft OAuth when needed (company uses Microsoft for emails)
-    setError('Microsoft sign-in will be available soon.');
+    window.location.href = '/api/auth/microsoft/start';
   };
 
   return (

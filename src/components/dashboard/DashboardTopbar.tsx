@@ -18,15 +18,33 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
+import type { UserSummary } from '@/types/dashboard';
 
-const QUICK_ACTIONS = [
+const QUICK_ACTIONS_BASE = [
   { label: 'Add job', href: '/dashboard/jobs/new', icon: Briefcase },
   { label: 'Schedule interview', href: '/dashboard/interviews', icon: CalendarCheck },
   { label: 'Add client', href: '/dashboard/clients/new', icon: Handshake },
+];
+
+const QUICK_ACTIONS_ADMIN = [
   { label: 'Add staff member', href: '/dashboard/staff', icon: UserCog },
 ] as const;
 
-export default function DashboardTopbar() {
+interface DashboardTopbarProps {
+  currentUser: UserSummary | null;
+}
+
+function getInitials(name: string) {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (!parts.length) return 'SU';
+  return parts.map((p) => p[0]?.toUpperCase() || '').join('') || 'SU';
+}
+
+export default function DashboardTopbar({ currentUser }: DashboardTopbarProps) {
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -74,6 +92,14 @@ export default function DashboardTopbar() {
     router.push('/dashboard/login');
   };
 
+  const displayName = currentUser?.name || 'Staff User';
+  const displayEmail = currentUser?.email || 'staff@eaglehr.co.ke';
+  const initials = getInitials(displayName);
+  const quickActions =
+    currentUser?.role === 'admin'
+      ? [...QUICK_ACTIONS_BASE, ...QUICK_ACTIONS_ADMIN]
+      : QUICK_ACTIONS_BASE;
+
   return (
     <header className="sticky top-0 z-30 flex-shrink-0 h-16 bg-white border-b border-neutral-200 flex items-center justify-between gap-4 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
       {/* Search — opens command palette on focus or use Cmd+K / Ctrl+K */}
@@ -114,7 +140,7 @@ export default function DashboardTopbar() {
           </button>
           {quickActionsOpen && (
             <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden py-1">
-              {QUICK_ACTIONS.map(({ label, href, icon: Icon }) => (
+              {quickActions.map(({ label, href, icon: Icon }) => (
                 <Link
                   key={href + label}
                   href={href}
@@ -218,19 +244,19 @@ export default function DashboardTopbar() {
             aria-expanded={userMenuOpen}
           >
             <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-semibold text-primary-700">SU</span>
+              <span className="text-xs font-semibold text-primary-700">{initials}</span>
             </div>
             <div className="hidden md:block text-left min-w-0">
-              <p className="text-sm font-medium text-primary-900 truncate">Staff User</p>
-              <p className="text-xs text-neutral-500 truncate">staff@eaglehr.co.ke</p>
+              <p className="text-sm font-medium text-primary-900 truncate">{displayName}</p>
+              <p className="text-xs text-neutral-500 truncate">{displayEmail}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-neutral-400 shrink-0" />
           </button>
           {userMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-60 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden py-1">
               <div className="px-4 py-3 border-b border-neutral-100">
-                <p className="text-sm font-medium text-primary-900">Staff User</p>
-                <p className="text-xs text-neutral-500 truncate">staff@eaglehr.co.ke</p>
+                <p className="text-sm font-medium text-primary-900">{displayName}</p>
+                <p className="text-xs text-neutral-500 truncate">{displayEmail}</p>
               </div>
               <Link
                 href="/dashboard"

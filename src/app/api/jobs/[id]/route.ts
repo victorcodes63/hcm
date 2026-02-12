@@ -90,6 +90,7 @@ export async function GET(
             minYearsExperience?: number | null;
             educationLevel?: string | null;
             educationQualification?: string | null;
+            requiredCertifications?: string | null;
           };
           out.concealCompany = job.concealCompany ?? false;
           out.clientId = job.clientId ?? null;
@@ -97,6 +98,7 @@ export async function GET(
           out.minYearsExperience = (job as { minYearsExperience?: number | null }).minYearsExperience ?? null;
           out.educationLevel = (job as { educationLevel?: string | null }).educationLevel ?? null;
           out.educationQualification = (job as { educationQualification?: string | null }).educationQualification ?? null;
+          out.requiredCertifications = (job as { requiredCertifications?: string | null }).requiredCertifications ?? null;
         }
         return NextResponse.json(listing);
       }
@@ -118,6 +120,7 @@ export async function GET(
         minYearsExperience: raw.minYearsExperience ?? null,
         educationLevel: raw.educationLevel ?? null,
         educationQualification: raw.educationQualification ?? null,
+        requiredCertifications: raw.requiredCertifications ?? null,
       });
     }
   } else {
@@ -205,6 +208,14 @@ export async function PATCH(
           ? b.educationQualification.trim() || null
           : undefined
       : undefined;
+  const requiredCertifications =
+    b.requiredCertifications !== undefined
+      ? b.requiredCertifications === null || b.requiredCertifications === ''
+        ? null
+        : typeof b.requiredCertifications === 'string'
+          ? b.requiredCertifications.trim() || null
+          : undefined
+      : undefined;
 
   let resolvedClientId: string | null | undefined = clientId;
   let resolvedCompany: string | undefined = company;
@@ -277,6 +288,7 @@ export async function PATCH(
   if (minYearsExperience !== undefined) payload.minYearsExperience = minYearsExperience;
   if (educationLevel !== undefined) payload.educationLevel = educationLevel;
   if (educationQualification !== undefined) payload.educationQualification = educationQualification;
+  if (requiredCertifications !== undefined) payload.requiredCertifications = requiredCertifications;
 
   try {
     if (process.env.DATABASE_URL) {
@@ -300,6 +312,7 @@ export async function PATCH(
           ...(payload.minYearsExperience !== undefined && { minYearsExperience: payload.minYearsExperience }),
           ...(payload.educationLevel !== undefined && { educationLevel: payload.educationLevel }),
           ...(payload.educationQualification !== undefined && { educationQualification: payload.educationQualification }),
+          ...(payload.requiredCertifications !== undefined && { requiredCertifications: payload.requiredCertifications }),
         },
       });
       const listing = prismaJobToListing(job as unknown as PrismaJobForListing);

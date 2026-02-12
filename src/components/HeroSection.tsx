@@ -125,7 +125,7 @@ const HeroSection = () => {
             >
               <Link
                 href="/contact"
-                className="group bg-secondary-500 text-primary-900 px-8 py-4 rounded-lg font-medium text-lg hover:bg-secondary-600 hover:shadow-lg transform transition-all duration-300 flex items-center justify-center"
+                className="group bg-secondary-500 text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-secondary-600 hover:shadow-lg transform transition-all duration-300 flex items-center justify-center"
               >
                 Partner With Us
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />

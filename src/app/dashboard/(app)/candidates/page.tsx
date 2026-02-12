@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, Search, MapPin, FileText, Filter, Loader2 } from 'lucide-react';
+import { Users, Search, MapPin, FileText, Loader2 } from 'lucide-react';
 import type { CandidateSummary } from '@/types/dashboard';
 
 const inputBase =
@@ -49,6 +49,12 @@ export default function DashboardCandidatesPage() {
   const filtered = candidates;
   const hasActiveFilters =
     jobFilter || minExperience.trim() || maxExperience.trim() || educationFilter.trim();
+  const clearFilters = () => {
+    setJobFilter('');
+    setMinExperience('');
+    setMaxExperience('');
+    setEducationFilter('');
+  };
 
   return (
     <div className="w-full min-w-0">
@@ -61,26 +67,28 @@ export default function DashboardCandidatesPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-5 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or skills..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 ${inputBase}`}
-              aria-label="Search candidates"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 shrink-0">
-              <Filter className="w-4 h-4 text-neutral-400 shrink-0" aria-hidden />
+      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
+        <div className="p-4 border-b border-neutral-100">
+          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+            Search &amp; application
+          </p>
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center flex-wrap">
+            <div className="flex-1 relative min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                aria-label="Search candidates"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
               <select
                 value={jobFilter}
                 onChange={(e) => setJobFilter(e.target.value)}
-                className={`min-w-[140px] ${inputBase}`}
+                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[160px] max-w-[240px] text-sm truncate"
                 aria-label="Filter by job"
               >
                 <option value="">All jobs</option>
@@ -91,22 +99,42 @@ export default function DashboardCandidatesPage() {
                 ))}
               </select>
             </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 text-sm font-medium transition-colors lg:ml-auto"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 bg-neutral-50/60">
+          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
+            Candidate &amp; qualifications
+          </p>
+          <p className="text-xs text-neutral-500 mb-3">
+            Narrow candidates by work experience range and education keyword.
+          </p>
+          <div className="flex flex-wrap gap-2 items-center">
             <input
               type="number"
-              placeholder="Min yrs"
+              placeholder="Min years"
               value={minExperience}
               onChange={(e) => setMinExperience(e.target.value)}
               min={0}
-              className={`w-20 ${inputBase}`}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white w-[120px] text-sm"
               aria-label="Minimum experience in years"
             />
             <input
               type="number"
-              placeholder="Max yrs"
+              placeholder="Max years"
               value={maxExperience}
               onChange={(e) => setMaxExperience(e.target.value)}
               min={0}
-              className={`w-20 ${inputBase}`}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white w-[120px] text-sm"
               aria-label="Maximum experience in years"
             />
             <input
@@ -115,21 +143,22 @@ export default function DashboardCandidatesPage() {
               value={educationFilter}
               onChange={(e) => setEducationFilter(e.target.value)}
               title="Filter by education field"
-              className={`min-w-[180px] flex-1 max-w-[220px] ${inputBase}`}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[220px] text-sm"
               aria-label="Filter by education"
             />
           </div>
         </div>
-        {!loading && (
-          <p className="mt-3 text-xs text-neutral-500">
-            {filtered.length === 0
-              ? hasActiveFilters
-                ? 'No candidates match your filters.'
-                : 'No candidates yet.'
-              : `${filtered.length} candidate${filtered.length !== 1 ? 's' : ''}`}
-          </p>
-        )}
       </div>
+
+      {!loading && (
+        <p className="mb-4 text-xs text-neutral-500">
+          {filtered.length === 0
+            ? hasActiveFilters
+              ? 'No candidates match your filters.'
+              : 'No candidates yet.'
+            : `${filtered.length} candidate${filtered.length !== 1 ? 's' : ''}`}
+        </p>
+      )}
 
       {loading ? (
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-12 flex items-center justify-center">
@@ -159,7 +188,7 @@ export default function DashboardCandidatesPage() {
       ) : (
         <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden min-w-0">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px]">
+            <table className="w-full min-w-[760px]">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50/80">
                 <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
@@ -169,10 +198,10 @@ export default function DashboardCandidatesPage() {
                   Email
                 </th>
                 <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
-                  Experience
+                  Work Experience
                 </th>
                 <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
-                  Skills
+                  Education
                 </th>
                 <th className="text-right text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
                   Actions
@@ -208,27 +237,12 @@ export default function DashboardCandidatesPage() {
                   </td>
                   <td className="px-5 py-3 text-neutral-600 text-sm">
                     {candidate.experience} years
-                    {candidate.education && (
-                      <span className="text-neutral-500"> · {candidate.education}</span>
-                    )}
                   </td>
-                  <td className="px-5 py-3">
-                    {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {candidate.skills.slice(0, 3).map((s) => (
-                          <span
-                            key={s}
-                            className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary-100 text-primary-800"
-                          >
-                            {s}
-                          </span>
-                        ))}
-                        {candidate.skills.length > 3 && (
-                          <span className="text-xs text-neutral-500">+{candidate.skills.length - 3}</span>
-                        )}
-                      </div>
+                  <td className="px-5 py-3 text-neutral-600 text-sm">
+                    {candidate.education ? (
+                      <span className="line-clamp-2">{candidate.education}</span>
                     ) : (
-                      <span className="text-neutral-400 text-xs">—</span>
+                      <span className="text-neutral-400">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-right">

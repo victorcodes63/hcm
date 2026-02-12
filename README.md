@@ -101,6 +101,17 @@ npm run build
 npm start
 ```
 
+### Deploying to Vercel (CV & certificate uploads)
+
+On Vercel the app runs in a read-only serverless environment, so file uploads cannot use the local disk. CV and certificate uploads use **Vercel Blob** when configured:
+
+1. In the [Vercel dashboard](https://vercel.com/dashboard), open your project → **Storage** tab.
+2. Create a **Blob** store (or use an existing one). Vercel will set the `BLOB_READ_WRITE_TOKEN` environment variable for the project.
+3. Ensure the token is available to your app (it is usually added automatically when you create the store).
+4. Uploads are limited to **4.5 MB** to stay within Vercel’s serverless request body limit.
+
+Without `BLOB_READ_WRITE_TOKEN`, the app falls back to writing files under `public/uploads/`, which only works in local development.
+
 ## 📄 Pages
 
 ### Home Page
@@ -195,6 +206,8 @@ This project is proprietary to Eagle HR Consultants.
 
 - **[AUTH.md](./AUTH.md)** – Staff dashboard auth: env vars, dev bypass, and wiring for Microsoft sign-in, forgot password, and full auth later.
 - **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** – ATS integration and environment setup.
+- **[EMAIL_SETUP.md](./EMAIL_SETUP.md)** – Sending from recruitment@eaglehr.co.ke (application received, contact form; Microsoft 365 or your SMTP).
+- **[PRODUCTION_ENV_CHECKLIST.md](./PRODUCTION_ENV_CHECKLIST.md)** – Production go-live checklist for Microsoft OAuth, SMTP, DB, monitoring, and smoke validation.
 - **[ATS_PROJECT_ANALYSIS_AND_NEXT_STEPS.md](./ATS_PROJECT_ANALYSIS_AND_NEXT_STEPS.md)** – ATS project status and next steps.
 
 ## 📞 Support
