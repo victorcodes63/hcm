@@ -305,7 +305,13 @@ const STATUS_OPTIONS: { value: 'all' | ApplicationStatus; label: string }[] = [
 ];
 
 type ClientOption = { id: string; name: string };
-type JobOption = { id: string; title: string; company: string };
+type JobOption = {
+  id: string;
+  title: string;
+  company: string;
+  clientId?: string | null;
+  postedDate?: string;
+};
 
 export default function DashboardApplicationsPage() {
   const [clients, setClients] = useState<ClientOption[]>([]);
@@ -320,6 +326,9 @@ export default function DashboardApplicationsPage() {
   const [certificateFilter, setCertificateFilter] = useState('');
   const [membershipFilter, setMembershipFilter] = useState('');
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState('');
+  const [minExperienceFilter, setMinExperienceFilter] = useState('');
+  const [maxExperienceFilter, setMaxExperienceFilter] = useState('');
+  const [employerCompanyFilter, setEmployerCompanyFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedApp, setSelectedApp] = useState<ApplicationWithDetails | null>(
     null
@@ -333,6 +342,7 @@ export default function DashboardApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -345,10 +355,12 @@ export default function DashboardApplicationsPage() {
       }
       if (!cancelled && Array.isArray(jobsData)) {
         setJobs(
-          jobsData.map((j: { id: string; title: string; company: string }) => ({
+          jobsData.map((j: { id: string; title: string; company: string; clientId?: string | null; postedDate?: string }) => ({
             id: j.id,
             title: j.title,
             company: j.company,
+            clientId: j.clientId ?? null,
+            postedDate: j.postedDate,
           }))
         );
       }
@@ -369,6 +381,9 @@ export default function DashboardApplicationsPage() {
     if (certificateFilter.trim()) params.set('certificate', certificateFilter.trim());
     if (membershipFilter.trim()) params.set('membership', membershipFilter.trim());
     if (employmentTypeFilter.trim()) params.set('employmentType', employmentTypeFilter.trim());
+    if (minExperienceFilter.trim()) params.set('minExperience', minExperienceFilter.trim());
+    if (maxExperienceFilter.trim()) params.set('maxExperience', maxExperienceFilter.trim());
+    if (employerCompanyFilter.trim()) params.set('employerCompany', employerCompanyFilter.trim());
     fetch(`/api/applications?${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -392,11 +407,51 @@ export default function DashboardApplicationsPage() {
     certificateFilter,
     membershipFilter,
     employmentTypeFilter,
+    minExperienceFilter,
+    maxExperienceFilter,
+    employerCompanyFilter,
+    refreshNonce,
   ]);
 
   useEffect(() => {
     if (selectedApp) setApplicantDetailTab('general');
   }, [selectedApp?.id]);
+
+  const filteredJobOptions = useMemo(() => {
+    const selectedClientName = clients
+      .find((c) => c.id === clientFilter.trim())
+      ?.name?.trim()
+      .toLowerCase();
+    const list = !clientFilter.trim()
+      ? jobs
+      : jobs.filter((j) => {
+          const strictClientMatch = (j.clientId ?? '') === clientFilter.trim();
+          // Fallback for environments where /api/jobs does not return clientId.
+          const companyNameFallbackMatch =
+            !j.clientId &&
+            !!selectedClientName &&
+            j.company.toLowerCase().includes(selectedClientName);
+          return strictClientMatch || companyNameFallbackMatch;
+        });
+    return [...list].sort((a, b) => {
+      const aTime = a.postedDate ? new Date(a.postedDate).getTime() : 0;
+      const bTime = b.postedDate ? new Date(b.postedDate).getTime() : 0;
+      return bTime - aTime; // most recent first
+    });
+  }, [jobs, clientFilter, clients]);
+
+  useEffect(() => {
+    // When a client is selected, default to that client's most recent job.
+    if (!clientFilter.trim()) return;
+    if (filteredJobOptions.length === 0) {
+      if (jobFilter) setJobFilter('');
+      return;
+    }
+    const jobStillValid = filteredJobOptions.some((j) => j.id === jobFilter);
+    if (!jobStillValid) {
+      setJobFilter(filteredJobOptions[0].id);
+    }
+  }, [clientFilter, jobFilter, filteredJobOptions]);
 
   useEffect(() => {
     setNotesDraft(selectedApp?.notes ?? '');
@@ -437,7 +492,10 @@ export default function DashboardApplicationsPage() {
     !!disciplineFilter.trim() ||
     !!certificateFilter.trim() ||
     !!membershipFilter.trim() ||
-    !!employmentTypeFilter.trim();
+    !!employmentTypeFilter.trim() ||
+    !!minExperienceFilter.trim() ||
+    !!maxExperienceFilter.trim() ||
+    !!employerCompanyFilter.trim();
 
   const clearFilters = () => {
     setStatusFilter('all');
@@ -450,6 +508,9 @@ export default function DashboardApplicationsPage() {
     setCertificateFilter('');
     setMembershipFilter('');
     setEmploymentTypeFilter('');
+    setMinExperienceFilter('');
+    setMaxExperienceFilter('');
+    setEmployerCompanyFilter('');
   };
 
   const exportParams = useMemo(
@@ -465,6 +526,9 @@ export default function DashboardApplicationsPage() {
         ...(certificateFilter.trim() && { certificate: certificateFilter.trim() }),
         ...(membershipFilter.trim() && { membership: membershipFilter.trim() }),
         ...(employmentTypeFilter.trim() && { employmentType: employmentTypeFilter.trim() }),
+        ...(minExperienceFilter.trim() && { minExperience: minExperienceFilter.trim() }),
+        ...(maxExperienceFilter.trim() && { maxExperience: maxExperienceFilter.trim() }),
+        ...(employerCompanyFilter.trim() && { employerCompany: employerCompanyFilter.trim() }),
       }).toString(),
     [
       statusFilter,
@@ -477,6 +541,9 @@ export default function DashboardApplicationsPage() {
       certificateFilter,
       membershipFilter,
       employmentTypeFilter,
+      minExperienceFilter,
+      maxExperienceFilter,
+      employerCompanyFilter,
     ]
   );
 
@@ -523,6 +590,8 @@ export default function DashboardApplicationsPage() {
           ? { ...prev, status: newStatus }
           : prev
       );
+      // Force a fast re-fetch so counters and filtered list stay accurate.
+      setRefreshNonce((n) => n + 1);
     } catch (_e) {
       // keep UI state
     }
@@ -600,13 +669,13 @@ export default function DashboardApplicationsPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-6">
-        {/* Row 1: Search + Application filters + Actions */}
+        {/* Row 1: Search + core application filters + actions */}
         <div className="p-4 border-b border-neutral-100">
           <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
             Search &amp; application
           </p>
-          <div className="flex flex-col lg:flex-row gap-3 lg:items-center flex-wrap">
-            <div className="flex-1 relative min-w-[200px] max-w-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <div className="relative lg:col-span-5">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
@@ -617,82 +686,83 @@ export default function DashboardApplicationsPage() {
                 aria-label="Search applications"
               />
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[120px] text-sm"
-                aria-label="Status"
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={jobFilter}
-                onChange={(e) => setJobFilter(e.target.value)}
-                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[160px] max-w-[240px] text-sm truncate"
-                aria-label="Job"
-              >
-                <option value="">All jobs</option>
-                {jobs.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.title} · {j.company}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={clientFilter}
-                onChange={(e) => setClientFilter(e.target.value)}
-                className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[130px] text-sm"
-                aria-label="Client"
-              >
-                <option value="">All clients</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2 lg:ml-auto shrink-0">
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 text-sm font-medium transition-colors"
-                >
-                  Clear filters
-                </button>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm lg:col-span-2"
+              aria-label="Status"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm lg:col-span-2"
+              aria-label="Client"
+            >
+              <option value="">All clients</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={jobFilter}
+              onChange={(e) => setJobFilter(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm lg:col-span-3 truncate"
+              aria-label="Job"
+            >
+              {!clientFilter && <option value="">All jobs</option>}
+              {clientFilter && filteredJobOptions.length === 0 && (
+                <option value="">No jobs for selected client</option>
               )}
-              <a
-                href={exportParams ? `/api/applications/export?${exportParams}` : '/api/applications/export'}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100 text-sm font-medium transition-colors"
-                download
-                title="Export applications (current filters)"
+              {filteredJobOptions.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.title} · {j.company}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end items-center gap-2 mt-3">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 text-sm font-medium transition-colors"
               >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export
-              </a>
-            </div>
+                Clear filters
+              </button>
+            )}
+            <a
+              href={exportParams ? `/api/applications/export?${exportParams}` : '/api/applications/export'}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100 text-sm font-medium transition-colors"
+              download
+              title="Export applications (current filters)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export
+            </a>
           </div>
         </div>
 
-        {/* Row 2: Candidate & qualifications (education + certs + memberships + location + employment) */}
+        {/* Row 2: Candidate & qualifications */}
         <div className="p-4 bg-neutral-50/60">
           <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1">
             Candidate &amp; qualifications
           </p>
           <p className="text-xs text-neutral-500 mb-3">
-            Match job requirements: e.g. Education = Masters + Nursing, Certificate = BioHacking, Membership = KPMDU (combine with Status/Job/Client above).
+            Filter by education, credentials, location, experience, and employer history.
           </p>
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             <select
               value={educationLevelFilter}
               onChange={(e) => setEducationLevelFilter(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[150px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Education level"
               title="Education level (e.g. Masters)"
             >
@@ -707,7 +777,7 @@ export default function DashboardApplicationsPage() {
               value={disciplineFilter}
               onChange={(e) => setDisciplineFilter(e.target.value)}
               placeholder="Discipline (e.g. Nursing)"
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[140px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Education discipline"
             />
             <input
@@ -715,7 +785,7 @@ export default function DashboardApplicationsPage() {
               value={certificateFilter}
               onChange={(e) => setCertificateFilter(e.target.value)}
               placeholder="Certificate (e.g. BioHacking)"
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[160px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Professional certificate name"
             />
             <input
@@ -723,7 +793,7 @@ export default function DashboardApplicationsPage() {
               value={membershipFilter}
               onChange={(e) => setMembershipFilter(e.target.value)}
               placeholder="Membership (e.g. KPMDU)"
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[140px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Professional membership name"
             />
             <input
@@ -731,7 +801,7 @@ export default function DashboardApplicationsPage() {
               value={nationalityFilter}
               onChange={(e) => setNationalityFilter(e.target.value)}
               placeholder="Nationality"
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[120px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Nationality"
             />
             <input
@@ -739,13 +809,13 @@ export default function DashboardApplicationsPage() {
               value={homeCountyFilter}
               onChange={(e) => setHomeCountyFilter(e.target.value)}
               placeholder="Home county"
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[120px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Home county"
             />
             <select
               value={employmentTypeFilter}
               onChange={(e) => setEmploymentTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[140px] text-sm"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
               aria-label="Employment type"
             >
               {EMPLOYMENT_TYPE_OPTIONS.map((o) => (
@@ -754,6 +824,32 @@ export default function DashboardApplicationsPage() {
                 </option>
               ))}
             </select>
+            <input
+              type="number"
+              value={minExperienceFilter}
+              onChange={(e) => setMinExperienceFilter(e.target.value)}
+              min={0}
+              placeholder="Min years exp"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
+              aria-label="Minimum work experience years"
+            />
+            <input
+              type="number"
+              value={maxExperienceFilter}
+              onChange={(e) => setMaxExperienceFilter(e.target.value)}
+              min={0}
+              placeholder="Max years exp"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm"
+              aria-label="Maximum work experience years"
+            />
+            <input
+              type="text"
+              value={employerCompanyFilter}
+              onChange={(e) => setEmployerCompanyFilter(e.target.value)}
+              placeholder="Worked at firm (e.g. Safaricom)"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-sm xl:col-span-2"
+              aria-label="Employer company name"
+            />
           </div>
         </div>
       </div>

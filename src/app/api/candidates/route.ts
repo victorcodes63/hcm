@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const maxExperience = searchParams.get('maxExperience');
   const education = searchParams.get('education') || undefined;
   const search = searchParams.get('search') || undefined;
+  const employerCompany = searchParams.get('employerCompany') || undefined;
 
   const minExp = minExperience !== null && minExperience !== undefined && minExperience !== ''
     ? parseInt(minExperience, 10)
@@ -21,21 +22,47 @@ export async function GET(request: NextRequest) {
   try {
     if (process.env.DATABASE_URL) {
       // When jobId is set, we want candidates who applied to this job; otherwise all candidates.
-      let candidateIds: string[] | undefined;
+      let candidateIdsSet: Set<string> | undefined;
       if (jobId) {
         const apps = await prisma.application.findMany({
           where: { jobId },
           select: { candidateId: true },
         });
-        candidateIds = [...new Set(apps.map((a) => a.candidateId))];
-        if (candidateIds.length === 0) {
+        candidateIdsSet = new Set(apps.map((a) => a.candidateId));
+        if (candidateIdsSet.size === 0) {
           return NextResponse.json([]);
         }
       }
+      if (employerCompany?.trim()) {
+        const q = employerCompany.trim().toLowerCase();
+        const apps = await prisma.application.findMany({
+          select: { candidateId: true, formData: true },
+        });
+        const employerMatchedIds = new Set(
+          apps
+            .filter((a) => {
+              const fd = a.formData as { employmentHistory?: { companyName?: string }[] } | null;
+              return (
+                fd?.employmentHistory?.some((e) =>
+                  (e.companyName ?? '').toLowerCase().includes(q)
+                ) ?? false
+              );
+            })
+            .map((a) => a.candidateId)
+        );
+        if (!candidateIdsSet) {
+          candidateIdsSet = employerMatchedIds;
+        } else {
+          candidateIdsSet = new Set(
+            Array.from(candidateIdsSet).filter((id) => employerMatchedIds.has(id))
+          );
+        }
+        if (candidateIdsSet.size === 0) return NextResponse.json([]);
+      }
 
       const where: Record<string, unknown> = {};
-      if (candidateIds?.length) {
-        where.id = { in: candidateIds };
+      if (candidateIdsSet?.size) {
+        where.id = { in: Array.from(candidateIdsSet) };
       }
       if (minExp != null && !Number.isNaN(minExp) && (maxExp == null || Number.isNaN(maxExp))) {
         where.experience = { gte: minExp };
@@ -88,6 +115,7 @@ export async function GET(request: NextRequest) {
     maxExperience: maxExp,
     education,
     search,
+    employerCompany,
   });
   return NextResponse.json(list);
 }

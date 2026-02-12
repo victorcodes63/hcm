@@ -81,6 +81,105 @@ const NATIONALITIES = [
   'Other',
 ];
 
+const KENYA_HOME_COUNTIES = [
+  'Mombasa',
+  'Kwale',
+  'Kilifi',
+  'Tana River',
+  'Lamu',
+  'Taita/Taveta',
+  'Garissa',
+  'Wajir',
+  'Mandera',
+  'Marsabit',
+  'Isiolo',
+  'Meru',
+  'Tharaka-Nithi',
+  'Embu',
+  'Kitui',
+  'Machakos',
+  'Makueni',
+  'Nyandarua',
+  'Nyeri',
+  'Kirinyaga',
+  "Murang'a",
+  'Kiambu',
+  'Turkana',
+  'West Pokot',
+  'Samburu',
+  'Trans Nzoia',
+  'Uasin Gishu',
+  'Elgeyo/Marakwet',
+  'Nandi',
+  'Baringo',
+  'Laikipia',
+  'Nakuru',
+  'Narok',
+  'Kajiado',
+  'Kericho',
+  'Bomet',
+  'Kakamega',
+  'Vihiga',
+  'Bungoma',
+  'Busia',
+  'Siaya',
+  'Kisumu',
+  'Homa Bay',
+  'Migori',
+  'Kisii',
+  'Nyamira',
+  'Nairobi City',
+] as const;
+const HOME_COUNTY_OTHER_VALUE = '__other__';
+
+function normalizeCountyName(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
+    Array.from({ length: b.length + 1 }, () => 0)
+  );
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function getCountySuggestion(input: string): string | null {
+  const normalizedInput = normalizeCountyName(input);
+  if (!normalizedInput) return null;
+
+  let bestMatch: string | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const county of KENYA_HOME_COUNTIES) {
+    const normalizedCounty = normalizeCountyName(county);
+    if (normalizedCounty === normalizedInput) return county;
+    const distance = levenshteinDistance(normalizedInput, normalizedCounty);
+    if (distance < bestScore) {
+      bestScore = distance;
+      bestMatch = county;
+    }
+  }
+
+  // Suggest only when the value is likely a misspelling of an existing county.
+  if (bestMatch && bestScore <= 2) return bestMatch;
+  return null;
+}
+
 function emptyEducation(level: EducationLevel): EducationEntry {
   return { level, institution: '', grade: '', discipline: '', certificatePath: undefined };
 }
@@ -134,6 +233,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     salaryExpectations: '',
     gender: '',
   });
+  const [homeCountyOther, setHomeCountyOther] = useState('');
+  const [isHomeCountyOther, setIsHomeCountyOther] = useState(false);
 
   // Stage 2: Education (high_school, certificate, diploma single; undergrad, masters, phd multiple)
   const [education, setEducation] = useState<EducationEntry[]>(() => [
@@ -193,9 +294,15 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     if (!profile.phone.trim()) e.phone = 'Phone number is required';
     else if (phoneDigits.length < 9) e.phone = 'Phone number must have at least 9 digits';
     if (!profile.nationality.trim()) e.nationality = 'Nationality is required';
-    const homeCounty = profile.homeCounty.trim();
+    const homeCounty = (isHomeCountyOther ? homeCountyOther : profile.homeCounty).trim();
     if (!homeCounty) e.homeCounty = 'Home county is required';
     else if (homeCounty.length < 2) e.homeCounty = 'Home county must be at least 2 characters';
+    else if (isHomeCountyOther) {
+      const suggestion = getCountySuggestion(homeCounty);
+      if (suggestion) {
+        e.homeCounty = `Did you mean "${suggestion}"? Please select it from the county list instead of Other.`;
+      }
+    }
     if (!profile.gender.trim()) e.gender = 'Gender is required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -224,10 +331,18 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     }
     employment.forEach((entry, i) => {
       const hasAny = entry.jobTitle.trim() || entry.companyName.trim() || entry.industry.trim() || entry.endDate;
-      if (hasAny && !entry.isCurrentJob && !entry.startDate.trim()) {
+      if (hasAny && !entry.startDate.trim()) {
         e[`emp_start_${i}`] = 'Start date is required when employment details are provided';
       }
-      if (hasAny && !entry.isCurrentJob && entry.startDate.trim() && entry.endDate.trim()) {
+      if (hasAny && !entry.isCurrentJob && !entry.endDate.trim()) {
+        e[`emp_end_${i}`] = 'End date is required when employment details are provided';
+      }
+      if (
+        hasAny &&
+        !entry.isCurrentJob &&
+        entry.startDate.trim() &&
+        entry.endDate.trim()
+      ) {
         const start = new Date(entry.startDate);
         const end = new Date(entry.endDate);
         if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end < start) {
@@ -539,6 +654,12 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     { num: 5, title: 'Declarations' },
     { num: 6, title: 'Review & submit' },
   ];
+  const selectedCounty =
+    !isHomeCountyOther &&
+    KENYA_HOME_COUNTIES.includes(profile.homeCounty as (typeof KENYA_HOME_COUNTIES)[number])
+      ? profile.homeCounty
+      : '';
+  const homeCountySuggestion = isHomeCountyOther ? getCountySuggestion(homeCountyOther.trim()) : null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -684,15 +805,52 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">Home county *</label>
-                    <input
-                      type="text"
-                      value={profile.homeCounty}
-                      onChange={(e) => setProfile((p) => ({ ...p, homeCounty: e.target.value }))}
+                    <select
+                      value={isHomeCountyOther ? HOME_COUNTY_OTHER_VALUE : selectedCounty}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === HOME_COUNTY_OTHER_VALUE) {
+                          setIsHomeCountyOther(true);
+                          setProfile((p) => ({ ...p, homeCounty: homeCountyOther.trim() }));
+                          return;
+                        }
+                        setIsHomeCountyOther(false);
+                        setHomeCountyOther('');
+                        setProfile((p) => ({ ...p, homeCounty: value }));
+                      }}
                       className={inputClass('homeCounty')}
-                      placeholder="e.g. Nairobi"
-                      maxLength={100}
-                      autoComplete="address-level2"
-                    />
+                      aria-label="Home county"
+                    >
+                      <option value="">Select home county</option>
+                      {KENYA_HOME_COUNTIES.map((county) => (
+                        <option key={county} value={county}>
+                          {county}
+                        </option>
+                      ))}
+                      <option value={HOME_COUNTY_OTHER_VALUE}>Other (specify)</option>
+                    </select>
+                    {isHomeCountyOther && (
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          value={homeCountyOther}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setHomeCountyOther(value);
+                            setProfile((p) => ({ ...p, homeCounty: value }));
+                          }}
+                          className={inputClass('homeCounty')}
+                          placeholder="Enter home county"
+                          maxLength={100}
+                          autoComplete="address-level2"
+                        />
+                        {homeCountySuggestion && !errors.homeCounty && (
+                          <p className="text-amber-700 text-sm mt-1">
+                            Did you mean <strong>{homeCountySuggestion}</strong>? You can select it from the county list.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {showError('homeCounty')}
                   </div>
                 </div>
@@ -977,10 +1135,10 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       />
                       <span className="text-sm text-neutral-700">This is my current job</span>
                     </label>
-                    {(errors[`emp_start_${idx}`] || errors[`emp_dates_${idx}`]) && (
+                    {(errors[`emp_start_${idx}`] || errors[`emp_end_${idx}`] || errors[`emp_dates_${idx}`]) && (
                       <p className="text-red-500 text-sm mt-1 flex items-center">
                         <AlertCircle className="w-4 h-4 mr-1 shrink-0" />
-                        {errors[`emp_start_${idx}`] ?? errors[`emp_dates_${idx}`]}
+                        {errors[`emp_start_${idx}`] ?? errors[`emp_end_${idx}`] ?? errors[`emp_dates_${idx}`]}
                       </p>
                     )}
                   </div>

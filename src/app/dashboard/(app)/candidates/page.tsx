@@ -14,6 +14,7 @@ export default function DashboardCandidatesPage() {
   const [minExperience, setMinExperience] = useState('');
   const [maxExperience, setMaxExperience] = useState('');
   const [educationFilter, setEducationFilter] = useState('');
+  const [employerCompanyFilter, setEmployerCompanyFilter] = useState('');
   const [candidates, setCandidates] = useState<CandidateSummary[]>([]);
   const [jobOptions, setJobOptions] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function DashboardCandidatesPage() {
     if (minExperience.trim()) params.set('minExperience', minExperience.trim());
     if (maxExperience.trim()) params.set('maxExperience', maxExperience.trim());
     if (educationFilter.trim()) params.set('education', educationFilter.trim());
+    if (employerCompanyFilter.trim()) params.set('employerCompany', employerCompanyFilter.trim());
     if (searchQuery.trim()) params.set('search', searchQuery.trim());
     Promise.all([
       fetch(`/api/candidates?${params}`).then((r) => r.json()),
@@ -44,16 +46,17 @@ export default function DashboardCandidatesPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [jobFilter, minExperience, maxExperience, educationFilter, searchQuery]);
+  }, [jobFilter, minExperience, maxExperience, educationFilter, employerCompanyFilter, searchQuery]);
 
   const filtered = candidates;
   const hasActiveFilters =
-    jobFilter || minExperience.trim() || maxExperience.trim() || educationFilter.trim();
+    jobFilter || minExperience.trim() || maxExperience.trim() || educationFilter.trim() || employerCompanyFilter.trim();
   const clearFilters = () => {
     setJobFilter('');
     setMinExperience('');
     setMaxExperience('');
     setEducationFilter('');
+    setEmployerCompanyFilter('');
   };
 
   return (
@@ -145,6 +148,15 @@ export default function DashboardCandidatesPage() {
               title="Filter by education field"
               className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[220px] text-sm"
               aria-label="Filter by education"
+            />
+            <input
+              type="text"
+              placeholder="Worked at firm (e.g. Safaricom)"
+              value={employerCompanyFilter}
+              onChange={(e) => setEmployerCompanyFilter(e.target.value)}
+              title="Filter by employer company name from employment history"
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white min-w-[220px] text-sm"
+              aria-label="Filter by employer company"
             />
           </div>
         </div>

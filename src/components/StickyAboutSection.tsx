@@ -106,8 +106,27 @@ const StickyAboutSection = () => {
     <section ref={containerRef} className={`relative ${isMobile ? 'min-h-auto' : 'min-h-[300vh]'} bg-gradient-to-b from-white via-neutral-50 to-white`}>
       {/* Desktop Sticky Container */}
       {!isMobile && (
-        <div className="sticky top-0 h-screen flex items-center z-10 bg-white/95 backdrop-blur-sm overflow-hidden">
-          <div className="container mx-auto px-4 max-w-7xl">
+        <div className="sticky top-0 h-screen flex items-center z-10 bg-gradient-to-b from-white/70 via-white/55 to-white/70 backdrop-blur-sm overflow-hidden">
+          {/* Desktop blob layer */}
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+            <motion.div
+              animate={{ x: [0, 30, 0], y: [0, -18, 0], scale: [1, 1.2, 1] }}
+              transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -left-24 -top-16 h-[24rem] w-[24rem] rounded-full bg-secondary-500/35 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: [0, -26, 0], y: [0, 14, 0], scale: [1.1, 1, 1.1] }}
+              transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute right-10 top-8 h-72 w-72 rounded-full bg-primary-300/35 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: [0, -16, 0], y: [0, 20, 0], scale: [1.05, 1.2, 1.05] }}
+              transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute bottom-[-3rem] right-20 h-64 w-64 rounded-full bg-secondary-400/28 blur-3xl"
+            />
+          </div>
+
+          <div className="container mx-auto px-4 max-w-7xl relative z-10">
           {/* Centered Pill Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -244,8 +263,22 @@ const StickyAboutSection = () => {
 
       {/* Mobile/Tablet Layout */}
       {isMobile && (
-        <div className="py-16 bg-white">
-          <div className="container mx-auto px-4">
+        <div className="py-16 bg-gradient-to-b from-white/75 via-white/60 to-white/75 backdrop-blur-sm relative overflow-hidden">
+          {/* Mobile blob layer */}
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+            <motion.div
+              animate={{ x: [0, 16, 0], y: [0, -12, 0], scale: [1, 1.15, 1] }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-secondary-500/30 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: [0, -14, 0], y: [0, 10, 0], scale: [1.1, 1, 1.1] }}
+              transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute right-[-3rem] bottom-8 h-52 w-52 rounded-full bg-primary-300/30 blur-3xl"
+            />
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
             {/* Centered Pill Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

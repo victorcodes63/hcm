@@ -47,32 +47,63 @@ const SlidingHRQuestions = () => {
   }, []);
 
   return (
-    <section className="mt-8 py-16 md:py-20 bg-gradient-to-br from-neutral-50 via-white to-primary-50 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0">
+    <section className="py-16 md:py-20 bg-gradient-to-br from-neutral-50 via-white to-primary-50 relative overflow-hidden">
+      {/* Background Blobs */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <motion.div
-          animate={{ 
-            rotate: 360,
-            scale: [1, 1.1, 1]
+          animate={{
+            x: [0, 26, 0],
+            y: [0, -16, 0],
+            scale: [1, 1.2, 1],
           }}
-          transition={{ 
-            duration: 20,
+          transition={{
+            duration: 24,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute top-20 right-20 w-32 h-32 bg-primary-200/20 rounded-full blur-xl"
+          className="absolute -top-20 -left-24 h-[22rem] w-[22rem] rounded-full bg-secondary-500/30 blur-3xl"
         />
+
         <motion.div
-          animate={{ 
-            rotate: -360,
-            scale: [1.1, 1, 1.1]
+          animate={{
+            x: [0, -24, 0],
+            y: [0, 14, 0],
+            scale: [1.1, 1, 1.1],
           }}
-          transition={{ 
-            duration: 25,
+          transition={{
+            duration: 30,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute bottom-20 left-20 w-40 h-40 bg-secondary-200/20 rounded-full blur-xl"
+          className="absolute right-10 top-10 h-72 w-72 rounded-full bg-primary-300/30 blur-3xl"
+        />
+
+        <motion.div
+          animate={{
+            x: [0, 16, 0],
+            y: [0, -12, 0],
+            scale: [1, 1.18, 1],
+          }}
+          transition={{
+            duration: 22,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute left-10 bottom-20 h-52 w-52 rounded-full bg-secondary-400/26 blur-3xl"
+        />
+
+        <motion.div
+          animate={{
+            x: [0, -18, 0],
+            y: [0, 18, 0],
+            scale: [1.1, 1, 1.1],
+          }}
+          transition={{
+            duration: 28,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute -bottom-16 right-20 h-60 w-60 rounded-full bg-primary-200/32 blur-3xl"
         />
       </div>
 

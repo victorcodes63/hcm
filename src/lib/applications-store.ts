@@ -77,11 +77,14 @@ export function getInMemoryApplications(filters?: {
   status?: ApplicationStatus;
   nationality?: string;
   homeCounty?: string;
+  minExperience?: number;
+  maxExperience?: number;
   educationLevel?: string;
   discipline?: string;
   employmentType?: string;
   certificate?: string;
   membership?: string;
+  employerCompany?: string;
 }): ApplicationWithDetails[] {
   let list = [...applications];
   if (filters?.jobId) list = list.filter((a) => a.jobId === filters.jobId);
@@ -95,6 +98,10 @@ export function getInMemoryApplications(filters?: {
     const q = filters.homeCounty.trim().toLowerCase();
     list = list.filter((a) => a.candidate.homeCounty?.toLowerCase().includes(q));
   }
+  if (filters?.minExperience != null)
+    list = list.filter((a) => a.candidate.experience >= filters.minExperience!);
+  if (filters?.maxExperience != null)
+    list = list.filter((a) => a.candidate.experience <= filters.maxExperience!);
   if (filters?.educationLevel?.trim()) {
     const level = filters.educationLevel.trim();
     list = list.filter(
@@ -137,6 +144,15 @@ export function getInMemoryApplications(filters?: {
         ) ?? false
     );
   }
+  if (filters?.employerCompany?.trim()) {
+    const q = filters.employerCompany.trim().toLowerCase();
+    list = list.filter(
+      (a) =>
+        a.formData?.employmentHistory?.some((e) =>
+          (e.companyName ?? '').toLowerCase().includes(q)
+        ) ?? false
+    );
+  }
   return list.sort(
     (a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()
   );
@@ -174,6 +190,7 @@ export function getInMemoryCandidates(filters?: {
   maxExperience?: number;
   education?: string;
   search?: string;
+  employerCompany?: string;
 }): ApplicationWithDetails['candidate'][] {
   const seen = new Map<string, ApplicationWithDetails['candidate']>();
   let list = applications;
@@ -199,6 +216,20 @@ export function getInMemoryCandidates(filters?: {
         `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q)
     );
+  }
+  if (filters?.employerCompany?.trim()) {
+    const q = filters.employerCompany.trim().toLowerCase();
+    const matchedCandidateIds = new Set(
+      list
+        .filter(
+          (a) =>
+            a.formData?.employmentHistory?.some((e) =>
+              (e.companyName ?? '').toLowerCase().includes(q)
+            ) ?? false
+        )
+        .map((a) => a.candidate.id)
+    );
+    candidates = candidates.filter((c) => matchedCandidateIds.has(c.id));
   }
   return candidates.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

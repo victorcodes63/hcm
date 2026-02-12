@@ -88,26 +88,42 @@ export async function GET(request: NextRequest) {
   const employmentType = searchParams.get('employmentType') || undefined;
   const certificate = searchParams.get('certificate') || undefined;
   const membership = searchParams.get('membership') || undefined;
+  const minExperience = searchParams.get('minExperience');
+  const maxExperience = searchParams.get('maxExperience');
+  const employerCompany = searchParams.get('employerCompany') || undefined;
+  const minExp =
+    minExperience !== null && minExperience !== undefined && minExperience !== ''
+      ? parseInt(minExperience, 10)
+      : undefined;
+  const maxExp =
+    maxExperience !== null && maxExperience !== undefined && maxExperience !== ''
+      ? parseInt(maxExperience, 10)
+      : undefined;
 
   try {
     if (process.env.DATABASE_URL) {
+      const candidateWhere: Record<string, unknown> = {
+        ...(nationality?.trim()
+          ? { nationality: { contains: nationality.trim(), mode: 'insensitive' as const } }
+          : {}),
+        ...(homeCounty?.trim()
+          ? { homeCounty: { contains: homeCounty.trim(), mode: 'insensitive' as const } }
+          : {}),
+      };
+      if (minExp != null && !Number.isNaN(minExp) && (maxExp == null || Number.isNaN(maxExp))) {
+        candidateWhere.experience = { gte: minExp };
+      } else if (maxExp != null && !Number.isNaN(maxExp) && (minExp == null || Number.isNaN(minExp))) {
+        candidateWhere.experience = { lte: maxExp };
+      } else if (minExp != null && !Number.isNaN(minExp) && maxExp != null && !Number.isNaN(maxExp)) {
+        candidateWhere.experience = { gte: minExp, lte: maxExp };
+      }
+
       const applications = await prisma.application.findMany({
         where: {
           ...(jobId ? { jobId } : {}),
           ...(clientId ? { job: { clientId } } : {}),
           ...(status ? { status: status as 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired' } : {}),
-          ...(nationality?.trim() || homeCounty?.trim()
-            ? {
-                candidate: {
-                  ...(nationality?.trim()
-                    ? { nationality: { contains: nationality.trim(), mode: 'insensitive' as const } }
-                    : {}),
-                  ...(homeCounty?.trim()
-                    ? { homeCounty: { contains: homeCounty.trim(), mode: 'insensitive' as const } }
-                    : {}),
-                },
-              }
-            : {}),
+          ...(Object.keys(candidateWhere).length ? { candidate: candidateWhere } : {}),
         },
         include: {
           candidate: true,
@@ -159,6 +175,17 @@ export async function GET(request: NextRequest) {
           return fd?.professionalMemberships?.some((m) =>
             (m.name ?? '').toLowerCase().includes(q)
           ) ?? false;
+        });
+      }
+      if (employerCompany?.trim()) {
+        const q = employerCompany.trim().toLowerCase();
+        filtered = filtered.filter((a) => {
+          const fd = a.formData as { employmentHistory?: { companyName?: string }[] } | null;
+          return (
+            fd?.employmentHistory?.some((e) =>
+              (e.companyName ?? '').toLowerCase().includes(q)
+            ) ?? false
+          );
         });
       }
       const list: ApplicationWithDetails[] = filtered.map((a) => ({
@@ -222,6 +249,9 @@ export async function GET(request: NextRequest) {
     employmentType: employmentType?.trim() || undefined,
     certificate: certificate?.trim() || undefined,
     membership: membership?.trim() || undefined,
+    minExperience: minExp,
+    maxExperience: maxExp,
+    employerCompany: employerCompany?.trim() || undefined,
   });
   return NextResponse.json(list);
 }

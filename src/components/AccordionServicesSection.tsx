@@ -1,103 +1,78 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  UserSearch, 
-  Building2, 
-  BookOpen, 
-  ShieldCheck, 
+import {
+  UserSearch,
+  Building2,
+  BookOpen,
+  ShieldCheck,
   TrendingUp, 
   Globe2,
   Brain,
   ArrowRight,
-  ChevronDown,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 
 const AccordionServicesSection = () => {
-  const [activeService, setActiveService] = useState(0); // Always start with first service open
-
   const services = [
     {
       id: '1',
       title: 'Recruitment & Executive Search',
-      description: 'Find the right talent for your organization with our comprehensive recruitment solutions.',
       icon: UserSearch,
-      color: 'from-slate-600 to-slate-700',
-      bgColor: 'from-slate-100 to-gray-200',
-      features: ['Executive Search', 'Technical Recruitment', 'Talent Assessment', 'Interview Coordination'],
       link: '/services/recruitment',
-      details: 'Our recruitment services help you find the perfect candidates for your organization. We specialize in executive search, technical recruitment, and comprehensive talent assessment processes.'
+      image: '/images/about/main_1.jpeg',
+      span: 'md:col-span-2 md:row-span-2',
     },
     {
       id: '2',
       title: 'HR Outsourcing',
-      description: 'Streamline your HR operations with our professional outsourcing services.',
       icon: Building2,
-      color: 'from-blue-600 to-blue-700',
-      bgColor: 'from-blue-100 to-sky-200',
-      features: ['Payroll Management', 'HR Administration', 'Policy Development', 'Compliance Management'],
       link: '/services/hr-outsourcing',
-      details: 'Focus on your core business while we handle all your HR needs. Our outsourcing services include payroll management, HR administration, and comprehensive compliance support.'
+      image: '/images/about/pic_1.jpeg',
+      span: 'md:col-span-2',
     },
     {
       id: '3',
       title: 'Training & Development',
-      description: 'Enhance your team\'s capabilities with our customized training programs.',
       icon: BookOpen,
-      color: 'from-indigo-600 to-indigo-700',
-      bgColor: 'from-indigo-100 to-blue-200',
-      features: ['Leadership Development', 'Skills Training', 'Team Building', 'Performance Management'],
       link: '/services/training-development',
-      details: 'Invest in your team\'s growth with our comprehensive training programs. We offer leadership development, skills training, and team building activities tailored to your needs.'
+      image: '/images/about/pic_3.jpeg',
+      span: 'md:col-span-1',
     },
     {
       id: '4',
       title: 'HR Compliance & Legal',
-      description: 'Ensure your organization meets all Kenyan labor laws and regulations.',
       icon: ShieldCheck,
-      color: 'from-slate-600 to-slate-700',
-      bgColor: 'from-slate-100 to-gray-200',
-      features: ['Labor Law Compliance', 'Employment Contracts', 'Disciplinary Procedures', 'Legal Advisory'],
       link: '/services/hr-compliance',
-      details: 'Stay compliant with all Kenyan labor laws and regulations. Our legal experts ensure your organization meets all statutory requirements and maintains proper documentation.'
+      image: '/images/about/pic_4.jpeg',
+      span: 'md:col-span-1',
     },
     {
       id: '5',
       title: 'Salary Surveys',
-      description: 'Get comprehensive market data to make informed compensation decisions.',
       icon: TrendingUp,
-      color: 'from-blue-600 to-blue-700',
-      bgColor: 'from-blue-100 to-sky-200',
-      features: ['Market Analysis', 'Compensation Benchmarking', 'Salary Ranges', 'Industry Reports'],
       link: '/services/salary-surveys',
-      details: 'Stay competitive with our comprehensive salary surveys. We provide detailed market analysis, compensation benchmarking, and industry-specific salary ranges to help you make informed decisions about your compensation strategy.'
+      image: '/images/about/C1DA58D7-86D6-4B35-B90C-C3C981540240_1_201_a.jpeg',
+      span: 'md:col-span-2',
     },
     {
       id: '6',
       title: 'EOR Services',
-      description: 'Employer of Record services for seamless global workforce management.',
       icon: Globe2,
-      color: 'from-indigo-600 to-indigo-700',
-      bgColor: 'from-indigo-100 to-blue-200',
-      features: ['Global Employment', 'Payroll Management', 'Compliance Handling', 'Local Expertise'],
       link: '/services/eor-services',
-      details: 'Expand your business globally with our Employer of Record services. We handle all employment, payroll, and compliance requirements, allowing you to focus on growing your business while we manage the complexities of international employment.'
+      image: '/images/about/5C73B2CE-5185-43B1-A31D-E554865181F1_1_201_a.jpeg',
+      span: 'md:col-span-1',
     },
     {
       id: '7',
       title: 'Psychometric Assessments',
-      description: 'Comprehensive psychological testing for better hiring and development decisions.',
       icon: Brain,
-      color: 'from-slate-600 to-slate-700',
-      bgColor: 'from-slate-100 to-gray-200',
-      features: ['Personality Testing', 'Cognitive Assessments', 'Behavioral Analysis', 'Talent Profiling'],
       link: '/services/psychometric-assessments',
-      details: 'Make data-driven hiring and development decisions with our comprehensive psychometric assessments. We provide personality testing, cognitive assessments, and behavioral analysis to help you understand your team better and make informed decisions.'
-    }
+      image: '/images/about/pic_1.jpeg',
+      span: 'md:col-span-1',
+    },
   ];
 
   return (
@@ -228,128 +203,61 @@ const AccordionServicesSection = () => {
           
           <p className="text-lg md:text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
             We offer a full spectrum of HR services designed to help your organization 
-            thrive in today's competitive business environment.
+            thrive in today&apos;s competitive business environment.
           </p>
         </motion.div>
 
-        {/* Sticky Accordion Services */}
-        <div className="max-w-6xl mx-auto">
-          <div className="space-y-4">
+        {/* Bento Masonry Services Grid */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[260px] md:auto-rows-[250px] gap-5 md:gap-6">
             {services.map((service, index) => {
               const Icon = service.icon;
-              const isActive = activeService === index;
-              
+              const isHeroCard = service.span.includes('row-span-2');
+              const isWideCard = service.span.includes('col-span-2');
+
               return (
                 <motion.div
                   key={service.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -6, scale: 1.01 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="relative"
+                  className={`group relative min-h-[320px] md:min-h-0 overflow-hidden rounded-[22px] border border-white/35 shadow-[0_10px_35px_rgba(10,25,47,0.16)] ${service.span}`}
                 >
-                  {/* Accordion Header */}
-                  <motion.button
-                    onClick={() => setActiveService(isActive ? (activeService === index ? activeService : index) : index)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full text-left p-4 md:p-6 lg:p-8 rounded-xl border-2 transition-all duration-500 ${
-                      isActive 
-                        ? `bg-gradient-to-r ${service.bgColor} border-${service.color.split('-')[1]}-300 shadow-lg` 
-                        : 'bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 md:space-x-4 flex-1">
-                        <motion.div
-                          whileHover={{ rotate: 360 }}
-                          transition={{ duration: 0.6 }}
-                          className={`w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br ${service.color} rounded-lg flex items-center justify-center shadow-lg`}
-                        >
-                          <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
-                        </motion.div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h3 className={`text-lg md:text-xl font-heading font-bold mb-1 md:mb-2 ${
-                            isActive ? 'text-primary-900' : 'text-primary-900'
-                          }`}>
-                            {service.title}
-                          </h3>
-                          <p className={`text-xs md:text-sm ${
-                            isActive ? 'text-neutral-700' : 'text-neutral-600'
-                          }`}>
-                            {service.description}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 md:space-x-4">
-                        {/* Learn More Button - Always visible on closed accordions */}
-                        {!isActive && (
-                          <Link
-                            href={service.link}
-                            className={`hidden sm:inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r ${service.color} text-white rounded-lg font-medium hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 text-xs md:text-sm`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Learn More
-                            <ArrowRight className="ml-1 md:ml-2 w-3 h-3 md:w-4 md:h-4" />
-                          </Link>
-                        )}
-                        
-                        <motion.div
-                          animate={{ rotate: isActive ? 180 : 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex-shrink-0"
-                        >
-                          <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-neutral-500" />
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.button>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-900/25 via-primary-800/15 to-secondary-700/20" />
+                  <div className="absolute inset-0">
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+                      onError={(e) => {
+                        e.currentTarget.src = '/images/about/pic_1.jpeg';
+                      }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-white/70" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-900/35 via-primary-900/8 to-transparent" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.14),transparent_35%)]" />
 
-                  {/* Accordion Content */}
-                  <AnimatePresence>
-                    {isActive && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="overflow-hidden"
+                  <div className={`relative z-10 flex h-full flex-col justify-between text-white ${isHeroCard ? 'p-6 md:p-7' : 'p-5 md:p-6'}`}>
+                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/70 bg-white/90 backdrop-blur-md shadow-[0_6px_20px_rgba(0,0,0,0.2)]">
+                        <Icon className="h-5 w-5 text-secondary-500" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className={`font-heading font-semibold leading-tight tracking-tight ${isHeroCard ? 'text-2xl md:text-[1.85rem]' : isWideCard ? 'text-xl md:text-2xl' : 'text-xl'}`}>
+                        {service.title}
+                      </h3>
+                      <Link
+                        href={service.link}
+                        className="inline-flex items-center text-sm md:text-base font-semibold text-white/95 hover:text-secondary-200 transition-colors"
                       >
-                        <div className={`bg-gradient-to-br ${service.bgColor} rounded-b-xl p-4 md:p-6 lg:p-8 border-l-2 border-r-2 border-b-2 border-${service.color.split('-')[1]}-300`}>
-                          <div className="grid md:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-                            {/* Left Column - Features */}
-                            <div>
-                              <h4 className="text-base md:text-lg font-semibold text-primary-900 mb-3 md:mb-4">What We Offer:</h4>
-                              <div className="space-y-2 md:space-y-3">
-                                {service.features.map((feature, featureIndex) => (
-                                  <motion.div
-                                    key={featureIndex}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.4, delay: featureIndex * 0.1 }}
-                                    className="flex items-center space-x-2 md:space-x-3"
-                                  >
-                                    <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-secondary-500 flex-shrink-0" />
-                                    <span className="text-sm md:text-base text-neutral-700">{feature}</span>
-                                  </motion.div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            {/* Right Column - Details */}
-                            <div>
-                              <h4 className="text-base md:text-lg font-semibold text-primary-900 mb-3 md:mb-4">Service Details:</h4>
-                              <p className="text-sm md:text-base text-neutral-700 leading-relaxed">
-                                {service.details}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        Learn More
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                      </Link>
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}
@@ -398,8 +306,8 @@ const AccordionServicesSection = () => {
                   Ready to Transform Your HR?
                 </h3>
                 <p className="text-base md:text-lg text-neutral-700 mb-6 md:mb-8 leading-relaxed">
-                  Discover how our comprehensive HR services can drive your organization's success. 
-                  Let's discuss your specific needs and create a tailored solution.
+                  Discover how our comprehensive HR services can drive your organization&apos;s success. 
+                  Let&apos;s discuss your specific needs and create a tailored solution.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
