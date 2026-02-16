@@ -42,24 +42,21 @@ export default function AboutPage() {
       name: 'Mrs. Winnie Mbugua',
       position: 'Business Manager',
       bio: 'With extensive experience in business strategy and client relations, Winnie leads our business development initiatives and ensures exceptional client satisfaction.',
-      image: '/images/team/winnie.webp',
-      linkedin: 'https://linkedin.com/in/winnie-mbugua'
+      image: '/images/team/winnie.webp'
     },
     {
       id: '2',
       name: 'Mr. Moses Kirui',
       position: 'Finance & Operations Manager',
       bio: 'Moses oversees our day-to-day operations, ensuring seamless service delivery and maintaining the highest standards of operational excellence.',
-      image: '/images/team/kirui.webp',
-      linkedin: 'https://linkedin.com/in/moses-kirui'
+      image: '/images/team/kirui.webp'
     },
     {
       id: '3',
       name: 'Mr. Titus Muriuki',
       position: 'Head of Outsourced Workforce Management',
       bio: 'Titus specializes in managing outsourced workforce solutions, helping organizations optimize their human capital through strategic workforce planning.',
-      image: '/images/team/titus.jpeg',
-      linkedin: 'https://linkedin.com/in/titus-muriuki'
+      image: '/images/team/titus.jpeg'
     }
   ];
 
