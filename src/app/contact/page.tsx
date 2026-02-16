@@ -101,7 +101,7 @@ export default function ContactPage() {
           <div className="absolute inset-0 bg-white/70" />
         </div>
         
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -128,7 +128,7 @@ export default function ContactPage() {
 
       {/* Contact Form & Info */}
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             {/* Contact Form */}
             <div>
@@ -226,7 +226,7 @@ export default function ContactPage() {
 
       {/* Why Choose Us */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -269,7 +269,7 @@ export default function ContactPage() {
 
       {/* FAQ Section */}
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -309,7 +309,7 @@ export default function ContactPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-primary-900 to-primary-800 text-white">
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 sm:px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
