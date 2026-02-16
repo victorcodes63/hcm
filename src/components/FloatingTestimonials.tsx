@@ -1,18 +1,53 @@
 'use client';
 
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useState, useRef } from 'react';
-import { Star, Quote, ArrowRight, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Star, Quote, ArrowRight, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Testimonial } from '@/types';
+import SectionTitle from '@/components/SectionTitle';
 import Image from 'next/image';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 interface FloatingTestimonialsProps {
   testimonials: Testimonial[];
 }
 
 const FloatingTestimonials = ({ testimonials }: FloatingTestimonialsProps) => {
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useIsDesktop();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const cardsPerView = isDesktop ? 3 : 1;
+  const maxIndex = Math.max(0, testimonials.length - cardsPerView);
+
+  useEffect(() => {
+    if (currentIndex > maxIndex) setCurrentIndex(maxIndex);
+  }, [currentIndex, maxIndex]);
+
+  useEffect(() => {
+    if (!isAutoPlaying || testimonials.length <= cardsPerView) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, testimonials.length, maxIndex, cardsPerView]);
+
+  const goNext = () => {
+    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+    setIsAutoPlaying(false);
+  };
+
+  const goPrev = () => {
+    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
+    setIsAutoPlaying(false);
+  };
+
+  if (testimonials.length === 0) return null;
+
+  const cardWidthPercent = 100 / cardsPerView;
+  const trackWidthPercent = cardWidthPercent * testimonials.length;
+  // translateX % is relative to track width; move by currentIndex cards
+  const translatePercentOfTrack = testimonials.length > 0 ? (currentIndex * 100) / testimonials.length : 0;
 
   return (
     <section className="py-20 bg-gradient-to-br from-neutral-50 via-white to-primary-50 relative overflow-hidden">
@@ -21,43 +56,31 @@ const FloatingTestimonials = ({ testimonials }: FloatingTestimonialsProps) => {
         <motion.div
           animate={{ 
             rotate: 360,
-            scale: [1, 1.2, 1],
+            ...(isDesktop ? { scale: [1, 1.2, 1] } : {}),
             x: [0, 30, 0],
             y: [0, -20, 0]
           }}
-          transition={{ 
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -top-20 -left-20 w-80 h-80 bg-secondary-500/10 rounded-full blur-3xl"
         />
         <motion.div
           animate={{ 
             rotate: -360,
-            scale: [1.1, 1, 1.1],
+            ...(isDesktop ? { scale: [1.1, 1, 1.1] } : {}),
             x: [0, -25, 0],
             y: [0, 15, 0]
           }}
-          transition={{ 
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-10 right-10 w-60 h-60 bg-primary-500/15 rounded-full blur-2xl"
         />
         <motion.div
           animate={{ 
             rotate: 180,
-            scale: [1, 1.3, 1],
+            ...(isDesktop ? { scale: [1, 1.3, 1] } : {}),
             x: [0, 40, 0],
             y: [0, -30, 0]
           }}
-          transition={{ 
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
           className="absolute bottom-20 left-20 w-40 h-40 bg-secondary-600/20 rounded-full blur-xl"
         />
       </div>
@@ -72,177 +95,123 @@ const FloatingTestimonials = ({ testimonials }: FloatingTestimonialsProps) => {
           className="text-center mb-16"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+            whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-full text-sm font-semibold mb-6 shadow-lg"
           >
-            <Users className="w-4 h-4 mr-2" />
-            Client Success Stories
+            <SectionTitle
+              label="Testimonials"
+              title="Trusted by industry leaders"
+              titleLine2="across Kenya."
+              subtitle="See how we've helped organisations transform their HR operations and achieve remarkable results."
+              variant="section"
+              className="mb-8"
+            />
           </motion.div>
-          
-          <h2 className="text-4xl md:text-5xl font-heading font-bold text-primary-900 mb-6">
-            Trusted by Industry Leaders
-            <span className="block text-secondary-500 mt-2">Across Kenya</span>
-          </h2>
-          
-          <p className="text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
-            See how we've helped organizations transform their HR operations 
-            and achieve remarkable results.
-          </p>
         </motion.div>
 
-        {/* Floating Testimonial Cards */}
-        <div ref={containerRef} className="relative max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => {
-              const isHovered = hoveredCard === index;
-              
-              return (
-                <motion.div
-                  key={testimonial.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ 
-                    y: -20,
-                    scale: 1.05,
-                    rotateY: 5,
-                    rotateX: 5,
-                    z: 50
-                  }}
-                  onHoverStart={() => setHoveredCard(index)}
-                  onHoverEnd={() => setHoveredCard(null)}
-                  className="relative group cursor-pointer"
-                  style={{
-                    perspective: "1000px"
-                  }}
+        {/* Carousel - 3 cards visible on desktop, 1 on mobile */}
+        <div className="relative max-w-6xl mx-auto">
+          {/* Navigation Arrows */}
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Previous testimonials"
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl border border-neutral-200 flex items-center justify-center text-primary-900 hover:text-secondary-500 transition-all duration-300 -left-4 md:-left-6"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label="Next testimonials"
+            className="absolute top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl border border-neutral-200 flex items-center justify-center text-primary-900 hover:text-secondary-500 transition-all duration-300 -right-4 md:-right-6"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          {/* Sliding track */}
+          <div className="overflow-hidden px-4 md:px-14">
+            <motion.div
+              className="flex"
+              style={{ width: `${trackWidthPercent}%` }}
+              animate={{ x: `-${translatePercentOfTrack}%` }}
+              transition={{ type: 'tween', duration: 0.5, ease: 'easeInOut' }}
+            >
+              {testimonials.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex-shrink-0 px-2 box-border"
+                  style={{ width: `${100 / testimonials.length}%` }}
                 >
-                  {/* Card */}
-                  <motion.div
-                    whileHover={{
-                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                    }}
-                    className="bg-white border-2 border-neutral-200 rounded-2xl p-8 h-full relative overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500"
-                  >
-                    {/* Floating Elements */}
-                    <motion.div
-                      animate={{
-                        y: [0, -10, 0],
-                        rotate: [0, 5, 0]
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                      className="absolute top-4 right-4 w-8 h-8 bg-secondary-500/20 rounded-full"
-                    />
-                    
-                    <motion.div
-                      animate={{
-                        y: [0, 15, 0],
-                        rotate: [0, -5, 0]
-                      }}
-                      transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 1
-                      }}
-                      className="absolute bottom-4 left-4 w-6 h-6 bg-primary-500/20 rounded-full"
-                    />
+                  <div className="bg-white border-2 border-neutral-200 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-lg h-full flex flex-col">
+                    <Quote className="absolute top-6 left-6 w-8 h-8 text-secondary-500/30" />
 
-                    {/* Quote Icon */}
-                    <motion.div
-                      animate={isHovered ? { scale: 1.2, rotate: 10 } : { scale: 1, rotate: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="absolute top-6 left-6"
-                    >
-                      <Quote className="w-8 h-8 text-secondary-500/30" />
-                    </motion.div>
-
-                    {/* Content */}
-                    <div className="relative z-10">
-                      {/* Client Info */}
-                      <div className="flex items-center space-x-4 mb-6">
-                        <motion.div
-                          whileHover={{ scale: 1.1, rotate: 360 }}
-                          transition={{ duration: 0.6 }}
-                          className="w-16 h-16 rounded-full overflow-hidden shadow-lg border-2 border-white"
-                        >
+                    <div className="relative z-10 flex-1">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden shadow-lg border-2 border-white bg-neutral-100 flex-shrink-0">
                           <Image
-                            src={testimonial.image || '/images/about/smile_1.jpg'}
-                            alt={testimonial.name}
+                            src={t.image || '/images/about/smile_1.jpg'}
+                            alt={t.company}
                             width={64}
                             height={64}
                             className="w-full h-full object-cover"
                           />
-                        </motion.div>
-                        
-                        <div>
-                          <h3 className="text-lg font-heading font-bold text-primary-900">
-                            {testimonial.name}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-base md:text-lg font-heading font-bold text-primary-900 truncate">
+                            {t.name}
                           </h3>
-                          <p className="text-secondary-500 font-medium text-sm">
-                            {testimonial.position}
+                          <p className="text-secondary-500 font-medium text-xs md:text-sm">
+                            {t.position}
                           </p>
-                          <p className="text-neutral-600 text-xs">
-                            {testimonial.company}
+                          <p className="text-neutral-600 text-xs md:text-sm font-medium truncate">
+                            {t.company}
                           </p>
                         </div>
                       </div>
 
-                      {/* Rating */}
-                      <div className="flex space-x-1 mb-6">
+                      <div className="flex gap-1 mb-4">
                         {[...Array(5)].map((_, i) => (
-                          <motion.div
+                          <Star
                             key={i}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: i * 0.1 }}
-                          >
-                            <Star
-                              className={`w-5 h-5 ${
-                                i < testimonial.rating
-                                  ? 'text-secondary-500 fill-current'
-                                  : 'text-neutral-300'
-                              }`}
-                            />
-                          </motion.div>
+                            className={`w-4 h-4 md:w-5 md:h-5 ${
+                              i < t.rating ? 'text-secondary-500 fill-current' : 'text-neutral-300'
+                            }`}
+                          />
                         ))}
                       </div>
 
-                      {/* Testimonial Text */}
-                      <blockquote className="text-neutral-700 leading-relaxed italic mb-6">
-                        "{testimonial.content}"
+                      <blockquote className="text-neutral-700 text-sm md:text-base leading-relaxed italic line-clamp-5">
+                        &ldquo;{t.content}&rdquo;
                       </blockquote>
-
-                      {/* Hover Effect - Learn More */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ duration: 0.3 }}
-                        className="flex items-center text-primary-900 font-semibold text-sm"
-                      >
-                        Read full story
-                        <ArrowRight className="ml-2 w-4 h-4" />
-                      </motion.div>
                     </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
 
-                    {/* Gradient Overlay on Hover */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={isHovered ? { opacity: 1 } : { opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="absolute inset-0 bg-gradient-to-br from-primary-900/5 to-secondary-500/5 rounded-2xl"
-                    />
-                  </motion.div>
-                </motion.div>
-              );
-            })}
+          {/* Dots - one per card, active = first visible index */}
+          <div className="flex justify-center gap-2 mt-8 flex-wrap">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => {
+                  const next = Math.min(index, maxIndex);
+                  setCurrentIndex(next);
+                  setIsAutoPlaying(false);
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  index >= currentIndex && index < currentIndex + cardsPerView
+                    ? 'bg-primary-900 w-8'
+                    : 'bg-neutral-300 hover:bg-neutral-400'
+                }`}
+              />
+            ))}
           </div>
 
           {/* Bottom CTA */}
@@ -264,8 +233,8 @@ const FloatingTestimonials = ({ testimonials }: FloatingTestimonialsProps) => {
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={isDesktop ? { scale: 1.05, y: -2 } : undefined}
+                    whileTap={isDesktop ? { scale: 0.95 } : undefined}
                     className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary-800 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
                   >
                     Start Your Success Story
@@ -273,8 +242,8 @@ const FloatingTestimonials = ({ testimonials }: FloatingTestimonialsProps) => {
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={isDesktop ? { scale: 1.05, y: -2 } : undefined}
+                    whileTap={isDesktop ? { scale: 0.95 } : undefined}
                     className="border-2 border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary-900 hover:text-white transition-all duration-300 flex items-center justify-center"
                   >
                     View All Case Studies

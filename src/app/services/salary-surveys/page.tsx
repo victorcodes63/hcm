@@ -11,7 +11,7 @@ import {
   Download,
   ArrowRight,
   Star,
-  Building,
+  Building2,
   Calculator,
   PieChart,
   BookOpen,
@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SectionTitle from '@/components/SectionTitle';
+import ServicePageCard from '@/components/ServicePageCard';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function SalarySurveysPage() {
   const surveyServices = [
@@ -123,12 +127,9 @@ export default function SalarySurveysPage() {
   };
 
   const industries = [
-    { name: 'Banking & Finance', icon: Building },
-    { name: 'Insurance', icon: Shield },
-    { name: 'Government', icon: Building },
-    { name: 'Manufacturing', icon: Building },
-    { name: 'Technology', icon: Building },
-    { name: 'Healthcare', icon: Building }
+    "Banking & Financial Services", "Technology & IT", "Healthcare & Pharmaceuticals",
+    "Manufacturing & Engineering", "Government & Public Sector", "NGOs & Development",
+    "Education & Training", "Retail & Consumer Goods", "Energy & Utilities", "Real Estate & Construction"
   ];
 
   return (
@@ -156,13 +157,13 @@ export default function SalarySurveysPage() {
             transition={{ duration: 0.8 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <h1 className="text-4xl md:text-6xl font-heading font-bold mb-6 text-primary-900">
-              Salary Surveys & Analytics
-            </h1>
-            <p className="text-xl md:text-2xl text-primary-800 leading-relaxed mb-8">
-              Make data-driven compensation decisions with comprehensive salary surveys, 
-              market analytics, and strategic pay structure design.
-            </p>
+            <SectionTitle
+              label="Salary surveys & analytics"
+              title="Salary surveys & analytics."
+              subtitle="Make data-driven compensation decisions with comprehensive salary surveys, market analytics, and strategic pay structure design."
+              variant="hero"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/contact"
@@ -193,47 +194,17 @@ export default function SalarySurveysPage() {
             viewport={{ once: true }}
             className="max-w-6xl mx-auto"
           >
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                Comprehensive Salary Survey Solutions
-              </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Leverage market intelligence to make informed compensation decisions. 
-                Our comprehensive surveys and analytics provide the insights you need.
-              </p>
-            </div>
+            <SectionTitle
+              label="Our services"
+              title="Comprehensive salary survey solutions."
+              subtitle="Leverage market intelligence to make informed compensation decisions. Our comprehensive surveys and analytics provide the insights you need."
+              variant="section"
+              className="mb-16"
+            />
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {surveyServices.map((service, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-neutral-100 hover:border-primary-200 p-8"
-                >
-                  <div className="w-16 h-16 bg-secondary-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <service.icon className="w-8 h-8 text-secondary-500" />
-                  </div>
-                  
-                  <h3 className="text-xl font-semibold text-primary-900 mb-4">
-                    {service.title}
-                  </h3>
-                  
-                  <p className="text-neutral-600 mb-6 leading-relaxed">
-                    {service.description}
-                  </p>
-                  
-                  <ul className="space-y-3">
-                    {service.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-neutral-600">
-                        <CheckCircle className="w-4 h-4 text-secondary-500 mr-3 flex-shrink-0" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
+                <ServicePageCard key={index} item={service} index={index} />
               ))}
             </div>
           </motion.div>
@@ -269,8 +240,8 @@ export default function SalarySurveysPage() {
                   viewport={{ once: true }}
                   className="text-center"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-                    <benefit.icon className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mx-auto mb-6 border border-secondary-100">
+                    <benefit.icon className="w-8 h-8 text-secondary-500" />
                   </div>
                   <h3 className="text-xl font-bold text-primary-900 mb-4">
                     {benefit.title}
@@ -425,43 +396,41 @@ export default function SalarySurveysPage() {
         </div>
       </section>
 
-      {/* Industries Served */}
-      <section className="py-20 bg-neutral-50">
+      {/* Industries Section */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-6xl mx-auto"
-          >
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                Industries We Serve
-              </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Our salary survey expertise spans across various industries, each with unique compensation challenges.
-              </p>
-            </div>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Industries" title="Industries we serve." subtitle="With deep expertise across multiple sectors, we understand the unique compensation and talent needs of each industry we serve." variant="section" />
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {industries.map((industry, index) => (
+              <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05, duration: 0.4 }} viewport={{ once: true }} className="bg-secondary-50/80 rounded-lg p-4 text-center border border-secondary-100/60 hover:bg-secondary-100/80 transition-colors duration-300">
+                <div className="text-sm font-medium text-primary-900">{industry}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {industries.map((industry, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center group"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <industry.icon className="w-8 h-8 text-primary-600" />
+      {/* CTA Card */}
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="relative h-56 lg:h-auto lg:min-h-[340px] order-1">
+                  <Image src="/images/about/Smiling%20African%20American%20Woman%20Business%20Suit.PNG" alt="Professional HR consultation" fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 50vw" />
+                </div>
+                <div className="p-8 lg:p-10 flex flex-col justify-center order-2">
+                  <h3 className="text-2xl lg:text-3xl font-heading font-bold text-primary-900 mb-4">Ready to Optimize Your Compensation Strategy?</h3>
+                  <p className="text-neutral-600 leading-relaxed mb-6">Let our expert team help you make data-driven compensation decisions. Stay competitive and attract the best talent with market-aligned pay structures.</p>
+                  <p className="text-xl font-semibold text-secondary-500 mb-4">Take the next step</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link href="/services" className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-800 transition text-center">View All Services</Link>
+                    <Link href="/contact" className="border border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition text-center">Schedule Consultation</Link>
                   </div>
-                  <h3 className="text-xl font-bold text-primary-900">
-                    {industry.name}
-                  </h3>
-                </motion.div>
-              ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -470,131 +439,23 @@ export default function SalarySurveysPage() {
       {/* Download Resources Section */}
       <section className="py-12 bg-secondary-500 text-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Download Our Resources
-            </h2>
-            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
-              Access our comprehensive guides, templates, and company information to learn more 
-              about our salary survey services and best practices.
-            </p>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Resources" title="Download our resources." subtitle="Access our company profile and client list to learn more about Eagle HR and the organisations we partner with." variant="dark" className="mb-16" />
           </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <BarChart3 className="w-8 h-8 text-white" />
-              </div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><BarChart3 className="w-8 h-8 text-white" /></div>
               <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Learn more about Eagle HR Consultants and our comprehensive salary survey services.
-              </p>
-              <a
-                href="/downloads/company-profile.pdf"
-                download="Eagle-HR-Company-Profile.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
+              <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in salary surveys and compensation.</p>
+              <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
             </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <PieChart className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Salary Survey Guide</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Comprehensive guide to conducting effective salary surveys and market analysis.
-              </p>
-              <a
-                href="/downloads/salary-survey-guide.pdf"
-                download="Salary-Survey-Guide.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Compensation Analytics</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Tools and templates for analyzing compensation data and market trends.
-              </p>
-              <a
-                href="/downloads/compensation-analytics.pdf"
-                download="Compensation-Analytics.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building2 className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Client List</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
+              <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto text-center"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-white mb-6">
-              Ready to Optimize Your Compensation Strategy?
-            </h2>
-            <p className="text-xl text-primary-200 mb-8 leading-relaxed">
-              Let our expert team help you make data-driven compensation decisions. 
-              Stay competitive and attract the best talent with market-aligned pay structures.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 bg-secondary-500 text-white rounded-lg font-semibold text-lg hover:bg-secondary-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Schedule Consultation
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </a>
-              <a
-                href="mailto:info@eaglehr.co.ke"
-                className="inline-flex items-center px-8 py-4 bg-white/20 text-white rounded-lg font-semibold text-lg hover:bg-white/30 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-sm"
-              >
-                Send Email
-              </a>
-            </div>
-          </motion.div>
         </div>
       </section>
 

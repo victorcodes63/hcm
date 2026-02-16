@@ -16,8 +16,13 @@ import {
   FileText,
   TrendingUp,
   Star,
-  Building2
+  Building2,
+  Download
 } from 'lucide-react';
+import SectionTitle from '@/components/SectionTitle';
+import ServicePageCard from '@/components/ServicePageCard';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function PsychometricTestingPage() {
   const testTypes = [
@@ -109,6 +114,12 @@ export default function PsychometricTestingPage() {
     ]
   };
 
+  const industries = [
+    "Banking & Financial Services", "Technology & IT", "Healthcare & Pharmaceuticals",
+    "Manufacturing & Engineering", "Government & Public Sector", "NGOs & Development",
+    "Education & Training", "Retail & Consumer Goods", "Energy & Utilities", "Real Estate & Construction"
+  ];
+
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -132,35 +143,14 @@ export default function PsychometricTestingPage() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
-            >
-              <Brain className="w-4 h-4 mr-2" />
-              Psychometric Testing
-            </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Psychometric Testing
-              <span className="block text-secondary-500">For Better Hiring Decisions</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              Comprehensive psychological assessments to identify the right talent, 
-              reduce hiring risks, and improve organizational performance through data-driven selection.
-            </motion.p>
+            <SectionTitle
+              label="Psychometric testing"
+              title="Psychometric testing"
+              titleLine2="for better hiring decisions."
+              subtitle="Comprehensive psychological assessments to identify the right talent, reduce hiring risks, and improve organisational performance through data-driven selection."
+              variant="hero"
+              className="mb-8"
+            />
           </motion.div>
         </div>
       </section>
@@ -173,48 +163,19 @@ export default function PsychometricTestingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Comprehensive Assessment Types
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Our psychometric testing covers all aspects of human capability and potential, 
-              providing you with complete insights for informed hiring decisions.
-            </p>
+            <SectionTitle
+              label="Assessment types"
+              title="Comprehensive assessment types."
+              subtitle="Our psychometric testing covers all aspects of human capability and potential, providing you with complete insights for informed hiring decisions."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {testTypes.map((test, index) => (
-              <motion.div
-                key={test.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                viewport={{ once: true }}
-                className="bg-white border border-neutral-200 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mb-6">
-                  <test.icon className="w-8 h-8 text-primary-600" />
-                </div>
-                
-                <h3 className="text-xl font-heading font-semibold text-primary-900 mb-4">
-                  {test.title}
-                </h3>
-                
-                <p className="text-neutral-600 mb-6">
-                  {test.description}
-                </p>
-                
-                <ul className="space-y-2">
-                  {test.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-sm text-neutral-600">
-                      <CheckCircle className="w-4 h-4 text-secondary-500 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+              <ServicePageCard key={test.title} item={test} index={index} />
             ))}
           </div>
         </div>
@@ -228,15 +189,14 @@ export default function PsychometricTestingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Our Assessment Process
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              A systematic approach to psychometric testing that ensures accuracy, 
-              reliability, and actionable insights for your hiring decisions.
-            </p>
+            <SectionTitle
+              label="Our process"
+              title="Our assessment process."
+              subtitle="A systematic approach to psychometric testing that ensures accuracy, reliability, and actionable insights for your hiring decisions."
+              variant="section"
+            />
           </motion.div>
 
           <div className="max-w-4xl mx-auto">
@@ -266,8 +226,8 @@ export default function PsychometricTestingPage() {
                   </div>
                   
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <step.icon className="w-6 h-6 text-primary-600" />
+                    <div className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center border border-secondary-100">
+                      <step.icon className="w-6 h-6 text-secondary-500" />
                     </div>
                   </div>
                 </motion.div>
@@ -287,13 +247,13 @@ export default function PsychometricTestingPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Why Choose Psychometric Testing?
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Transform your hiring process with scientific assessments that provide 
-              objective insights and improve your selection outcomes.
-            </p>
+            <SectionTitle
+              label="Why us"
+              title="Why choose psychometric testing?"
+              subtitle="Transform your hiring process with scientific assessments that provide objective insights and improve your selection outcomes."
+              variant="section"
+              className="mb-16"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -306,8 +266,8 @@ export default function PsychometricTestingPage() {
                 viewport={{ once: true }}
                 className="text-center p-6 bg-gradient-to-br from-neutral-50 to-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <benefit.icon className="w-8 h-8 text-primary-600" />
+                <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mx-auto mb-4 border border-secondary-100">
+                  <benefit.icon className="w-8 h-8 text-secondary-500" />
                 </div>
                 <h3 className="text-lg font-heading font-semibold text-primary-900 mb-3">
                   {benefit.title}
@@ -400,41 +360,66 @@ export default function PsychometricTestingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary-900 to-primary-800 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Ready to Transform Your Hiring?
-            </h2>
-            <p className="text-lg text-white/90 mb-8">
-              Let our psychometric testing experts help you make better hiring decisions 
-              and build a stronger, more capable workforce.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 bg-secondary-500 text-primary-900 rounded-lg font-semibold text-lg hover:bg-secondary-400 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Get Assessment Consultation
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </a>
-              
-              <a
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 border-2 border-white/30 text-white rounded-lg font-semibold text-lg hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-300"
-              >
-                Learn More
-              </a>
+      {/* Industries Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Industries" title="Industries we serve." subtitle="With deep expertise across multiple sectors, we understand the unique talent assessment needs of each industry we serve." variant="section" />
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {industries.map((industry, index) => (
+              <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05, duration: 0.4 }} viewport={{ once: true }} className="bg-secondary-50/80 rounded-lg p-4 text-center border border-secondary-100/60 hover:bg-secondary-100/80 transition-colors duration-300">
+                <div className="text-sm font-medium text-primary-900">{industry}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Card */}
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="relative h-56 lg:h-auto lg:min-h-[340px] order-1">
+                  <Image src="/images/about/Smiling%20African%20American%20Woman%20Business%20Suit.PNG" alt="Professional HR consultation" fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 50vw" />
+                </div>
+                <div className="p-8 lg:p-10 flex flex-col justify-center order-2">
+                  <h3 className="text-2xl lg:text-3xl font-heading font-bold text-primary-900 mb-4">Ready to Transform Your Hiring?</h3>
+                  <p className="text-neutral-600 leading-relaxed mb-6">Let our psychometric testing experts help you make better hiring decisions and build a stronger, more capable workforce.</p>
+                  <p className="text-xl font-semibold text-secondary-500 mb-4">Take the next step</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link href="/services" className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-800 transition text-center">View All Services</Link>
+                    <Link href="/contact" className="border border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition text-center">Schedule Consultation</Link>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Download Resources Section */}
+      <section className="py-12 bg-secondary-500 text-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Resources" title="Download our resources." subtitle="Access our company profile and client list to learn more about Eagle HR and the organisations we partner with." variant="dark" className="mb-16" />
+          </motion.div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in recruitment.</p>
+              <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building2 className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Client List</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
+              <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+          </div>
         </div>
       </section>
 

@@ -4,8 +4,11 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BookOpen, Users, Target, Award, CheckCircle, Download, ArrowRight, Phone, Mail, Clock, TrendingUp, Star } from 'lucide-react';
+import { BookOpen, Users, Target, Award, CheckCircle, Download, ArrowRight, Phone, Mail, Clock, TrendingUp, Star, Building2, FileText } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import SectionTitle from '@/components/SectionTitle';
+import ServicePageCard from '@/components/ServicePageCard';
 
 export default function TrainingDevelopmentPage() {
   const [isMounted, setIsMounted] = useState(false);
@@ -82,6 +85,12 @@ export default function TrainingDevelopmentPage() {
     { number: "98%", label: "Satisfaction Rate", description: "Based on participant feedback" }
   ];
 
+  const industries = [
+    "Banking & Financial Services", "Technology & IT", "Healthcare & Pharmaceuticals",
+    "Manufacturing & Engineering", "Government & Public Sector", "NGOs & Development",
+    "Education & Training", "Retail & Consumer Goods", "Energy & Utilities", "Real Estate & Construction"
+  ];
+
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -107,13 +116,13 @@ export default function TrainingDevelopmentPage() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary-900 mb-6">
-              Training & Development
-            </h1>
-            <p className="text-xl text-neutral-700 leading-relaxed mb-8">
-              Enhance your team's capabilities with our customized training programs. 
-              We focus on leadership development, skills training, and performance management for sustainable growth.
-            </p>
+            <SectionTitle
+              label="Training & development"
+              title="Training & development."
+              subtitle="Enhance your team's capabilities with our customised training programmes. We focus on leadership development, skills training, and performance management for sustainable growth."
+              variant="hero"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
@@ -143,49 +152,19 @@ export default function TrainingDevelopmentPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Comprehensive Training Solutions
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We offer end-to-end training and development programs designed to enhance 
-              your team's capabilities and drive organizational success.
-            </p>
+            <SectionTitle
+              label="Our services"
+              title="Comprehensive training solutions."
+              subtitle="We offer end-to-end training and development programmes designed to enhance your team's capabilities and drive organisational success."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {trainingServices.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: isMounted ? index * 0.1 : 0, duration: 0.6 }}
-                className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-neutral-100 hover:border-primary-200 p-8"
-              >
-                {/* Icon */}
-                <div className={`w-16 h-16 bg-gradient-to-br ${service.bgColor} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <service.icon className="w-8 h-8 text-white" />
-                </div>
-                
-                {/* Content */}
-                <h3 className="text-xl font-semibold text-primary-900 mb-4">
-                  {service.title}
-                </h3>
-                
-                <p className="text-neutral-600 mb-6 leading-relaxed">
-                  {service.description}
-                </p>
-                
-                <ul className="space-y-3">
-                  {service.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-neutral-600">
-                      <CheckCircle className="w-4 h-4 text-secondary-500 mr-3 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+              <ServicePageCard key={index} item={service} index={index} />
             ))}
           </div>
         </div>
@@ -201,13 +180,12 @@ export default function TrainingDevelopmentPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Specialized Board Training Services
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Our specialized board training programs focus on governance excellence, 
-              strategic leadership, and organizational effectiveness for board members and executives.
-            </p>
+            <SectionTitle
+              label="Board training"
+              title="Specialised board training services."
+              subtitle="Our specialised board training programmes focus on governance excellence, strategic leadership, and organisational effectiveness for board members and executives."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -220,8 +198,8 @@ export default function TrainingDevelopmentPage() {
                 viewport={{ once: true }}
                 className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border border-primary-100 hover:shadow-lg transition-all duration-300"
               >
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                  <Award className="w-6 h-6 text-primary-900" />
+                <div className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center mb-4 border border-secondary-100">
+                  <Award className="w-6 h-6 text-secondary-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-primary-900">{service}</h3>
               </motion.div>
@@ -240,13 +218,12 @@ export default function TrainingDevelopmentPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Client Spotlight
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Success stories from our training and development partnerships 
-              across various industries and organizational levels.
-            </p>
+            <SectionTitle
+              label="Case study"
+              title="Client spotlight."
+              subtitle="Success stories from our training and development partnerships across various industries and organisational levels."
+              variant="section"
+            />
           </motion.div>
 
           <div className="max-w-6xl mx-auto">
@@ -340,13 +317,13 @@ export default function TrainingDevelopmentPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Training Impact & Results
-            </h2>
-            <p className="text-xl text-primary-200 max-w-3xl mx-auto">
-              Our training programs deliver measurable results that transform 
-              individuals and organizations for long-term success.
-            </p>
+            <SectionTitle
+              label="Impact"
+              title="Training impact & results."
+              subtitle="Our training programmes deliver measurable results that transform individuals and organisations for long-term success."
+              variant="dark"
+              className="mb-16"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
@@ -374,135 +351,66 @@ export default function TrainingDevelopmentPage() {
         </div>
       </section>
 
-      {/* Download Resources Section */}
-      <section className="py-12 bg-secondary-500 text-white">
+      {/* Industries Section */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Download Our Resources
-            </h2>
-            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
-              Access our comprehensive guides, templates, and company information to learn more 
-              about our training and development services and best practices.
-            </p>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Industries" title="Industries we serve." subtitle="With deep expertise across multiple sectors, we understand the unique talent and development needs of each industry we serve." variant="section" />
           </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Training Guide</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Comprehensive guide to effective training and development strategies for modern organizations.
-              </p>
-              <a
-                href="/downloads/training-development-guide.pdf"
-                download="Training-Development-Guide.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Leadership Development</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Best practices and frameworks for developing effective leaders in your organization.
-              </p>
-              <a
-                href="/downloads/leadership-development-guide.pdf"
-                download="Leadership-Development-Guide.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Performance Management</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Comprehensive checklist for implementing effective performance management systems.
-              </p>
-              <a
-                href="/downloads/performance-management-guide.pdf"
-                download="Performance-Management-Guide.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {industries.map((industry, index) => (
+              <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05, duration: 0.4 }} viewport={{ once: true }} className="bg-secondary-50/80 rounded-lg p-4 text-center border border-secondary-100/60 hover:bg-secondary-100/80 transition-colors duration-300">
+                <div className="text-sm font-medium text-primary-900">{industry}</div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white">
+      {/* CTA Card */}
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Ready to Transform Your Team?
-            </h2>
-            <p className="text-xl text-primary-200 mb-8">
-              Let us help you develop your team's potential and drive organizational success. 
-              Contact us today for a free consultation.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 bg-white text-primary-900 rounded-lg font-semibold text-lg hover:bg-primary-100 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <Phone className="mr-2 w-5 h-5" />
-                Schedule Consultation
-              </Link>
-              <Link
-                href="mailto:info@eaglehr.co.ke"
-                className="inline-flex items-center px-8 py-4 bg-transparent text-white rounded-lg font-semibold text-lg border-2 border-white hover:bg-white hover:text-primary-900 transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <Mail className="mr-2 w-5 h-5" />
-                Send Email
-              </Link>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="relative h-56 lg:h-auto lg:min-h-[340px] order-1">
+                  <Image src="/images/about/Smiling%20African%20American%20Woman%20Business%20Suit.PNG" alt="Professional HR consultation" fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 50vw" />
+                </div>
+                <div className="p-8 lg:p-10 flex flex-col justify-center order-2">
+                  <h3 className="text-2xl lg:text-3xl font-heading font-bold text-primary-900 mb-4">Ready to Transform Your Team?</h3>
+                  <p className="text-neutral-600 leading-relaxed mb-6">Partner with us to develop your people through leadership programmes, skills training, and performance management that drive sustainable growth.</p>
+                  <p className="text-xl font-semibold text-secondary-500 mb-4">Take the next step</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link href="/services" className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-800 transition text-center">View All Services</Link>
+                    <Link href="/contact" className="border border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition text-center">Schedule Consultation</Link>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Download Resources Section */}
+      <section className="py-12 bg-secondary-500 text-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Resources" title="Download our resources." subtitle="Access our company profile and client list to learn more about Eagle HR and the organisations we partner with." variant="dark" className="mb-16" />
+          </motion.div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in training and development.</p>
+              <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building2 className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Client List</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
+              <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+          </div>
         </div>
       </section>
 

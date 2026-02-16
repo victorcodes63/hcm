@@ -18,10 +18,13 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 // Metadata moved to layout.tsx
 
 export default function AboutPage() {
+  const isDesktop = useIsDesktop();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -159,35 +162,15 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              About Eagle HR
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}>
+              <SectionTitle
+                label="About Eagle HR"
+                title="Leading HR excellence"
+                titleLine2="across Kenya."
+                subtitle="For nearly a decade, Eagle HR Consultants has been at the forefront of human resource innovation, helping organisations unlock their full potential through exceptional people practices."
+                variant="hero"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Leading HR Excellence
-              <span className="block text-secondary-500">Across Kenya</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              For nearly a decade, Eagle HR Consultants has been at the forefront of human resource 
-              innovation, helping organizations unlock their full potential through exceptional people practices.
-            </motion.p>
 
           </motion.div>
         </div>
@@ -200,14 +183,14 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: isMounted ? 0 : 0.2 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Our Story
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-4xl mx-auto leading-relaxed">
-              Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya's rapidly expanding business landscape. What started as a small team of HR experts has grown into one of the most trusted HR consulting firms in East Africa.
-              </p>
+              className="mb-16"
+            >
+              <SectionTitle
+                label="Our story"
+                title="Our story."
+                subtitle="Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya's rapidly expanding business landscape. What started as a small team of HR experts has grown into one of the most trusted HR consulting firms in East Africa."
+                variant="section"
+              />
             </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start lg:items-end">
@@ -256,8 +239,8 @@ export default function AboutPage() {
                 className="bg-white p-8 rounded-xl shadow-lg border border-primary-100"
               >
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mr-4">
-                    <Target className="w-6 h-6 text-primary-900" />
+                  <div className="w-12 h-12 bg-secondary-50 rounded-xl flex items-center justify-center mr-4 border border-secondary-100">
+                    <Target className="w-6 h-6 text-secondary-500" />
                   </div>
                   <h4 className="text-xl font-heading font-semibold text-primary-900">Our Mission</h4>
                 </div>
@@ -274,8 +257,8 @@ export default function AboutPage() {
                 className="bg-white p-8 rounded-xl shadow-lg border border-primary-100"
               >
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mr-4">
-                    <Eye className="w-6 h-6 text-primary-900" />
+                  <div className="w-12 h-12 bg-secondary-50 rounded-xl flex items-center justify-center mr-4 border border-secondary-100">
+                    <Eye className="w-6 h-6 text-secondary-500" />
                   </div>
                   <h4 className="text-xl font-heading font-semibold text-primary-900">Our Vision</h4>
                 </div>
@@ -293,14 +276,14 @@ export default function AboutPage() {
               viewport={{ once: true }}
               className="bg-white p-8 rounded-xl shadow-lg border border-primary-100"
             >
-              <div className="text-center mb-8">
-                <h4 className="text-2xl font-heading font-bold text-primary-900">Our Core Values</h4>
-              </div>
+              <SectionTitle label="Values" title="Our core values." variant="section" className="mb-8 text-center" />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {values.map((value, index) => (
                   <div key={value.title} className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <value.icon className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                      <div className="w-10 h-10 bg-secondary-50 rounded-lg flex items-center justify-center flex-shrink-0 border border-secondary-100">
+                        <value.icon className="w-5 h-5 text-secondary-500" />
+                      </div>
                       <p className="text-base font-semibold text-primary-900">{value.title}</p>
                     </div>
                     <p className="text-sm text-neutral-600 leading-relaxed">{value.description}</p>
@@ -323,14 +306,14 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Meet Our Team
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Our experienced professionals bring together decades of HR expertise to deliver exceptional results for our clients.
-            </p>
+            <SectionTitle
+              label="Team"
+              title="Meet our team."
+              subtitle="Our experienced professionals bring together decades of HR expertise to deliver exceptional results for our clients."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -357,14 +340,14 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary-900 to-secondary-500 bg-clip-text text-transparent mb-6">
-              Why Choose Eagle HR?
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We're not just another HR consultancy. Here's what sets us apart and makes us the right choice for your organization.
-            </p>
+            <SectionTitle
+              label="Why us"
+              title="Why choose Eagle HR?"
+              subtitle="We're not just another HR consultancy. Here's what sets us apart and makes us the right choice for your organisation."
+              variant="section"
+            />
           </motion.div>
 
           {/* Mixed Rectangle and Square Grid */}
@@ -497,15 +480,14 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Trusted by Leading Organizations
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We're proud to partner with organizations across Kenya, from startups to multinational corporations, 
-              helping them build stronger teams and achieve their business goals.
-            </p>
+            <SectionTitle
+              label="Clients"
+              title="Trusted by leading organisations."
+              subtitle="We're proud to partner with organisations across Kenya, from startups to multinational corporations, helping them build stronger teams and achieve their business goals."
+              variant="section"
+            />
           </motion.div>
 
           {/* Featured Client Spotlight */}
@@ -583,15 +565,13 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="mb-16"
           >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-heading font-bold text-primary-900 mb-4">
-                Our Trusted Partners
-              </h3>
-              <p className="text-neutral-600">
-                Join these leading organizations who trust Eagle HR with their human capital needs
-              </p>
-            </div>
-            
+            <SectionTitle
+              label="Partners"
+              title="Our trusted partners."
+              subtitle="Join these leading organisations who trust Eagle HR with their human capital needs."
+              variant="section"
+              className="mb-8"
+            />
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {[
                 { name: 'Kenya Development Corporation', logo: '/images/clients/kdc_logo.png' },
@@ -615,17 +595,17 @@ export default function AboutPage() {
             ].map((client, index) => (
               <motion.div
                 key={client.name}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, ...(isDesktop ? { scale: 0.9 } : {}) }}
+                  whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
                   transition={{ delay: index * 0.05, duration: 0.4 }}
                 viewport={{ once: true }}
-                  className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center h-20 border border-neutral-100 hover:border-primary-200"
+                  className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center h-24 border border-neutral-100 hover:border-primary-200"
                 >
                   <div className="relative">
                     <img 
                       src={client.logo} 
                       alt={client.name}
-                      className={`${client.name === 'WSUP' ? 'max-w-full max-h-12 w-32' : client.name === 'KEBS' ? 'max-w-full max-h-16 w-auto' : client.name === 'Consolidated Bank' ? 'max-w-full max-h-16 w-auto' : client.name === 'Kenya Development Corporation' ? 'max-w-full max-h-16 w-auto' : client.name === 'TARDA' ? 'max-w-full max-h-14 w-auto' : 'max-w-full max-h-12'} object-contain opacity-70 group-hover:opacity-100 transition-opacity duration-300`}
+                      className={`${client.name === 'WSUP' ? 'max-w-full max-h-[3.6rem] w-[9.6rem]' : client.name === 'Kenya Bureau of Standards' ? 'max-w-full max-h-[4.8rem] w-auto' : client.name === 'Consolidated Bank' ? 'max-w-full max-h-[4.8rem] w-auto' : client.name === 'Kenya Development Corporation' ? 'max-w-full max-h-[4.8rem] w-auto' : client.name === 'TARDA' ? 'max-w-full max-h-[4.2rem] w-auto' : 'max-w-full max-h-[3.6rem]'} object-contain opacity-70 group-hover:opacity-100 transition-opacity duration-300`}
                       onError={(e) => {
                         // Fallback to text if logo doesn't exist
                         e.currentTarget.style.display = 'none';
@@ -651,13 +631,13 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="text-center bg-white rounded-2xl p-8 shadow-lg"
           >
-            <h3 className="text-2xl font-heading font-bold text-primary-900 mb-4">
-              Join Our Growing Client Family
-            </h3>
-            <p className="text-neutral-600 mb-6 max-w-2xl mx-auto">
-              Whether you're a startup looking to build your first HR processes or an established 
-              organization seeking to optimize your people operations, we're here to help.
-            </p>
+            <SectionTitle
+              label="Get in touch"
+              title="Join our growing client family."
+              subtitle="Whether you're a startup looking to build your first HR processes or an established organisation seeking to optimize your people operations, we're here to help."
+              variant="section"
+              className="mb-6"
+            />
             <Link
               href="/contact"
               className="inline-flex items-center px-8 py-4 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300"
@@ -669,116 +649,111 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Video Testimonial Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+      {/* Client Testimonials Section - Real clients */}
+      <section className="py-24 bg-gradient-to-b from-neutral-50 to-white overflow-hidden">
+        <div className="container mx-auto px-4 relative">
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-14"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              What Our Clients Say
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Hear directly from our clients about their experience working with Eagle HR Consultants 
-              and the impact we've had on their organizations.
-            </p>
+            <SectionTitle
+              label="Testimonials"
+              title="What our clients say."
+              subtitle="Hear directly from organisations we partner with about their experience with Eagle HR."
+              variant="section"
+            />
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {/* Central Bank of Kenya */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="bg-gradient-to-br from-primary-900 to-secondary-500 rounded-2xl p-8 text-white">
-                <div className="aspect-video rounded-lg overflow-hidden mb-6 relative">
-                  <img 
-                    src="/images/clients/vid_interview.jpg" 
-                    alt="Video testimonial placeholder" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                    <p className="text-sm opacity-90">Video Testimonial</p>
-                    <p className="text-xs opacity-75">Click to play</p>
+              <div className="h-full bg-white rounded-2xl p-6 md:p-8 border border-neutral-200/80 shadow-lg shadow-neutral-200/50 hover:shadow-xl hover:border-primary-200/60 transition-all duration-300 flex flex-col overflow-hidden relative">
+                <div className="absolute -top-12 -right-12 w-40 h-40 bg-secondary-500/12 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-start gap-4 mb-5 relative">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary-100 shadow-md">
+                    <img
+                      src="/images/about/smile_1.jpg"
+                      alt="Central Bank of Kenya"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-semibold text-primary-900 text-lg">Leadership Team</h3>
+                    <p className="text-secondary-600 font-medium text-sm">Central Bank of Kenya</p>
                   </div>
                 </div>
-                </div>
-                <h4 className="text-xl font-bold mb-2">David Kimani</h4>
-                <p className="text-sm opacity-90 mb-4">HR Director, Tech Solutions Kenya</p>
-                <p className="text-sm opacity-90">
-                  "Eagle HR transformed our recruitment process. Their expertise in finding the right talent 
-                  has been invaluable to our growth. We've seen a 40% improvement in our hiring success rate."
+                <p className="text-neutral-700 italic leading-relaxed flex-1 relative">
+                  &ldquo;Eagle HR has been a strategic partner in our talent acquisition and HR advisory.
+                  Their expertise in executive search and compliance has been invaluable to our organization.&rdquo;
                 </p>
               </div>
             </motion.div>
 
+            {/* Kenya Bureau of Standards */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.05, ease: 'easeOut' }}
               viewport={{ once: true }}
-              className="space-y-6"
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-neutral-50 to-white rounded-xl p-6 border border-neutral-200">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4 flex-shrink-0">
-                    <img 
-                      src="/images/about/smile_2.jpg" 
-                      alt="James Ochieng" 
+              <div className="h-full bg-white rounded-2xl p-6 md:p-8 border border-neutral-200/80 shadow-lg shadow-neutral-200/50 hover:shadow-xl hover:border-primary-200/60 transition-all duration-300 flex flex-col">
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary-100 shadow-md">
+                    <img
+                      src="/images/about/smile_2.jpg"
+                      alt="Kenya Bureau of Standards"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-primary-900">James Ochieng</h5>
-                    <p className="text-sm text-neutral-600">CEO, Innovate Africa Ltd</p>
+                    <h3 className="font-heading font-semibold text-primary-900 text-lg">HR & Standards Division</h3>
+                    <p className="text-secondary-600 font-medium text-sm">Kenya Bureau of Standards</p>
                   </div>
                 </div>
-                <p className="text-neutral-700 italic">
-                  "The training programs provided by Eagle HR have significantly improved our team's 
-                  performance and productivity. Their approach is both practical and results-driven."
+                <p className="text-neutral-700 italic leading-relaxed flex-1">
+                  &ldquo;Working with Eagle HR has strengthened our workforce planning and recruitment processes.
+                  Their professional approach and understanding of the public sector have delivered strong results.&rdquo;
                 </p>
               </div>
+            </motion.div>
 
-              <div className="bg-gradient-to-br from-neutral-50 to-white rounded-xl p-6 border border-neutral-200">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4 flex-shrink-0">
-                    <img 
-                      src="/images/about/smile_1.jpg" 
-                      alt="Grace Wanjiku" 
+            {/* PACIDA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="h-full bg-white rounded-2xl p-6 md:p-8 border border-neutral-200/80 shadow-lg shadow-neutral-200/50 hover:shadow-xl hover:border-primary-200/60 transition-all duration-300 flex flex-col">
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-primary-100 shadow-md">
+                    <img
+                      src="/images/about/smile_4.jpg"
+                      alt="PACIDA"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div>
-                    <h5 className="font-semibold text-primary-900">Grace Wanjiku</h5>
-                    <p className="text-sm text-neutral-600">Operations Manager, Green Energy Co.</p>
+                    <h3 className="font-heading font-semibold text-primary-900 text-lg">Management Team</h3>
+                    <p className="text-secondary-600 font-medium text-sm">PACIDA</p>
                   </div>
                 </div>
-                <p className="text-neutral-700 italic">
-                  "Professional, reliable, and results-driven. Eagle HR's outsourcing services have 
-                  streamlined our operations and allowed us to focus on our core business."
+                <p className="text-neutral-700 italic leading-relaxed flex-1">
+                  &ldquo;Eagle HR&apos;s recruitment and HR outsourcing services have supported our growth and
+                  operational excellence. We value their commitment to quality and timely delivery.&rdquo;
                 </p>
-              </div>
-
-              <div className="text-center">
-                <Link
-                  href="/testimonials"
-                  className="inline-flex items-center px-6 py-3 border-2 border-primary-900 text-primary-900 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition-all duration-300"
-                >
-                  View All Testimonials
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
               </div>
             </motion.div>
           </div>
@@ -796,14 +771,13 @@ export default function AboutPage() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-white">
-              Ready to Partner with Us?
-            </h2>
-            <p className="text-lg text-white/90 mb-8">
-              Join hundreds of organizations that have transformed their HR practices 
-              with our expert guidance and innovative solutions.
-            </p>
-            
+            <SectionTitle
+              label="Get started"
+              title="Ready to partner with us?"
+              subtitle="Join hundreds of organisations that have transformed their HR practices with our expert guidance and innovative solutions."
+              variant="dark"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"

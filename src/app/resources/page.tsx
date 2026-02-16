@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 import { 
   Calculator, 
-  FileText, 
   Download, 
   BookOpen, 
   Users, 
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function ResourcesPage() {
+  const isDesktop = useIsDesktop();
   const [activeFilter, setActiveFilter] = useState('All Resources');
   const resources = [
     {
@@ -41,17 +43,6 @@ export default function ResourcesPage() {
       link: '/resources/net-calculator',
       category: 'Calculators',
       features: ['Gross to Net', 'Tax Deductions', 'Benefits Calculation', 'Statutory Compliance']
-    },
-    {
-      id: 'cv-templates',
-      title: 'CV & Cover Letter Templates',
-      description: 'Professional CV and cover letter templates designed for the Kenyan job market.',
-      icon: FileText,
-      color: 'from-purple-600 to-purple-700',
-      bgColor: 'from-purple-100 to-violet-200',
-      link: '/resources/cv-templates',
-      category: 'Templates',
-      features: ['Professional Design', 'ATS Friendly', 'Industry Specific', 'Download Ready']
     },
     {
       id: 'interview-checklist-employers',
@@ -80,7 +71,6 @@ export default function ResourcesPage() {
   const categories = [
     { name: 'All Resources', count: resources.length },
     { name: 'Calculators', count: resources.filter(r => r.category === 'Calculators').length },
-    { name: 'Templates', count: resources.filter(r => r.category === 'Templates').length },
     { name: 'Checklists', count: resources.filter(r => r.category === 'Checklists').length }
   ];
 
@@ -113,34 +103,19 @@ export default function ResourcesPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
             >
-              <BookOpen className="w-4 h-4 mr-2" />
-              HR Resources
+              <SectionTitle
+                label="HR resources"
+                title="HR resources & tools"
+                titleLine2="for your success."
+                subtitle="Access our comprehensive collection of HR tools, calculators, templates, and checklists designed to streamline your HR processes."
+                variant="hero"
+                className="mb-8"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              HR Resources & Tools
-              <span className="block text-secondary-500">For Your Success</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              Access our comprehensive collection of HR tools, calculators, templates, 
-              and checklists designed to streamline your HR processes.
-            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -184,7 +159,7 @@ export default function ResourcesPage() {
                     <div className="p-8 flex flex-col flex-grow">
                       {/* Icon */}
                       <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileHover={isDesktop ? { scale: 1.1, rotate: 5 } : undefined}
                         className={`w-16 h-16 bg-gradient-to-br ${resource.color} rounded-xl flex items-center justify-center mb-6 group-hover:shadow-lg transition-all duration-300`}
                       >
                         <Icon className="w-8 h-8 text-white" />
@@ -253,14 +228,13 @@ export default function ResourcesPage() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-                Need More HR Support?
-              </h2>
-              <p className="text-lg mb-8 opacity-90">
-                Our HR experts are ready to help you implement these tools and 
-                transform your organization's HR processes.
-              </p>
-              
+              <SectionTitle
+                label="Get support"
+                title="Need more HR support?"
+                subtitle="Our HR experts are ready to help you implement these tools and transform your organisation's HR processes."
+                variant="dark"
+                className="mb-8"
+              />
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/contact"

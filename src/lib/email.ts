@@ -8,7 +8,7 @@ import nodemailer from 'nodemailer';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
-const FROM_NAME = process.env.SMTP_FROM_NAME || 'Eagle HR Recruitment';
+const FROM_NAME = (process.env.SMTP_FROM_NAME && process.env.SMTP_FROM_NAME.trim()) || 'Eagle HR Recruitment';
 const FROM_EMAIL = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || '';
 
 /** Base URL for logo in email (must be absolute). Set NEXT_PUBLIC_SITE_URL in production. */

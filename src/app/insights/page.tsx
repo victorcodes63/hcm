@@ -1,9 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 import { 
   Calendar, 
   User, 
@@ -14,10 +16,12 @@ import {
   BookOpen,
   TrendingUp,
   Users,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 
 interface BlogPost {
+  id: string;
   title: string;
   excerpt: string;
   date: string;
@@ -28,105 +32,47 @@ interface BlogPost {
 }
 
 export default function InsightsPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isDesktop = useIsDesktop();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
+  const [postsFromApi, setPostsFromApi] = useState<BlogPost[] | null>(null);
 
-  // Mock data based on the blog content - in a real implementation, you'd fetch this from an API
-  const mockPosts: BlogPost[] = [
-    {
-      title: "Why Toxic Culture Accumulates Like Interest",
-      excerpt: "Culture is the heartbeat of any organization. It dictates how people behave when no one is watching, how decisions are made, and ultimately, how successful the organization becomes.",
-      date: "October 17, 2025",
-      author: "EaglesHR",
-      category: "Uncategorized",
-      url: "https://www.eaglehr.co.ke/blog/why-toxic-culture-accumulates-like-interest/",
-      image: "/images/insights/featured-images/Why-Toxic-Culture-Accumulates-Like-Interest.png"
-    },
-    {
-      title: "What Every Employer Should Include in a Job Contract",
-      excerpt: "Hiring a new employee is an exciting milestone for any business. But before your new hire officially joins the team, there's one document that can make or break the relationship.",
-      date: "October 15, 2025",
-      author: "EaglesHR",
-      category: "Uncategorized",
-      url: "https://www.eaglehr.co.ke/blog/what-every-employer-should-include-in-a-job-contract/",
-      image: "/images/insights/featured-images/contract-checklist.png"
-    },
-    {
-      title: "10 Employee Red Flags Companies Should Watch Out for When Hiring",
-      excerpt: "Recruiting the right people is one of the most important investments a company can make. A great hire can propel a business forward, boost morale, and drive innovation.",
-      date: "October 9, 2025",
-      author: "EaglesHR",
-      category: "Job Hunting Tips",
-      url: "https://www.eaglehr.co.ke/blog/10-employee-red-flags-companies-should-watch-out-for-when-hiring/",
-      image: "/images/insights/featured-images/red-flags.jpg"
-    },
-    {
-      title: "10 Employer Red Flags When Job Hunting",
-      excerpt: "Vague or Overly Flashy Job Descriptions - One of the first red flags you may encounter when job hunting is a job description that sounds too good to be true.",
-      date: "October 6, 2025",
-      author: "EaglesHR",
-      category: "Job Hunting Tips",
-      url: "https://www.eaglehr.co.ke/blog/10-employer-red-flags-when-job-hunting/",
-      image: "/images/insights/featured-images/red-flags-hunting.png"
-    },
-    {
-      title: "Quiet Quitting: What HR Leaders Need to Know",
-      excerpt: "In the past few years, one phrase has captured global workplace conversations: quiet quitting. Despite the dramatic name, it does not mean that employees are literally quitting their jobs.",
-      date: "September 22, 2025",
-      author: "EaglesHR",
-      category: "Uncategorized",
-      url: "https://www.eaglehr.co.ke/blog/quiet-quitting-what-hr-leaders-need-to-know/",
-      image: "/images/insights/featured-images/quiet-qutting.png"
-    },
-    {
-      title: "Why Gen Z Isn't Interested in Climbing the Corporate Ladder",
-      excerpt: "For decades, the image of success in the workplace has been tied to the metaphorical 'corporate ladder.' Employees were expected to start at the bottom and work their way up.",
-      date: "September 17, 2025",
-      author: "EaglesHR",
-      category: "Uncategorized",
-      url: "https://www.eaglehr.co.ke/blog/why-gen-z-isnt-interested-in-climbing-the-corporate-ladder/",
-      image: "/images/insights/featured-images/corporate-ladder.jpg"
-    },
-    {
-      title: "Why You Should Choose Eagle HR Consultants as Your In-House HR Partner",
-      excerpt: "Running a business in Kenya comes with both opportunities and challenges. While many organizations start lean, relying on a small team to manage operations.",
-      date: "September 11, 2025",
-      author: "EaglesHR",
-      category: "HR Outsourcing",
-      url: "https://www.eaglehr.co.ke/blog/why-you-should-choose-eagle-hr-consultants-as-your-in-house-hr-partner/",
-      image: "/images/insights/featured-images/in-house-hr.png"
-    },
-    {
-      title: "Beyond Compliance: How SMEs in Kenya Can Stay Legally Safe Without a Full HR Department",
-      excerpt: "When most people hear HR compliance, they think of large corporates with in-house legal teams and full-fledged HR departments.",
-      date: "September 8, 2025",
-      author: "EaglesHR",
-      category: "Compliance and Regulation",
-      url: "https://www.eaglehr.co.ke/blog/beyond-compliance-how-smes-in-kenya-can-stay-legally-safe-without-a-full-hr-department/",
-      image: "/images/insights/featured-images/SMEs.png"
-    },
-    {
-      title: "The Future of Work in Kenya: Skills Employers Will Value Most in 2025 and Beyond",
-      excerpt: "The world of work is changing faster than ever before. In Kenya, shifts in technology, demographics, and business needs are reshaping how companies hire and retain talent.",
-      date: "September 5, 2025",
-      author: "EaglesHR",
-      category: "Strategy Business",
-      url: "https://www.eaglehr.co.ke/blog/the-future-of-work-in-kenya-skills-employers-will-value-most-in-2025-and-beyond/",
-      image: "/images/insights/featured-images/future-work.jpg"
-    },
-    {
-      title: "The Five Pillars of Organizations",
-      excerpt: "Every organisation, whether for-profit or non-profit, rests on five key pillars: Mission, Vision, Strategy, Structure, and Culture. Top leadership must understand and balance these elements.",
-      date: "August 25, 2025",
-      author: "EaglesHR",
-      category: "Strategy Business",
-      url: "https://www.eaglehr.co.ke/blog/the-five-pillars-of-organizations/",
-      image: "/images/insights/featured-images/5-pillars.png"
+  useEffect(() => {
+    fetch('/api/insights')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : [];
+        setPostsFromApi(
+          arr.map((i: { id: string; title: string; excerpt: string; date?: string; publishedAt?: string; author: string; category: string; url: string; image: string }) => ({
+            id: i.id,
+            title: i.title,
+            excerpt: i.excerpt,
+            date: i.date || (i.publishedAt ? new Date(i.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''),
+            author: i.author,
+            category: i.category,
+            url: i.url,
+            image: i.image,
+          }))
+        );
+      })
+      .catch(() => setPostsFromApi([]));
+  }, []);
+
+  const posts = postsFromApi ?? [];
+
+  const filteredPosts = useMemo(() => {
+    let filtered = posts;
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(post => post.category === selectedCategory);
     }
-  ];
+    if (searchTerm) {
+      filtered = filtered.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [posts, selectedCategory, searchTerm]);
 
   const categories = [
     { value: 'all', label: 'All Categories', icon: BookOpen },
@@ -136,34 +82,6 @@ export default function InsightsPage() {
     { value: 'Strategy Business', label: 'Strategy', icon: TrendingUp },
     { value: 'Uncategorized', label: 'General', icon: BookOpen }
   ];
-
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setPosts(mockPosts);
-      setFilteredPosts(mockPosts);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    let filtered = posts;
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(post => post.category === selectedCategory);
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(post => 
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredPosts(filtered);
-  }, [posts, selectedCategory, searchTerm]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -199,34 +117,19 @@ export default function InsightsPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
             >
-              <BookOpen className="w-4 h-4 mr-2" />
-              News & Insights
+              <SectionTitle
+                label="News & insights"
+                title="HR insights & expertise"
+                titleLine2="from Eagle HR."
+                subtitle="Stay updated with the latest HR trends, best practices, and insights from Kenya's leading HR consultancy experts."
+                variant="hero"
+                className="mb-8"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              HR Insights & Expertise
-              <span className="block text-secondary-500">From Eagle HR</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              Stay updated with the latest HR trends, best practices, and insights 
-              from Kenya's leading HR consultancy experts.
-            </motion.p>
 
           </motion.div>
         </div>
@@ -273,27 +176,27 @@ export default function InsightsPage() {
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            {loading ? (
-              <div className="text-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-900 mx-auto mb-4"></div>
-                <p className="text-neutral-600">Loading articles...</p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-8">
-                  <h2 className="text-2xl font-heading font-bold text-primary-900 mb-2">
-                    Latest Articles
-                  </h2>
-                  <p className="text-neutral-600">
-                    Showing {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
-                    {selectedCategory !== 'all' && ` in ${categories.find(c => c.value === selectedCategory)?.label}`}
-                  </p>
+            <div className="mb-8">
+                  <SectionTitle
+                    label="Articles"
+                    title="Latest articles."
+                    subtitle={`Showing ${filteredPosts.length} article${filteredPosts.length !== 1 ? 's' : ''}${selectedCategory !== 'all' ? ` in ${categories.find(c => c.value === selectedCategory)?.label}` : ''}`}
+                    variant="section"
+                    className="text-left"
+                  />
                 </div>
 
                 <div className="space-y-12">
+                  {postsFromApi === null ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <Loader2 className="w-10 h-10 text-primary-600 animate-spin mb-4" />
+                      <p className="text-neutral-600">Loading articles…</p>
+                    </div>
+                  ) : (
+                    <>
                   {filteredPosts.map((post, index) => (
                     <motion.article
-                      key={post.title}
+                      key={post.id}
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.6 }}
@@ -378,19 +281,23 @@ export default function InsightsPage() {
                       </div>
                     </motion.article>
                   ))}
-                </div>
 
                 {filteredPosts.length === 0 && (
                   <div className="text-center py-20">
                     <BookOpen className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-neutral-600 mb-2">No articles found</h3>
+                    <h3 className="text-xl font-semibold text-neutral-600 mb-2">
+                      {posts.length === 0 ? 'No articles yet' : 'No articles found'}
+                    </h3>
                     <p className="text-neutral-500">
-                      Try adjusting your search terms or category filter.
+                      {posts.length === 0
+                        ? 'Articles from the database will appear here. Add articles from the staff dashboard.'
+                        : 'Try adjusting your search terms or category filter.'}
                     </p>
                   </div>
                 )}
-              </>
-            )}
+                    </>
+                  )}
+                </div>
           </div>
         </div>
       </section>
@@ -405,14 +312,13 @@ export default function InsightsPage() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Need Expert HR Guidance?
-            </h2>
-            <p className="text-lg text-white/90 mb-8">
-              Our team of HR experts is ready to help you implement these insights 
-              and transform your organization's people practices.
-            </p>
-            
+            <SectionTitle
+              label="Get guidance"
+              title="Need expert HR guidance?"
+              subtitle="Our team of HR experts is ready to help you implement these insights and transform your organisation's people practices."
+              variant="dark"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/contact"

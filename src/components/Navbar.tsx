@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, ArrowRight, Phone, Mail, Users, Building, GraduationCap, Shield, ChevronDown, ChevronLeft, ChevronRight, BarChart3, FileText, Calculator, BookOpen, Brain } from 'lucide-react'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 
 const fadeIn = {
   hidden: { opacity: 0, y: -15 },
@@ -13,6 +14,7 @@ const fadeIn = {
 
 
 const Navbar = () => {
+  const isDesktop = useIsDesktop()
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isServicesOpen, setIsServicesOpen] = useState(false)
@@ -104,13 +106,6 @@ const Navbar = () => {
       isNew: false
     },
     {
-      title: 'CV & Cover Letter Templates',
-      description: 'Professional templates for job applications',
-      href: '/resources/cv-templates',
-      icon: FileText,
-      isNew: false
-    },
-    {
       title: 'Interview Checklist - Employers',
       description: 'Guide for conducting effective interviews',
       href: '/resources/interview-checklist-employers',
@@ -196,7 +191,7 @@ const Navbar = () => {
                 src="/images/logo/logo_dark_ubxaCll.png"
                 alt="Eagle HR Consultants"
                 className="w-12 h-12 md:w-14 md:h-14 object-contain"
-                whileHover={{ scale: 1.05 }}
+                whileHover={isDesktop ? { scale: 1.05 } : undefined}
                 transition={{ duration: 0.3 }}
               />
             </Link>
@@ -272,7 +267,7 @@ const Navbar = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center ml-auto z-10">
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <motion.div whileHover={isDesktop ? { scale: 1.03 } : undefined} whileTap={isDesktop ? { scale: 0.97 } : undefined}>
                 <Link
                   href="/contact"
                   className="px-6 py-2 bg-secondary-500 text-white font-semibold rounded-lg shadow-md hover:bg-secondary-600 hover:shadow-lg transition-all duration-300 flex items-center gap-2"
@@ -285,7 +280,7 @@ const Navbar = () => {
 
             {/* Mobile Menu Button */}
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={isDesktop ? { scale: 0.9 } : undefined}
               onClick={() => setIsOpen(!isOpen)}
               className="lg:hidden p-3 rounded-lg hover:bg-neutral-100 transition-colors duration-200 flex items-center justify-center z-20 -mr-2"
               aria-label="Toggle mobile menu"
@@ -349,8 +344,8 @@ const Navbar = () => {
                                   className="block p-6 rounded-xl hover:bg-primary-50 transition-all duration-300 group-hover:shadow-lg"
                                 >
                                   <div className="flex items-center mb-4">
-                                    <div className="w-12 h-12 bg-slate-100 border-2 border-slate-200 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 group-hover:border-primary-600 transition-all duration-300">
-                                      <service.icon className="w-6 h-6 text-primary-700" />
+                                    <div className="w-12 h-12 bg-secondary-50 border border-secondary-200 rounded-lg flex items-center justify-center mr-4 lg:group-hover:scale-110 group-hover:border-secondary-300 transition-all duration-300">
+                                      <service.icon className="w-6 h-6 text-secondary-500" />
                                     </div>
                                     <div>
                                       <h3 className="font-semibold text-primary-900 group-hover:text-secondary-500 transition-colors duration-300">
@@ -511,8 +506,8 @@ const Navbar = () => {
                                 className="block p-6 rounded-xl hover:bg-primary-50 transition-all duration-300 group-hover:shadow-lg"
                               >
                                 <div className="flex items-center mb-4">
-                                  <div className="w-12 h-12 bg-slate-100 border-2 border-slate-200 rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 group-hover:border-primary-600 transition-all duration-300">
-                                    <resource.icon className="w-6 h-6 text-primary-700" />
+                                  <div className="w-12 h-12 bg-secondary-50 border border-secondary-200 rounded-lg flex items-center justify-center mr-4 lg:group-hover:scale-110 group-hover:border-secondary-300 transition-all duration-300">
+                                    <resource.icon className="w-6 h-6 text-secondary-500" />
                                   </div>
                                   <div>
                                     <h3 className="font-semibold text-primary-900 group-hover:text-secondary-500 transition-colors duration-300 flex items-center gap-2">
@@ -667,8 +662,8 @@ const Navbar = () => {
                                   }}
                                   className="flex items-center py-2 px-4 rounded-lg text-sm text-neutral-600 hover:text-primary-900 hover:bg-primary-50/30 transition-all duration-200"
                                 >
-                                  <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center mr-3">
-                                    <service.icon className="w-4 h-4 text-primary-700" />
+                                  <div className="w-8 h-8 bg-secondary-50 border border-secondary-200 rounded-lg flex items-center justify-center mr-3">
+                                    <service.icon className="w-4 h-4 text-secondary-500" />
                                   </div>
                                   <div>
                                     <div className="font-medium">{service.title}</div>
@@ -700,8 +695,8 @@ const Navbar = () => {
                                   }}
                                   className="flex items-center py-2 px-4 rounded-lg text-sm text-neutral-600 hover:text-primary-900 hover:bg-primary-50/30 transition-all duration-200"
                                 >
-                                  <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center mr-3">
-                                    <resource.icon className="w-4 h-4 text-primary-700" />
+                                  <div className="w-8 h-8 bg-secondary-50 border border-secondary-200 rounded-lg flex items-center justify-center mr-3">
+                                    <resource.icon className="w-4 h-4 text-secondary-500" />
                                   </div>
                                   <div>
                                     <div className="font-medium flex items-center gap-2">
@@ -731,8 +726,8 @@ const Navbar = () => {
                         <span>{item.name}</span>
                         {isActive(item.href) && (
                           <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
+                            initial={isDesktop ? { scale: 0 } : { opacity: 0 }}
+                            animate={isDesktop ? { scale: 1 } : { opacity: 1 }}
                             className="w-2 h-2 bg-secondary-500 rounded-full"
                           />
                         )}
@@ -752,7 +747,7 @@ const Navbar = () => {
                 <Link
                   href="/contact"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full bg-secondary-500 text-white font-semibold rounded-lg py-3 px-4 text-center transition-all duration-300 hover:bg-secondary-600 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  className="block w-full bg-secondary-500 text-white font-semibold rounded-lg py-3 px-4 text-center transition-all duration-300 hover:bg-secondary-600 hover:shadow-lg"
                 >
                   Partner With Us
                 </Link>

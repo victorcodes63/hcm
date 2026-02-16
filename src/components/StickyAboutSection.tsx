@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Target, Eye, Heart, Users, CheckCircle, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Target, Eye, Heart, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import SectionTitle from '@/components/SectionTitle';
 
 const StickyAboutSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,8 +20,7 @@ const StickyAboutSection = () => {
     '/images/about/pic_1.jpeg', // Image 1
     '/images/about/pic_3.jpeg', // Image 2
     '/images/about/pic_4.jpeg', // Image 3
-    '/images/about/5C73B2CE-5185-43B1-A31D-E554865181F1_1_201_a.jpeg', // Image 4
-    '/images/about/C1DA58D7-86D6-4B35-B90C-C3C981540240_1_201_a.jpeg' // Image 5
+    '/images/about/C1DA58D7-86D6-4B35-B90C-C3C981540240_1_201_a.jpeg', // Image 5 (image 4 removed)
   ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -43,25 +43,19 @@ const StickyAboutSection = () => {
     if (isMobile) return;
     
     const unsubscribe = scrollYProgress.onChange((latest) => {
-      const totalImages = aboutImages.length;
-      
-      // Ensure we see all images including the first and last
+      // 5 images: map scroll 0–1 to indices 0–4 in equal steps
       let imageIndex;
-      
-      if (latest <= 0.1) {
-        imageIndex = 0; // First image (0-10% scroll)
-      } else if (latest <= 0.25) {
-        imageIndex = 1; // Second image (10-25% scroll)
+      if (latest <= 0.2) {
+        imageIndex = 0;
       } else if (latest <= 0.4) {
-        imageIndex = 2; // Third image (25-40% scroll)
-      } else if (latest <= 0.55) {
-        imageIndex = 3; // Fourth image (40-55% scroll)
-      } else if (latest <= 0.7) {
-        imageIndex = 4; // Fifth image (55-70% scroll)
+        imageIndex = 1;
+      } else if (latest <= 0.6) {
+        imageIndex = 2;
+      } else if (latest <= 0.8) {
+        imageIndex = 3;
       } else {
-        imageIndex = 5; // Last image (70-100% scroll) - Shows much earlier!
+        imageIndex = 4;
       }
-      
       setCurrentImageIndex(imageIndex);
     });
 
@@ -127,26 +121,20 @@ const StickyAboutSection = () => {
           </div>
 
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
-          {/* Centered Pill Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-8"
+            className="mb-8 md:mb-10"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-full text-sm font-semibold shadow-lg"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              About Eagle HR
-            </motion.div>
+            <SectionTitle
+              label="About us"
+              title="Your partner"
+              titleLine2="in HR excellence."
+              variant="section"
+            />
           </motion.div>
-
           <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* Left Content - Flipbook Images (Larger) */}
             <motion.div
@@ -206,7 +194,7 @@ const StickyAboutSection = () => {
             {/* Right Content - Minimal Text */}
             <motion.div
               initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
               className="order-1 lg:order-2 lg:col-span-1 flex flex-col justify-center h-auto lg:h-[500px]"
@@ -218,11 +206,6 @@ const StickyAboutSection = () => {
                   transition={{ delay: 0.2, duration: 0.6 }}
                   viewport={{ once: true }}
                 >
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-bold text-primary-900 mb-4">
-                    <span className="block">Your Partner</span>
-                    <span className="block text-secondary-500 mt-2">in HR Excellence</span>
-                  </h2>
-                  
                   <div className="space-y-3 mb-6">
                     <p className="text-sm md:text-base lg:text-lg text-neutral-700 leading-relaxed">
                       Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.
@@ -264,41 +247,35 @@ const StickyAboutSection = () => {
       {/* Mobile/Tablet Layout */}
       {isMobile && (
         <div className="py-16 bg-gradient-to-b from-white/75 via-white/60 to-white/75 backdrop-blur-sm relative overflow-hidden">
-          {/* Mobile blob layer */}
+          {/* Mobile blob layer - no scale animation on mobile/tablet */}
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <motion.div
-              animate={{ x: [0, 16, 0], y: [0, -12, 0], scale: [1, 1.15, 1] }}
+              animate={{ x: [0, 16, 0], y: [0, -12, 0] }}
               transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-secondary-500/30 blur-3xl"
             />
             <motion.div
-              animate={{ x: [0, -14, 0], y: [0, 10, 0], scale: [1.1, 1, 1.1] }}
+              animate={{ x: [0, -14, 0], y: [0, 10, 0] }}
               transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute right-[-3rem] bottom-8 h-52 w-52 rounded-full bg-primary-300/30 blur-3xl"
             />
           </div>
 
           <div className="container mx-auto px-4 relative z-10">
-            {/* Centered Pill Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="text-center mb-8"
+              className="mb-8"
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-full text-sm font-semibold shadow-lg"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                About Eagle HR
-              </motion.div>
+              <SectionTitle
+                label="About us"
+                title="Your partner"
+                titleLine2="in HR excellence."
+                variant="section"
+              />
             </motion.div>
-
             <div className="grid gap-8">
               {/* Mobile Image Slider */}
               <motion.div
@@ -312,9 +289,9 @@ const StickyAboutSection = () => {
                   {/* Current Image */}
                   <motion.div
                     key={currentImageIndex}
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
                     className="absolute inset-0"
                   >
@@ -375,11 +352,6 @@ const StickyAboutSection = () => {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                  <span className="block">Your Partner</span>
-                  <span className="block text-secondary-500 mt-2">in HR Excellence</span>
-                </h2>
-                
                 <div className="space-y-4 mb-8">
                   <p className="text-base md:text-lg text-neutral-700 leading-relaxed">
                     Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.

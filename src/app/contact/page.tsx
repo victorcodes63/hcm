@@ -8,13 +8,13 @@ import {
   MapPin, 
   Phone, 
   Mail, 
-  MessageCircle,
   ArrowRight,
   Users,
   Award,
   Clock,
   Heart
 } from 'lucide-react';
+import SectionTitle from '@/components/SectionTitle';
 
 // Metadata moved to layout.tsx
 
@@ -109,34 +109,19 @@ export default function ContactPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Contact Us
+              <SectionTitle
+                label="Contact us"
+                title="Let's transform your"
+                titleLine2="HR together."
+                subtitle="Ready to take your HR to the next level? Get in touch with our experts for a free consultation and discover how we can help your organisation succeed."
+                variant="hero"
+                className="mb-8"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Let's Transform Your
-              <span className="block text-secondary-500">HR Together</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              Ready to take your HR to the next level? Get in touch with our experts 
-              for a free consultation and discover how we can help your organization succeed.
-            </motion.p>
           </motion.div>
         </div>
       </section>
@@ -162,8 +147,8 @@ export default function ContactPage() {
                   Get In Touch
                 </h2>
                 <p className="text-neutral-600">
-                  We're here to help you succeed. Reach out to us through any of the channels below, 
-                  and we'll get back to you as soon as possible.
+                  We&apos;re here to help you succeed. Reach out to us through any of the channels below, 
+                  and we&apos;ll get back to you as soon as possible.
                 </p>
               </div>
 
@@ -178,8 +163,8 @@ export default function ContactPage() {
                     viewport={{ once: true }}
                     className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 h-20"
                   >
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <info.icon className="w-5 h-5 text-primary-600" />
+                    <div className="w-10 h-10 bg-secondary-50 rounded-lg flex items-center justify-center flex-shrink-0 border border-secondary-100">
+                      <info.icon className="w-5 h-5 text-secondary-500" />
                     </div>
                     <div className="flex-1 flex flex-col justify-center">
                       <h3 className="font-semibold text-primary-900 mb-1">{info.title}</h3>
@@ -247,14 +232,14 @@ export default function ContactPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Why Choose Eagle HR?
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              When you partner with us, you're choosing excellence, expertise, and proven results.
-            </p>
+            <SectionTitle
+              label="Why us"
+              title="Why choose Eagle HR?"
+              subtitle="When you partner with us, you're choosing excellence, expertise, and proven results."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -267,8 +252,8 @@ export default function ContactPage() {
                 viewport={{ once: true }}
                 className="text-center p-8 bg-gradient-to-br from-neutral-50 to-white rounded-xl hover:shadow-lg transition-all duration-300"
               >
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-6">
-                  <item.icon className="w-8 h-8 text-primary-600" />
+                <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mx-auto mb-6 border border-secondary-100">
+                  <item.icon className="w-8 h-8 text-secondary-500" />
                 </div>
                 <h3 className="text-xl font-heading font-semibold text-primary-900 mb-3">
                   {item.title}
@@ -290,15 +275,14 @@ export default function ContactPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Here are some common questions we receive. Don't see your question? 
-              Contact us directly and we'll be happy to help.
-            </p>
+            <SectionTitle
+              label="FAQ"
+              title="Frequently asked questions."
+              subtitle="Here are some common questions we receive. Don't see your question? Contact us directly and we'll be happy to help."
+              variant="section"
+            />
           </motion.div>
 
           <div className="max-w-4xl mx-auto space-y-6">
@@ -333,14 +317,13 @@ export default function ContactPage() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-white">
-              Ready to Get Started?
-            </h2>
-            <p className="text-lg text-white mb-8">
-              Join hundreds of organizations that have transformed their HR practices 
-              with our expert guidance and innovative solutions.
-            </p>
-            
+            <SectionTitle
+              label="Get started"
+              title="Ready to get started?"
+              subtitle="Join hundreds of organisations that have transformed their HR practices with our expert guidance and innovative solutions."
+              variant="dark"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="group bg-secondary-500 text-primary-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary-400 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
                 Schedule Free Consultation

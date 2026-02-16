@@ -296,8 +296,8 @@ export default function InterviewChecklistEmployers() {
                 viewport={{ once: true }}
                 className="text-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <tip.icon className="w-8 h-8 text-primary-600" />
+                <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mx-auto mb-4 border border-secondary-100">
+                  <tip.icon className="w-8 h-8 text-secondary-500" />
                 </div>
                 <h3 className="text-lg font-heading font-semibold text-primary-900 mb-3">
                   {tip.title}

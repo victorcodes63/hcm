@@ -7,9 +7,14 @@ import {
   GraduationCap, 
   FileText, 
   Calculator,
-  ArrowRight 
+  ArrowRight,
+  CheckCircle,
+  Shield,
+  BarChart3,
+  Brain
 } from 'lucide-react';
 import { Service } from '@/types';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 interface ServiceCardProps {
   service: Service;
@@ -17,12 +22,16 @@ interface ServiceCardProps {
 }
 
 const ServiceCard = ({ service, index }: ServiceCardProps) => {
+  const isDesktop = useIsDesktop();
   const iconMap = {
     'users': Users,
     'building': Building2,
     'graduation': GraduationCap,
     'file-text': FileText,
     'calculator': Calculator,
+    'shield': Shield,
+    'bar-chart': BarChart3,
+    'brain': Brain,
   };
 
   const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Users;
@@ -35,12 +44,12 @@ const ServiceCard = ({ service, index }: ServiceCardProps) => {
       viewport={{ once: true }}
       className="group relative bg-white rounded-xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-neutral-100"
     >
-      {/* Icon */}
+      {/* Icon — same pack & styling site-wide: cream bg + gold icon */}
       <motion.div
-        whileHover={{ scale: 1.1, rotate: 5 }}
-        className="w-16 h-16 bg-gradient-to-br from-primary-900 to-secondary-500 rounded-xl flex items-center justify-center mb-6 group-hover:shadow-lg transition-all duration-300"
+        whileHover={isDesktop ? { scale: 1.1, rotate: 5 } : undefined}
+        className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mb-6 border border-secondary-100 group-hover:shadow-md transition-all duration-300"
       >
-        <IconComponent className="w-8 h-8 text-white" />
+        <IconComponent className="w-8 h-8 text-secondary-500" />
       </motion.div>
 
       {/* Content */}
@@ -62,9 +71,9 @@ const ServiceCard = ({ service, index }: ServiceCardProps) => {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ delay: (index * 0.1) + (featureIndex * 0.05), duration: 0.3 }}
               viewport={{ once: true }}
-              className="flex items-center text-sm text-neutral-600"
+              className="flex items-center gap-2 text-sm text-neutral-600"
             >
-              <div className="w-1.5 h-1.5 bg-secondary-500 rounded-full mr-3"></div>
+              <CheckCircle className="w-4 h-4 text-secondary-500 flex-shrink-0" aria-hidden />
               {feature}
             </motion.li>
           ))}

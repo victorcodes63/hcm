@@ -7,20 +7,23 @@ import Footer from '@/components/Footer';
 import ServiceCard from '@/components/ServiceCard';
 import { Service } from '@/types';
 import { 
-  Users, 
-  GraduationCap, 
-  FileText, 
+  Users,
+  GraduationCap,
+  FileText,
   Calculator,
-  ArrowRight,
-  Award,
   Shield,
   BarChart3,
-  Star,
   Building2,
+  ArrowRight,
   CheckCircle,
-  ChevronDown
+  Plus,
+  Star,
+  Brain
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 // Metadata moved to layout.tsx
 
@@ -65,6 +68,7 @@ const getServiceTarget = (serviceId: string) => {
 };
 
 export default function ServicesPage() {
+  const isDesktop = useIsDesktop();
   const [activeFilter, setActiveFilter] = useState('all');
   const [isMounted, setIsMounted] = useState(false);
 
@@ -194,29 +198,6 @@ export default function ServicesPage() {
     }
   ];
 
-  const processSteps = [
-    {
-      step: '01',
-      title: 'Discovery & Assessment',
-      description: 'We begin by understanding your unique needs, challenges, and organizational goals.'
-    },
-    {
-      step: '02',
-      title: 'Solution Design',
-      description: 'Our experts design customized HR solutions tailored to your specific requirements.'
-    },
-    {
-      step: '03',
-      title: 'Implementation',
-      description: 'We execute the solution with precision, ensuring minimal disruption to your operations.'
-    },
-    {
-      step: '04',
-      title: 'Monitoring & Optimization',
-      description: 'We continuously monitor results and optimize processes for maximum effectiveness.'
-    }
-  ];
-
   const benefits = [
     'Access to Expert HR Knowledge',
     'Cost-Effective Solutions',
@@ -225,7 +206,9 @@ export default function ServicesPage() {
     '24/7 Support & Monitoring',
     'Proven Track Record',
     'Customized Approach',
-    'Technology Integration'
+    'Technology Integration',
+    'Data-Driven Insights & Reporting',
+    'Dedicated Account Management'
   ];
 
   // Filter services based on active filter
@@ -260,110 +243,102 @@ export default function ServicesPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
             >
-              <Star className="w-4 h-4 mr-2" />
-              Our Services
+              <SectionTitle
+                label="Our services"
+                title="Comprehensive HR solutions"
+                titleLine2="that drive results."
+                subtitle="From recruitment to training, we offer a full spectrum of HR services designed to help your organisation thrive in today's competitive business environment."
+                variant="hero"
+                className="mb-8"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Comprehensive HR Solutions
-              <span className="block text-secondary-500">That Drive Results</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              From recruitment to training, we offer a full spectrum of HR services designed to 
-              help your organization thrive in today's competitive business environment.
-            </motion.p>
 
           </motion.div>
         </div>
       </section>
 
       {/* Services Overview */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-neutral-50/50">
         <div className="container mx-auto px-4">
+          <SectionTitle
+            label="Services"
+            title="Our services at a glance."
+            subtitle="Choose a category or browse all services below."
+            variant="section"
+            className="mb-10"
+          />
           {/* Service Categories Filter */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
             <button 
               onClick={() => setActiveFilter('all')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'all' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               All Services
             </button>
             <button 
               onClick={() => setActiveFilter('recruitment')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'recruitment' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               Recruitment
             </button>
             <button 
               onClick={() => setActiveFilter('hr-operations')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'hr-operations' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               HR Operations
             </button>
             <button 
               onClick={() => setActiveFilter('training-development')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'training-development' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               Training & Development
             </button>
             <button 
               onClick={() => setActiveFilter('compliance')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'compliance' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               Compliance
             </button>
             <button 
               onClick={() => setActiveFilter('analytics')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'analytics' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               Analytics
             </button>
             <button 
               onClick={() => setActiveFilter('documentation')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 activeFilter === 'documentation' 
-                  ? 'bg-primary-900 text-white' 
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  ? 'bg-primary-900 text-white shadow-sm' 
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
               }`}
             >
               Documentation
@@ -396,14 +371,13 @@ export default function ServicesPage() {
       {/* Service Comparison Matrix */}
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Service Comparison
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Compare our services to find the perfect solution for your organization's needs
-            </p>
-          </div>
+          <SectionTitle
+            label="Compare"
+            title="Find the right solution for your organisation."
+            subtitle="Compare our services to find the perfect fit for your needs."
+            variant="section"
+            className="mb-16"
+          />
 
           <div className="overflow-x-auto">
             <table className="w-full bg-white rounded-xl shadow-lg overflow-hidden">
@@ -474,136 +448,69 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* FAQ Section — two-column: intro left, accordion right */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Get answers to common questions about our HR services
-            </p>
-          </div>
-
+          <SectionTitle
+            label="FAQ"
+            title="Common questions about our HR services."
+            subtitle="Find answers below, or contact us for a confidential discussion about your organisation\u2019s needs."
+            variant="section"
+            className="mb-12"
+          />
           <div className="max-w-4xl mx-auto">
             <FAQAccordion />
           </div>
         </div>
       </section>
 
-      {/* Process Section */}
-      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+      {/* Benefits Section — world-class layout: aligned heights, refined card, clear CTA */}
+      <section className="py-20 md:py-28 bg-neutral-50/50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Our Proven Process
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We follow a systematic approach to ensure successful delivery of HR solutions 
-              that meet your specific needs and drive organizational success.
-            </p>
-          </div>
+          <SectionTitle
+            label="Why work with us"
+            title="Expertise and results that scale with your organisation."
+            subtitle="We combine deep HR expertise with a track record you can measure—so you get both strategic guidance and tangible outcomes."
+            variant="section"
+            className="mb-14 md:mb-16 max-w-3xl mx-auto"
+          />
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {processSteps.map((step, index) => (
-              <div key={step.step} className="text-center">
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-900 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white font-bold text-lg">{step.step}</span>
-                  </div>
-                  {index < processSteps.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary-300 to-transparent"></div>
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,400px)_1fr] gap-8 lg:gap-14 items-stretch max-w-6xl mx-auto">
+            <div className="relative flex-shrink-0 w-full aspect-[3/4] max-h-[520px] lg:max-h-none lg:aspect-auto lg:h-full lg:min-h-[460px] rounded-2xl overflow-hidden bg-white shadow-sm">
+              <Image
+                src="/images/about/African American Businessman with Tablet.png"
+                alt="Professional with tablet - HR expertise"
+                fill
+                className="object-contain object-bottom"
+                sizes="(max-width: 1024px) 100vw, 400px"
+              />
+            </div>
+            <div className="min-w-0 flex flex-col h-full lg:min-h-[460px]">
+              <div className="rounded-2xl bg-white border border-neutral-100 shadow-soft p-6 sm:p-8 lg:p-10 flex-1 min-h-0 flex flex-col">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-5">
+                  {benefits.map((benefit, index) => (
+                    <div key={index} className="flex gap-3 items-start">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary-500/10 flex items-center justify-center mt-0.5" aria-hidden>
+                        <CheckCircle className="w-3.5 h-3.5 text-secondary-600" />
+                      </span>
+                      <span className="text-primary-900 font-medium text-[15px] leading-snug min-w-0 pt-px">{benefit}</span>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="text-xl font-heading font-semibold text-primary-900 mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-neutral-600 leading-relaxed">
-                  {step.description}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 mt-6 border-t border-neutral-100 flex-shrink-0">
+                <p className="text-primary-900 font-semibold text-base">
+                  Ready to strengthen your HR framework?
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 bg-primary-900 text-white">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-                Why Choose Our Services?
-              </h2>
-              <p className="text-lg text-white/90 mb-8 leading-relaxed">
-                Our comprehensive HR services are designed to deliver exceptional value 
-                and measurable results for your organization.
-              </p>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <CheckCircle className="w-5 h-5 text-secondary-500 flex-shrink-0" />
-                    <span className="text-white/90">{benefit}</span>
-                  </div>
-                ))}
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-secondary-500 text-white text-sm font-semibold rounded-xl hover:bg-secondary-600 transition-colors shadow-sm"
+                >
+                  Get in touch
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
               </div>
             </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-              <div className="text-center">
-                <Award className="w-16 h-16 text-secondary-500 mx-auto mb-6" />
-                <h3 className="text-2xl font-heading font-bold mb-4">
-                  Proven Excellence
-                </h3>
-                <div className="grid grid-cols-2 gap-6 text-center">
-                  <div>
-                    <div className="text-3xl font-bold text-secondary-500 mb-1">500+</div>
-                    <div className="text-sm text-white/80">Companies Served</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-secondary-500 mb-1">98%</div>
-                    <div className="text-sm text-white/80">Client Satisfaction</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-secondary-500 mb-1">2000+</div>
-                    <div className="text-sm text-white/80">Successful Placements</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-secondary-500 mb-1">15+</div>
-                    <div className="text-sm text-white/80">Years Experience</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Industry Expertise */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Industry Expertise
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We serve organizations across diverse industries, bringing specialized knowledge 
-              and tailored solutions to each sector.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {[
-              'Technology', 'Banking & Finance', 'Healthcare', 'Manufacturing', 
-              'Education', 'Retail', 'Construction', 'Agriculture', 
-              'Telecommunications', 'Energy', 'Logistics', 'Hospitality'
-            ].map((industry, index) => (
-              <div key={industry} className="bg-gradient-to-br from-neutral-50 to-white p-6 rounded-xl text-center hover:shadow-lg transition-all duration-300">
-                <div className="text-sm font-medium text-primary-900">{industry}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -612,14 +519,13 @@ export default function ServicesPage() {
       <section className="py-20 bg-gradient-to-r from-secondary-500 to-secondary-400 text-primary-900">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Ready to Transform Your HR?
-            </h2>
-            <p className="text-lg mb-8 opacity-90">
-              Let's discuss how our comprehensive HR services can drive your organization's success. 
-              Contact us today for a free consultation.
-            </p>
-            
+            <SectionTitle
+              label="Get started"
+              title="Ready to transform your HR?"
+              subtitle="Let's discuss how our comprehensive HR services can drive your organisation's success. Contact us today for a free consultation."
+              variant="dark"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
@@ -645,7 +551,7 @@ export default function ServicesPage() {
   );
 }
 
-// Enhanced Service Card Component
+// Enhanced Service Card — Lucide icons, consistent gold accent + light cream container
 const EnhancedServiceCard = ({ service, index }: { service: Service; index: number }) => {
   const iconMap = {
     'users': Users,
@@ -655,17 +561,18 @@ const EnhancedServiceCard = ({ service, index }: { service: Service; index: numb
     'calculator': Calculator,
     'shield': Shield,
     'bar-chart': BarChart3,
+    'brain': Brain,
   };
 
   const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Users;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.6 }}
-      viewport={{ once: true }}
-      className="group relative bg-white rounded-xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-neutral-100 flex flex-col h-full"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      viewport={{ once: true, margin: '40px' }}
+      className="group relative bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow duration-300 hover:-translate-y-1 border border-neutral-100 flex flex-col h-full"
     >
       {/* Service Badge */}
       <div className="absolute top-4 right-4">
@@ -674,13 +581,10 @@ const EnhancedServiceCard = ({ service, index }: { service: Service; index: numb
         </span>
       </div>
 
-      {/* Icon */}
-      <motion.div
-        whileHover={{ scale: 1.1, rotate: 5 }}
-        className="w-16 h-16 bg-secondary-100 rounded-xl flex items-center justify-center mb-6 group-hover:shadow-lg transition-all duration-300"
-      >
+      {/* Icon — same styling as header/service cards: cream bg + gold icon */}
+      <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mb-6 border border-secondary-100 group-hover:shadow-md transition-transform duration-200 group-hover:scale-105">
         <IconComponent className="w-8 h-8 text-secondary-500" />
-      </motion.div>
+      </div>
 
       {/* Content */}
       <div className="flex flex-col h-full">
@@ -693,22 +597,18 @@ const EnhancedServiceCard = ({ service, index }: { service: Service; index: numb
             {service.description}
           </p>
 
-          {/* Key Features */}
+          {/* Key Features — no per-item animation for performance */}
           <div className="space-y-2 mt-6">
             <h4 className="font-semibold text-primary-900 text-sm">Key Features:</h4>
             <ul className="space-y-2">
               {service.features.slice(0, 4).map((feature, featureIndex) => (
-                <motion.li
+                <li
                   key={featureIndex}
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: (index * 0.1) + (featureIndex * 0.05), duration: 0.3 }}
-                  viewport={{ once: true }}
-                  className="flex items-center text-sm text-neutral-600"
+                  className="flex gap-2 items-start text-sm text-neutral-600"
                 >
-                  <CheckCircle className="w-4 h-4 text-secondary-500 mr-2 flex-shrink-0" />
-                  <span>{feature}</span>
-                </motion.li>
+                  <CheckCircle className="w-4 h-4 text-secondary-500 flex-shrink-0 mt-0.5" aria-hidden />
+                  <span className="min-w-0 leading-snug">{feature}</span>
+                </li>
               ))}
             </ul>
           </div>
@@ -784,49 +684,52 @@ const FAQAccordion = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {faqs.map((faq, index) => (
-        <motion.div
+        <div
           key={index}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1, duration: 0.4 }}
-          viewport={{ once: true }}
-          className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+          className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm transition-shadow duration-200 hover:shadow-md"
         >
           <button
             onClick={() => toggleFAQ(index)}
-            className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-neutral-50 transition-colors duration-200"
+            className="w-full px-6 py-5 text-left flex items-center justify-between gap-4 hover:bg-neutral-50/80 transition-colors duration-200"
           >
-            <h3 className="font-semibold text-primary-900 text-lg pr-6">
+            <h3 className="font-medium text-primary-900 text-base pr-4">
               {faq.question}
             </h3>
-            <motion.div
-              animate={{ rotate: activeFAQ === index ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
+            <span
+              className={`flex-shrink-0 w-8 h-8 rounded-full border border-neutral-200 flex items-center justify-center transition-all duration-200 ${
+                activeFAQ === index
+                  ? 'bg-primary-900 border-primary-900 text-white'
+                  : 'bg-neutral-50 text-neutral-500'
+              }`}
             >
-              <ChevronDown className="w-5 h-5 text-primary-600 flex-shrink-0" />
-            </motion.div>
+              <Plus
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  activeFAQ === index ? 'rotate-45' : ''
+                }`}
+              />
+            </span>
           </button>
-          
+
           <AnimatePresence>
             {activeFAQ === index && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
                 className="overflow-hidden"
               >
-                <div className="px-8 pb-8 pt-6">
-                  <p className="text-neutral-600 leading-relaxed text-base">
+                <div className="px-6 pb-6 pt-0">
+                  <p className="text-neutral-600 leading-relaxed text-sm border-t border-neutral-100 pt-4">
                     {faq.answer}
                   </p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </div>
       ))}
     </div>
   );

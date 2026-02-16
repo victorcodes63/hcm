@@ -3,8 +3,11 @@
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, BookOpen, ShieldCheck, Users, Clock, CheckCircle, Download, ArrowRight, Phone, Mail, Award, Target } from 'lucide-react';
+import { FileText, BookOpen, ShieldCheck, Users, Clock, CheckCircle, Download, ArrowRight, Phone, Mail, Award, Target, Building } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import SectionTitle from '@/components/SectionTitle';
+import ServicePageCard from '@/components/ServicePageCard';
 
 export default function HRDocumentationPage() {
   const documentationServices = [
@@ -72,8 +75,9 @@ export default function HRDocumentationPage() {
   };
 
   const industries = [
-    "Government & Public Sector", "Banking & Finance", "Manufacturing & Industrial", "Healthcare & Pharmaceuticals",
-    "Education & Training", "Technology & IT", "Retail & Consumer Goods", "NGOs & Development"
+    "Banking & Financial Services", "Technology & IT", "Healthcare & Pharmaceuticals",
+    "Manufacturing & Engineering", "Government & Public Sector", "NGOs & Development",
+    "Education & Training", "Retail & Consumer Goods", "Energy & Utilities", "Real Estate & Construction"
   ];
 
   return (
@@ -101,13 +105,13 @@ export default function HRDocumentationPage() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary-900 mb-6">
-              HR Documentation Services
-            </h1>
-            <p className="text-xl text-neutral-700 leading-relaxed mb-8">
-              Professional HR documentation that ensures compliance, clarity, and consistency. 
-              From policy development to employee handbooks, we create comprehensive HR documentation solutions.
-            </p>
+            <SectionTitle
+              label="HR documentation"
+              title="HR documentation services."
+              subtitle="Professional HR documentation that ensures compliance, clarity, and consistency. From policy development to employee handbooks, we create comprehensive HR documentation solutions."
+              variant="hero"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
@@ -137,50 +141,19 @@ export default function HRDocumentationPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Comprehensive HR Documentation Solutions
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              We provide end-to-end HR documentation services designed to ensure compliance, 
-              clarity, and professional standards across your organization.
-            </p>
+            <SectionTitle
+              label="Our services"
+              title="Comprehensive HR documentation solutions."
+              subtitle="We provide end-to-end HR documentation services designed to ensure compliance, clarity, and professional standards across your organisation."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {documentationServices.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                viewport={{ once: true }}
-                className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-neutral-100 hover:border-primary-200 p-8"
-              >
-                {/* Icon */}
-                <div className="w-16 h-16 bg-secondary-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <service.icon className="w-8 h-8 text-secondary-500" />
-                </div>
-                
-                {/* Content */}
-                <h3 className="text-xl font-semibold text-primary-900 mb-4">
-                  {service.title}
-                </h3>
-                
-                <p className="text-neutral-600 mb-6 leading-relaxed">
-                  {service.description}
-                </p>
-                
-                <ul className="space-y-3">
-                  {service.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-neutral-600">
-                      <CheckCircle className="w-4 h-4 text-secondary-500 mr-3 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+              <ServicePageCard key={index} item={service} index={index} />
             ))}
           </div>
         </div>
@@ -196,13 +169,12 @@ export default function HRDocumentationPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Why Choose Our HR Documentation Services?
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Professional HR documentation ensures legal compliance, clear communication, 
-              and consistent implementation of HR policies across your organization.
-            </p>
+            <SectionTitle
+              label="Why us"
+              title="Why choose our HR documentation services?"
+              subtitle="Professional HR documentation ensures legal compliance, clear communication, and consistent implementation of HR policies across your organisation."
+              variant="section"
+            />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
@@ -215,8 +187,8 @@ export default function HRDocumentationPage() {
                 viewport={{ once: true }}
                 className="text-center p-6 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100 hover:shadow-lg transition-all duration-300"
               >
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-primary-900" />
+                <div className="w-16 h-16 bg-secondary-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-secondary-100">
+                  <CheckCircle className="w-8 h-8 text-secondary-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-primary-900">{benefit}</h3>
               </motion.div>
@@ -375,34 +347,14 @@ export default function HRDocumentationPage() {
       </section>
 
       {/* Industries Section */}
-      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Industries We Serve
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Our HR documentation expertise spans across various industries, 
-              providing tailored solutions for each sector's unique requirements.
-            </p>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Industries" title="Industries we serve." subtitle="Our HR documentation expertise spans across various industries, providing tailored solutions for each sector's unique requirements." variant="section" />
           </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {industries.map((industry, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05, duration: 0.6 }}
-                viewport={{ once: true }}
-                className="bg-white rounded-lg p-4 text-center shadow-md hover:shadow-lg transition-all duration-300 border border-neutral-100"
-              >
+              <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05, duration: 0.4 }} viewport={{ once: true }} className="bg-secondary-50/80 rounded-lg p-4 text-center border border-secondary-100/60 hover:bg-secondary-100/80 transition-colors duration-300">
                 <div className="text-sm font-medium text-primary-900">{industry}</div>
               </motion.div>
             ))}
@@ -410,135 +362,50 @@ export default function HRDocumentationPage() {
         </div>
       </section>
 
-      {/* Download Resources Section */}
-      <section className="py-12 bg-secondary-500 text-white">
+      {/* CTA Card */}
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Download Our Resources
-            </h2>
-            <p className="text-lg text-orange-100 max-w-3xl mx-auto">
-              Access our comprehensive guides, templates, and documentation samples to learn more 
-              about our HR documentation services and best practices.
-            </p>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="relative h-56 lg:h-auto lg:min-h-[340px] order-1">
+                  <Image src="/images/about/Smiling%20African%20American%20Woman%20Business%20Suit.PNG" alt="Professional HR consultation" fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 50vw" />
+                </div>
+                <div className="p-8 lg:p-10 flex flex-col justify-center order-2">
+                  <h3 className="text-2xl lg:text-3xl font-heading font-bold text-primary-900 mb-4">Ready to Professionalize Your HR Documentation?</h3>
+                  <p className="text-neutral-600 leading-relaxed mb-6">Let us help you create comprehensive, compliant, and professional HR documentation that protects your organization and supports your employees.</p>
+                  <p className="text-xl font-semibold text-secondary-500 mb-4">Take the next step</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link href="/services" className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-800 transition text-center">View All Services</Link>
+                    <Link href="/contact" className="border border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition text-center">Schedule Consultation</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <FileText className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">HR Documentation Guide</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Comprehensive guide to creating effective HR documentation and policies for Kenyan organizations.
-              </p>
-              <a
-                href="/downloads/hr-documentation-guide.pdf"
-                download="HR-Documentation-Guide.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Employee Handbook Template</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Professional employee handbook template tailored for Kenyan labor laws and best practices.
-              </p>
-              <a
-                href="/downloads/employee-handbook-template.pdf"
-                download="Employee-Handbook-Template.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                <ShieldCheck className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Policy Templates</h3>
-              <p className="text-orange-100 mb-6 flex-grow">
-                Ready-to-use HR policy templates covering all essential areas for Kenyan organizations.
-              </p>
-              <a
-                href="/downloads/hr-policy-templates.pdf"
-                download="HR-Policy-Templates.pdf"
-                className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </a>
-            </motion.div>
-          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white">
+      {/* Download Resources Section */}
+      <section className="py-12 bg-secondary-500 text-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Ready to Professionalize Your HR Documentation?
-            </h2>
-            <p className="text-xl text-primary-200 mb-8">
-              Let us help you create comprehensive, compliant, and professional HR documentation 
-              that protects your organization and supports your employees.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 bg-white text-primary-900 rounded-lg font-semibold text-lg hover:bg-primary-100 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <Phone className="mr-2 w-5 h-5" />
-                Schedule Consultation
-              </Link>
-              <Link
-                href="mailto:info@eaglehr.co.ke"
-                className="inline-flex items-center px-8 py-4 bg-transparent text-white rounded-lg font-semibold text-lg border-2 border-white hover:bg-white hover:text-primary-900 transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <Mail className="mr-2 w-5 h-5" />
-                Send Email
-              </Link>
-            </div>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Resources" title="Download our resources." subtitle="Access our company profile and client list to learn more about Eagle HR and the organisations we partner with." variant="dark" className="mb-16" />
           </motion.div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in recruitment.</p>
+              <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Client List</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
+              <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+          </div>
         </div>
       </section>
 

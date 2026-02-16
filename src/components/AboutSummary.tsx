@@ -75,7 +75,7 @@ const AboutSummary = () => {
                 viewport={{ once: true }}
               >
                 <div className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-4">
-                  <Users className="w-4 h-4 mr-2" />
+                  <Users className="w-4 h-4 mr-2 text-secondary-500" />
                   About Eagle HR
                 </div>
                 
@@ -127,10 +127,10 @@ const AboutSummary = () => {
                   >
                     <div className="flex items-start space-x-4">
                       <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="w-12 h-12 bg-gradient-to-br from-primary-900 to-secondary-500 rounded-lg flex items-center justify-center group-hover:shadow-lg transition-all duration-300"
+                        whileHover={{ scale: 1.1 }}
+                        className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center border border-secondary-100 group-hover:shadow-md transition-all duration-300"
                       >
-                        <value.icon className="w-6 h-6 text-white" />
+                        <value.icon className="w-6 h-6 text-secondary-500" />
                       </motion.div>
                       
                       <div className="flex-1">

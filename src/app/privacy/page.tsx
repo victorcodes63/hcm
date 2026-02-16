@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SectionTitle from '@/components/SectionTitle';
 import { Shield, Lock, Eye, FileText, CheckCircle } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
@@ -36,7 +37,6 @@ export default function PrivacyPolicyPage() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 min-h-[60vh] flex flex-col justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-secondary-50"></div>
-        
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -44,35 +44,14 @@ export default function PrivacyPolicyPage() {
             transition={{ duration: 0.8 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Privacy Policy
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Your Privacy Matters
-              <span className="block text-secondary-500">To Us</span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              We are committed to protecting your privacy and ensuring the security of your personal information. 
-              This policy explains how we collect, use, and safeguard your data.
-            </motion.p>
+            <SectionTitle
+              label="Privacy policy"
+              title="Your privacy matters"
+              titleLine2="To us."
+              subtitle="We are committed to protecting your privacy and ensuring the security of your personal information. This policy explains how we collect, use, and safeguard your data."
+              variant="hero"
+              className="mb-8"
+            />
           </motion.div>
         </div>
       </section>
@@ -88,14 +67,13 @@ export default function PrivacyPolicyPage() {
               viewport={{ once: true }}
               className="mb-16"
             >
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                Our Privacy Commitment
-              </h2>
-              <p className="text-lg text-neutral-600 leading-relaxed">
-                At Eagle HR Consultants, we understand the importance of privacy and are committed to protecting 
-                your personal information. This Privacy Policy outlines our practices regarding the collection, 
-                use, and protection of your data.
-              </p>
+              <SectionTitle
+                label="Overview"
+                title="Our privacy commitment."
+                subtitle="At Eagle HR Consultants, we understand the importance of privacy and are committed to protecting your personal information. This Privacy Policy outlines our practices regarding the collection, use, and protection of your data."
+                variant="section"
+                className="text-left mb-6"
+              />
             </motion.div>
 
             {/* Key Sections */}
@@ -110,8 +88,8 @@ export default function PrivacyPolicyPage() {
                   className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300"
                 >
                   <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mr-4">
-                      <section.icon className="w-6 h-6 text-primary-600" />
+                    <div className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center mr-4 border border-secondary-100">
+                      <section.icon className="w-6 h-6 text-secondary-500" />
                     </div>
                     <h3 className="text-xl font-heading font-semibold text-primary-900">
                       {section.title}
@@ -132,9 +110,12 @@ export default function PrivacyPolicyPage() {
               viewport={{ once: true }}
               className="bg-neutral-50 rounded-xl p-8"
             >
-              <h3 className="text-2xl font-heading font-bold text-primary-900 mb-6">
-                Detailed Privacy Policy
-              </h3>
+              <SectionTitle
+                label="Full policy"
+                title="Detailed privacy policy."
+                variant="section"
+                className="text-left mb-6"
+              />
               
               <div className="space-y-6">
                 <div>
@@ -180,19 +161,20 @@ export default function PrivacyPolicyPage() {
               viewport={{ once: true }}
               className="mt-12 text-center"
             >
-              <h3 className="text-xl font-heading font-bold text-primary-900 mb-4">
-                Questions About This Policy?
-              </h3>
-              <p className="text-neutral-600 mb-6">
-                If you have any questions about this Privacy Policy, please contact us at:
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <SectionTitle
+                label="Contact"
+                title="Questions about this policy?"
+                subtitle="If you have any questions about this Privacy Policy, please contact us at:"
+                variant="section"
+                className="mb-6"
+              />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
                 <a
-                  href="mailto:privacy@eaglehr.co.ke"
+                  href="mailto:info@eaglehr.co.ke"
                   className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300"
                 >
                   <FileText className="w-5 h-5 mr-2" />
-                  privacy@eaglehr.co.ke
+                  info@eaglehr.co.ke
                 </a>
                 <a
                   href="/contact"

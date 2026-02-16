@@ -3,7 +3,9 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Clock, Briefcase, ArrowRight, ExternalLink, Star } from 'lucide-react';
+import { MapPin, Clock, ArrowRight, ExternalLink, Star, CheckCircle } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 type FeaturedJob = {
   id: string;
@@ -16,6 +18,7 @@ type FeaturedJob = {
 };
 
 const FeaturedJobs = () => {
+  const isDesktop = useIsDesktop();
   const [featuredJobs, setFeaturedJobs] = useState<FeaturedJob[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,25 +103,20 @@ const FeaturedJobs = () => {
           className="text-center mb-12 md:mb-16"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+            whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-4"
           >
-            <Briefcase className="w-4 h-4 mr-2" />
-            Featured Opportunities
+            <SectionTitle
+              label="Careers"
+              title="Featured"
+              titleLine2="career opportunities."
+              subtitle="Explore current openings from organisations we support across Kenya. Find roles that match your experience, qualifications, and career goals."
+              variant="section"
+              className="mb-8"
+            />
           </motion.div>
-          
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-bold text-primary-900 mb-6">
-            Featured
-            <span className="block text-secondary-500">Career Opportunities</span>
-          </h2>
-          
-          <p className="text-base md:text-lg text-neutral-600 max-w-3xl mx-auto leading-relaxed mb-8">
-            Explore current openings from organizations we support across Kenya.
-            Find roles that match your experience, qualifications, and career goals.
-          </p>
 
           {/* Company Stats */}
           <motion.div

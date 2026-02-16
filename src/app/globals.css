@@ -69,6 +69,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.025em;
 }
 
+/* Icon accent (public site): use Lucide icons with text-secondary-500 and container bg-secondary-50 border-secondary-100/200 for a consistent gold/orange line-art look. */
 /* Better text contrast */
 .text-neutral-600 {
   color: #404040 !important;

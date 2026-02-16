@@ -163,13 +163,13 @@ const CreativeServicesSection = () => {
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-current rounded-full"></div>
                   </div>
 
-                  {/* Icon */}
+                  {/* Icon — same styling site-wide: cream bg + gold icon */}
                   <motion.div
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    transition={{ duration: 0.6 }}
-                    className={`w-16 h-16 bg-gradient-to-br ${service.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300`}
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-16 h-16 bg-secondary-50 rounded-2xl flex items-center justify-center mb-6 border border-secondary-100 shadow-md group-hover:shadow-lg transition-all duration-300"
                   >
-                    <Icon className="w-8 h-8 text-white" />
+                    <Icon className="w-8 h-8 text-secondary-500" />
                   </motion.div>
 
                   {/* Content */}

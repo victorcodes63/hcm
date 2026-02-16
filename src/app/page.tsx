@@ -12,28 +12,55 @@ export default function Home() {
   const testimonials: Testimonial[] = [
     {
       id: '1',
-      name: 'Sarah Mwangi',
-      position: 'HR Director',
-      company: 'Tech Solutions Kenya',
-      content: 'Eagle HR transformed our recruitment process. Their expertise in finding the right talent has been invaluable to our growth.',
+      name: 'Leadership Team',
+      position: 'HR & Administration',
+      company: 'Central Bank of Kenya',
+      content: 'Eagle HR has been a strategic partner in our talent acquisition and HR advisory. Their expertise in executive search and compliance has been invaluable to our organization.',
       rating: 5,
       image: '/images/about/smile_1.jpg'
     },
     {
       id: '2',
-      name: 'James Ochieng',
-      position: 'CEO',
-      company: 'Innovate Africa Ltd',
-      content: 'The training programs provided by Eagle HR have significantly improved our team\'s performance and productivity.',
+      name: 'HR & Standards Division',
+      position: 'Partner',
+      company: 'Kenya Bureau of Standards',
+      content: 'Working with Eagle HR has strengthened our workforce planning and recruitment processes. Their professional approach and understanding of the public sector have delivered strong results.',
       rating: 5,
       image: '/images/about/smile_2.jpg'
     },
     {
       id: '3',
-      name: 'Grace Wanjiku',
-      position: 'Operations Manager',
-      company: 'Green Energy Co.',
-      content: 'Professional, reliable, and results-driven. Eagle HR\'s HR outsourcing services have streamlined our operations.',
+      name: 'Management Team',
+      position: 'Partner',
+      company: 'PACIDA',
+      content: 'Eagle HR\'s recruitment and HR outsourcing services have supported our growth and operational excellence. We value their commitment to quality and timely delivery.',
+      rating: 5,
+      image: '/images/about/smile_4.jpg'
+    },
+    {
+      id: '4',
+      name: 'Leadership',
+      position: 'Partner',
+      company: 'KeNIC',
+      content: 'Eagle HR has helped us build a high-performing team through their rigorous recruitment and assessment processes. A trusted partner for our HR needs.',
+      rating: 5,
+      image: '/images/about/smile_1.jpg'
+    },
+    {
+      id: '5',
+      name: 'HR Team',
+      position: 'Partner',
+      company: 'Kenya Development Corporation',
+      content: 'From executive search to HR compliance, Eagle HR has consistently delivered. Their local expertise and professional standards make them a go-to partner.',
+      rating: 5,
+      image: '/images/about/smile_2.jpg'
+    },
+    {
+      id: '6',
+      name: 'Leadership Team',
+      position: 'Partner',
+      company: 'Consolidated Bank',
+      content: 'Eagle HR\'s talent acquisition and training programs have contributed to our organizational development. We recommend their services for any institution seeking HR excellence.',
       rating: 5,
       image: '/images/about/smile_4.jpg'
     }

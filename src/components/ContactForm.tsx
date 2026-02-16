@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { Send, AlertCircle } from 'lucide-react';
 import { ContactFormData } from '@/types';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 const ContactForm = () => {
+  const isDesktop = useIsDesktop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -183,8 +185,8 @@ const ContactForm = () => {
         <motion.button
           type="submit"
           disabled={isSubmitting}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={isDesktop ? { scale: 1.02 } : undefined}
+          whileTap={isDesktop ? { scale: 0.98 } : undefined}
           className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-300 flex items-center justify-center ${
             isSubmitting
               ? 'bg-neutral-400 text-neutral-600 cursor-not-allowed'

@@ -18,10 +18,13 @@ import {
   ExternalLink,
   LucideIcon
 } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 // Metadata moved to layout.tsx
 
 export default function CareersPage() {
+  const isDesktop = useIsDesktop();
   const [jobCategories, setJobCategories] = useState<{ name: string; count: number }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
@@ -85,34 +88,19 @@ export default function CareersPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-6"
             >
-              <Briefcase className="w-4 h-4 mr-2" />
-              Job Board
+              <SectionTitle
+                label="Job board"
+                title="Find your dream job"
+                titleLine2="in Kenya."
+                subtitle="Discover thousands of job opportunities across Kenya. Our advanced job board connects talented professionals with top employers nationwide."
+                variant="hero"
+                className="mb-8"
+              />
             </motion.div>
-            
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-primary-900"
-            >
-              Find Your Dream Job
-              <span className="block text-secondary-500">In Kenya</span>
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl text-neutral-700 leading-relaxed mb-8"
-            >
-              Discover thousands of job opportunities across Kenya. Our advanced job board 
-              connects talented professionals with top employers nationwide.
-            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -232,14 +220,14 @@ export default function CareersPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Current Job Openings
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Browse through our latest job opportunities and find your perfect match
-            </p>
+            <SectionTitle
+              label="Opportunities"
+              title="Current job openings."
+              subtitle="Browse through our latest job opportunities and find your perfect match."
+              variant="section"
+            />
           </motion.div>
 
           {/* Dynamic Job Listings Component */}
@@ -258,14 +246,14 @@ export default function CareersPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-              Browse by Category
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-              Find jobs in your field of expertise
-            </p>
+            <SectionTitle
+              label="Categories"
+              title="Browse by category."
+              subtitle="Find jobs in your field of expertise."
+              variant="section"
+            />
           </motion.div>
 
           {jobCategories.length === 0 ? (
@@ -282,10 +270,10 @@ export default function CareersPage() {
                 className="bg-white rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-neutral-200"
               >
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center mr-4 border border-secondary-100">
                     {(() => {
                       const Icon = getCategoryIcon(category.name);
-                      return <Icon className="w-6 h-6 text-primary-600" />;
+                      return <Icon className="w-6 h-6 text-secondary-500" />;
                     })()}
                   </div>
                   <div>
@@ -322,15 +310,13 @@ export default function CareersPage() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">
-              Advanced Job Board Coming Soon
-            </h2>
-            <p className="text-lg text-white/90 mb-8">
-              We're building a comprehensive Applicant Tracking System (ATS) that will revolutionize 
-              job searching and recruitment in Kenya. Get ready for advanced features including 
-              AI-powered job matching, automated applications, and real-time notifications.
-            </p>
-            
+            <SectionTitle
+              label="Coming soon"
+              title="Advanced job board coming soon."
+              subtitle="We're building a comprehensive Applicant Tracking System (ATS) that will revolutionise job searching and recruitment in Kenya. Get ready for advanced features including AI-powered job matching, automated applications, and real-time notifications."
+              variant="dark"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/contact"

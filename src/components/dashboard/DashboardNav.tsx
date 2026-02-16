@@ -12,6 +12,7 @@ import {
   CalendarCheck,
   BarChart3,
   UserCog,
+  BookOpen,
 } from 'lucide-react';
 
 interface DashboardNavProps {
@@ -27,6 +28,7 @@ export default function DashboardNav({ currentUserRole }: DashboardNavProps) {
     { href: '/dashboard/candidates', label: 'Candidates', icon: Users },
     { href: '/dashboard/applications', label: 'Applications', icon: FileCheck },
     { href: '/dashboard/interviews', label: 'Interview Management', icon: CalendarCheck },
+    { href: '/dashboard/insights', label: 'Insights', icon: BookOpen },
     ...(currentUserRole === 'admin'
       ? [{ href: '/dashboard/staff', label: 'Staff', icon: UserCog }]
       : []),

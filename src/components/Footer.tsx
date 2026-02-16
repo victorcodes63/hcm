@@ -12,8 +12,10 @@ import {
   Instagram,
   ArrowUp
 } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 const Footer = () => {
+  const isDesktop = useIsDesktop();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -36,9 +38,9 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'LinkedIn', icon: Linkedin, href: '#' },
-    { name: 'Instagram', icon: Instagram, href: '#' },
+    { name: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/eaglehrke' },
+    { name: 'LinkedIn', icon: Linkedin, href: 'https://www.linkedin.com/company/eaglehr-consultants/' },
+    { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/eaglehrconsultantske' },
   ];
 
   return (
@@ -179,6 +181,8 @@ const Footer = () => {
                   <a
                     key={social.name}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-secondary-500 hover:text-white transition-all duration-200"
                     aria-label={social.name}
                   >
@@ -230,10 +234,10 @@ const Footer = () => {
 
       {/* Scroll to Top Button - Desktop Only */}
       <motion.button
-        initial={{ opacity: 0, scale: 0 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, ...(isDesktop ? { scale: 0 } : {}) }}
+        whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
+        whileHover={isDesktop ? { scale: 1.1 } : undefined}
+        whileTap={isDesktop ? { scale: 0.95 } : undefined}
         transition={{ duration: 0.3 }}
         viewport={{ once: true }}
         onClick={scrollToTop}

@@ -14,8 +14,10 @@ import {
   Clock,
   ArrowRight
 } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 const ValueProposition = () => {
+  const isDesktop = useIsDesktop();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   
@@ -157,7 +159,7 @@ const ValueProposition = () => {
         <motion.div
           animate={{ 
             rotate: 360,
-            scale: [1, 1.1, 1]
+            ...(isDesktop ? { scale: [1, 1.1, 1] } : {}),
           }}
           transition={{ 
             duration: 20,
@@ -169,7 +171,7 @@ const ValueProposition = () => {
         <motion.div
           animate={{ 
             rotate: -360,
-            scale: [1.1, 1, 1.1]
+            ...(isDesktop ? { scale: [1.1, 1, 1.1] } : {}),
           }}
           transition={{ 
             duration: 25,
@@ -190,8 +192,8 @@ const ValueProposition = () => {
           className="text-center mb-16"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+            whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-900 to-secondary-500 text-white rounded-full text-sm font-semibold mb-6 shadow-lg"
@@ -233,15 +235,15 @@ const ValueProposition = () => {
                 className="text-center group"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-20 h-20 bg-gradient-to-br from-primary-900 to-secondary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:shadow-xl transition-all duration-300"
+                  whileHover={isDesktop ? { scale: 1.1 } : undefined}
+                  className="w-20 h-20 bg-secondary-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-secondary-100 shadow-lg group-hover:shadow-xl transition-all duration-300"
                 >
-                  <Icon className="w-8 h-8 text-white" />
+                  <Icon className="w-8 h-8 text-secondary-500" />
                 </motion.div>
                 
                 <motion.div
-                  initial={{ scale: 0.8 }}
-                  whileInView={{ scale: 1 }}
+                  initial={isDesktop ? { scale: 0.8 } : {}}
+                  whileInView={isDesktop ? { scale: 1 } : {}}
                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
                   viewport={{ once: true }}
                   className="text-4xl md:text-5xl font-bold text-primary-900 mb-2"
@@ -300,10 +302,10 @@ const ValueProposition = () => {
                   >
                     {/* Timeline Node */}
                     <motion.div
-                      whileHover={{ scale: 1.2 }}
+                      whileHover={isDesktop ? { scale: 1.2 } : undefined}
                       className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
                         isActive 
-                          ? 'bg-gradient-to-br from-secondary-500 to-primary-900 scale-110' 
+                          ? 'bg-gradient-to-br from-secondary-500 to-primary-900 lg:scale-110' 
                           : 'bg-white border-4 border-primary-900'
                       }`}
                     >
@@ -312,7 +314,7 @@ const ValueProposition = () => {
                     
                     {/* Content Card */}
                     <motion.div
-                      whileHover={{ scale: 1.02, y: -5 }}
+                      whileHover={isDesktop ? { scale: 1.02, y: -5 } : undefined}
                       className={`w-5/12 mx-8 p-6 rounded-xl shadow-lg transition-all duration-300 ${
                         isActive 
                           ? 'bg-gradient-to-br from-primary-900 to-secondary-500 text-white' 
@@ -324,7 +326,7 @@ const ValueProposition = () => {
                           {milestone.year}
                         </span>
                         <motion.div
-                          animate={isActive ? { scale: [1, 1.2, 1] } : {}}
+                          animate={isDesktop && isActive ? { scale: [1, 1.2, 1] } : {}}
                           transition={{ duration: 0.5 }}
                           className={`ml-3 w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-secondary-500'}`}
                         />
@@ -370,11 +372,11 @@ const ValueProposition = () => {
               return (
                 <motion.div
                   key={badge.name}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+                  whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileHover={isDesktop ? { scale: 1.05, y: -5 } : undefined}
                   className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 text-center group"
                 >
                   <motion.div
@@ -423,7 +425,7 @@ const ValueProposition = () => {
                 className="text-center group"
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={isDesktop ? { scale: 1.1 } : undefined}
                   className="text-4xl md:text-5xl font-bold mb-3 group-hover:text-secondary-300 transition-colors duration-300"
                 >
                   {metric.metric}
@@ -448,8 +450,8 @@ const ValueProposition = () => {
             className="text-center mt-12"
           >
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isDesktop ? { scale: 1.05 } : undefined}
+              whileTap={isDesktop ? { scale: 0.95 } : undefined}
               className="bg-white text-primary-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-neutral-100 hover:shadow-lg transition-all duration-300 flex items-center mx-auto"
             >
               Discover Your Success Story

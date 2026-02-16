@@ -14,8 +14,11 @@ import {
   Brain,
   ArrowRight,
 } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 const ServicesSection = () => {
+  const isDesktop = useIsDesktop();
   const services = [
     {
       id: '1',
@@ -94,20 +97,14 @@ const ServicesSection = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-full text-sm font-semibold mb-6 shadow-lg">
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Our Services
-          </span>
-
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-primary-900 mb-6">
-            Comprehensive HR Solutions
-            <span className="block text-secondary-500 mt-2">Tailored to Your Needs</span>
-          </h2>
-
-          <p className="text-lg text-neutral-600 max-w-3xl mx-auto leading-relaxed">
-            Designed to strengthen workforce performance, compliance,
-            and long-term organizational growth.
-          </p>
+          <SectionTitle
+            label="Our services"
+            title="Comprehensive HR solutions"
+            titleLine2="tailored to your needs."
+            subtitle="Designed to strengthen workforce performance, compliance, and long-term organisational growth."
+            variant="section"
+            className="mb-8"
+          />
         </motion.div>
 
         {/* Bento Grid */}
@@ -127,7 +124,7 @@ const ServicesSection = () => {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -4 }}
+                    whileHover={isDesktop ? { y: -4 } : undefined}
                     transition={{ duration: 0.5, delay: index * 0.05 }}
                     viewport={{ once: true }}
                     className={`group relative h-full rounded-2xl border transition-all duration-300 ${
@@ -182,7 +179,7 @@ const ServicesSection = () => {
                               src="/images/about/vecteezy_business-meeting-illustration_71267549.jpg"
                               alt="Recruitment and executive search"
                               fill
-                              className="object-cover object-[50%_center] transition-transform duration-700 group-hover:scale-[1.03]"
+                              className="object-cover object-[50%_center] transition-transform duration-700 lg:group-hover:scale-[1.03]"
                             />
                             <div className="absolute inset-0 bg-primary-900/12 pointer-events-none" />
                           </div>

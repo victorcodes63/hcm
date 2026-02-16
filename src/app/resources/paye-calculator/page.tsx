@@ -300,8 +300,8 @@ export default function PAYECalculatorPage() {
                 viewport={{ once: true }}
                 className="text-center p-6 bg-gradient-to-br from-neutral-50 to-white rounded-xl hover:shadow-lg transition-all duration-300"
               >
-                <div className="w-16 h-16 bg-slate-100 border-2 border-slate-200 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <fact.icon className="w-8 h-8 text-primary-700" />
+                <div className="w-16 h-16 bg-secondary-50 border border-secondary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <fact.icon className="w-8 h-8 text-secondary-500" />
                 </div>
                 <h3 className="text-lg font-heading font-semibold text-primary-900 mb-3">
                   {fact.title}

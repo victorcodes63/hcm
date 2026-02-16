@@ -169,3 +169,21 @@ enum UserRole {
   staff
   viewer
 }
+
+// Insights / blog articles managed by staff; shown on public /insights page
+model Insight {
+  id        String   @id @default(cuid())
+  title     String   @db.Text
+  excerpt   String   @db.Text
+  author    String   // e.g. "Eagle HR" or staff name
+  category  String   // e.g. "Uncategorized", "Job Hunting Tips", "HR Outsourcing"
+  url       String   @db.Text // link to full article (external or future /insights/[slug])
+  image    String   @db.Text // path or URL for featured image (from upload or external)
+  imageTitle String?  // optional caption/title for the featured image, stored like CV metadata
+  publishedAt DateTime @default(now()) // used for ordering and "date" display
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([publishedAt(sort: Desc)])
+  @@index([category])
+}

@@ -4,8 +4,11 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle, Target, BarChart3, Users, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 const SlidingHRQuestions = () => {
+  const isDesktop = useIsDesktop();
   const [isVisible, setIsVisible] = useState(false);
 
   // HR Questions organized in three rows
@@ -54,7 +57,7 @@ const SlidingHRQuestions = () => {
           animate={{
             x: [0, 26, 0],
             y: [0, -16, 0],
-            scale: [1, 1.2, 1],
+            ...(isDesktop ? { scale: [1, 1.2, 1] } : {}),
           }}
           transition={{
             duration: 24,
@@ -68,7 +71,7 @@ const SlidingHRQuestions = () => {
           animate={{
             x: [0, -24, 0],
             y: [0, 14, 0],
-            scale: [1.1, 1, 1.1],
+            ...(isDesktop ? { scale: [1.1, 1, 1.1] } : {}),
           }}
           transition={{
             duration: 30,
@@ -82,7 +85,7 @@ const SlidingHRQuestions = () => {
           animate={{
             x: [0, 16, 0],
             y: [0, -12, 0],
-            scale: [1, 1.18, 1],
+            ...(isDesktop ? { scale: [1, 1.18, 1] } : {}),
           }}
           transition={{
             duration: 22,
@@ -96,7 +99,7 @@ const SlidingHRQuestions = () => {
           animate={{
             x: [0, -18, 0],
             y: [0, 18, 0],
-            scale: [1.1, 1, 1.1],
+            ...(isDesktop ? { scale: [1.1, 1, 1.1] } : {}),
           }}
           transition={{
             duration: 28,
@@ -117,25 +120,20 @@ const SlidingHRQuestions = () => {
           className="text-center mb-16"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+            whileInView={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-full text-sm font-semibold mb-6 shadow-lg"
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Your HR Questions Answered
+            <SectionTitle
+              label="HR Questions"
+              title="Removing the roadblocks to"
+              titleLine2="your HR success."
+              subtitle="We filter out the noise, focus on what truly matters, and give you the kind of clarity that lets your organisation shine in the market."
+              variant="section"
+              className="mb-8"
+            />
           </motion.div>
-          
-          <h2 className="text-4xl md:text-5xl font-heading font-bold text-primary-900 mb-6">
-            Removing the Roadblocks to
-            <span className="block text-secondary-500 mt-2">Your HR Success</span>
-          </h2>
-          
-          <p className="text-xl text-neutral-700 max-w-4xl mx-auto leading-relaxed"> 
-            We filter out the noise, focus on what truly matters, and give you the kind of clarity 
-            that lets your organization shine in the market.
-          </p>
         </motion.div>
 
         {/* Sliding Questions Section */}
@@ -154,7 +152,7 @@ const SlidingHRQuestions = () => {
               {[...hrQuestions.row1, ...hrQuestions.row1].map((question, index) => (
                 <motion.div
                   key={`row1-${index}`}
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileHover={isDesktop ? { scale: 1.05, y: -2 } : undefined}
                   className="flex-shrink-0 bg-gradient-to-r from-slate-100 to-gray-200 text-primary-900 px-4 py-3 md:px-6 md:py-4 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
                 >
                   {question}
@@ -177,7 +175,7 @@ const SlidingHRQuestions = () => {
               {[...hrQuestions.row2, ...hrQuestions.row2].map((question, index) => (
                 <motion.div
                   key={`row2-${index}`}
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileHover={isDesktop ? { scale: 1.05, y: -2 } : undefined}
                   className="flex-shrink-0 bg-gradient-to-r from-blue-100 to-sky-200 text-primary-900 px-4 py-3 md:px-6 md:py-4 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
                 >
                   {question}
@@ -200,7 +198,7 @@ const SlidingHRQuestions = () => {
               {[...hrQuestions.row3, ...hrQuestions.row3].map((question, index) => (
                 <motion.div
                   key={`row3-${index}`}
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileHover={isDesktop ? { scale: 1.05, y: -2 } : undefined}
                   className="flex-shrink-0 bg-gradient-to-r from-indigo-100 to-blue-200 text-primary-900 px-4 py-3 md:px-6 md:py-4 rounded-xl font-medium text-xs md:text-sm whitespace-nowrap shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
                 >
                   {question}
@@ -220,15 +218,15 @@ const SlidingHRQuestions = () => {
         >
           {/* Feature 1 */}
           <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
+            whileHover={isDesktop ? { scale: 1.05, y: -5 } : undefined}
             className="text-center group"
           >
             <motion.div
-              whileHover={{ scale: 1.1 }}
+              whileHover={isDesktop ? { scale: 1.1 } : undefined}
               transition={{ duration: 0.3 }}
-              className="w-16 h-16 bg-slate-100 border-2 border-slate-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-primary-600 transition-all duration-300"
+              className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Target className="w-8 h-8 text-primary-700" />
+              <Target className="w-8 h-8 text-secondary-500" />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -243,15 +241,15 @@ const SlidingHRQuestions = () => {
 
           {/* Feature 2 */}
           <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
+            whileHover={isDesktop ? { scale: 1.05, y: -5 } : undefined}
             className="text-center group"
           >
             <motion.div
-              whileHover={{ scale: 1.1 }}
+              whileHover={isDesktop ? { scale: 1.1 } : undefined}
               transition={{ duration: 0.3 }}
-              className="w-16 h-16 bg-blue-50 border-2 border-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-primary-600 transition-all duration-300"
+              className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <BarChart3 className="w-8 h-8 text-primary-700" />
+              <BarChart3 className="w-8 h-8 text-secondary-500" />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -266,15 +264,15 @@ const SlidingHRQuestions = () => {
 
           {/* Feature 3 */}
           <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
+            whileHover={isDesktop ? { scale: 1.05, y: -5 } : undefined}
             className="text-center group"
           >
             <motion.div
-              whileHover={{ scale: 1.1 }}
+              whileHover={isDesktop ? { scale: 1.1 } : undefined}
               transition={{ duration: 0.3 }}
-              className="w-16 h-16 bg-gray-50 border-2 border-gray-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-primary-600 transition-all duration-300"
+              className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Users className="w-8 h-8 text-primary-700" />
+              <Users className="w-8 h-8 text-secondary-500" />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -289,15 +287,15 @@ const SlidingHRQuestions = () => {
 
           {/* Feature 4 */}
           <motion.div
-            whileHover={{ scale: 1.05, y: -5 }}
+            whileHover={isDesktop ? { scale: 1.05, y: -5 } : undefined}
             className="text-center group"
           >
             <motion.div
-              whileHover={{ scale: 1.1 }}
+              whileHover={isDesktop ? { scale: 1.1 } : undefined}
               transition={{ duration: 0.3 }}
-              className="w-16 h-16 bg-slate-50 border-2 border-slate-300 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-primary-600 transition-all duration-300"
+              className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Shield className="w-8 h-8 text-primary-700" />
+              <Shield className="w-8 h-8 text-secondary-500" />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -321,8 +319,8 @@ const SlidingHRQuestions = () => {
         >
           <Link href="/contact">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isDesktop ? { scale: 1.05 } : undefined}
+              whileTap={isDesktop ? { scale: 0.95 } : undefined}
               className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:shadow-lg transition-all duration-300 flex items-center mx-auto"
             >
               Get Your HR Questions Answered

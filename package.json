@@ -12,10 +12,12 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed-candidates": "node prisma/seed-candidates.js",
+    "db:seed-insights": "node prisma/seed-insights.js",
     "db:update-resume-paths": "node prisma/update-resume-paths.js",
     "smoke:test": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "@types/nodemailer": "^7.0.2",

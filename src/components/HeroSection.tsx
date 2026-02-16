@@ -3,8 +3,11 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import SectionTitle from '@/components/SectionTitle';
 
 const HeroSection = () => {
+  const isDesktop = useIsDesktop();
   // Text animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -79,39 +82,15 @@ const HeroSection = () => {
           animate="visible"
           className="text-center max-w-4xl mx-auto"
         >
-          {/* Badge */}
-          <motion.div
-            variants={itemVariants}
-            className="inline-flex items-center px-4 py-2 bg-primary-100 backdrop-blur-sm rounded-full text-sm font-medium text-primary-800 mb-8"
-          >
-            <span className="w-2 h-2 bg-secondary-500 rounded-full mr-2 animate-pulse"></span>
-            Leading HR Excellence in Kenya
-          </motion.div>
-          
-          {/* Main Heading */}
-          <motion.div
-            variants={textVariants}
-            className="space-y-6 mb-8"
-          >
-            <motion.h1 
-              variants={textVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium leading-tight text-primary-900"
-            >
-              Transforming Your
-              <motion.span 
-                variants={textVariants}
-                className="block text-secondary-500 mt-2"
-              >
-                Human Resources
-              </motion.span>
-            </motion.h1>
-            
-            <motion.p 
-              variants={textVariants}
-              className="text-lg md:text-xl text-primary-700 max-w-3xl mx-auto leading-relaxed"
-            >
-              Building stronger organizations through tailored HR solutions and workforce transformation.
-            </motion.p>
+          <motion.div variants={textVariants} className="mb-8">
+            <SectionTitle
+              label="Leading HR in Kenya"
+              title="Transforming your"
+              titleLine2="human resources"
+              subtitle="Building stronger organizations through tailored HR solutions and workforce transformation."
+              variant="hero"
+              className="text-primary-900"
+            />
           </motion.div>
 
           {/* CTA Buttons */}
@@ -120,8 +99,8 @@ const HeroSection = () => {
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isDesktop ? { scale: 1.05 } : undefined}
+              whileTap={isDesktop ? { scale: 0.95 } : undefined}
             >
               <Link
                 href="/contact"
@@ -133,8 +112,8 @@ const HeroSection = () => {
             </motion.div>
             
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isDesktop ? { scale: 1.05 } : undefined}
+              whileTap={isDesktop ? { scale: 0.95 } : undefined}
             >
               <Link
                 href="/services"
@@ -169,15 +148,15 @@ const HeroSection = () => {
               {clients.map((client, index) => (
                 <motion.div
                   key={`first-${index}`}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+                  animate={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
                   transition={{ delay: 1.6 + index * 0.1, duration: 0.5 }}
-                  className="flex-shrink-0 mx-8 flex items-center justify-center h-16"
+                  className="flex-shrink-0 mx-8 flex items-center justify-center h-[4.84rem]"
                 >
                   <img 
                     src={client.logo} 
                     alt={client.name}
-                    className={`${client.name === 'WSUP' ? 'h-16 w-40' : client.name === 'KEBS' ? 'h-16 w-auto' : client.name === 'Consolidated Bank' ? 'h-16 w-auto' : client.name === 'Kenya Development Corporation' ? 'h-16 w-auto' : client.name === 'TARDA' ? 'h-14 w-auto' : client.name === 'Pacida' ? 'h-8 w-auto' : client.name === 'CMA' ? 'h-8 w-auto' : client.name === 'ICPAK' ? 'h-8 w-auto' : 'h-12 w-auto'} object-contain filter brightness-0 invert hover:brightness-100 hover:invert-0 transition-all duration-300 opacity-60 hover:opacity-100`}
+                    className={`${client.name === 'WSUP' ? 'h-[4.84rem] w-[12.1rem]' : client.name === 'KEBS' ? 'h-[4.84rem] w-auto' : client.name === 'Consolidated Bank' ? 'h-[4.84rem] w-auto' : client.name === 'Kenya Development Corporation' ? 'h-[4.84rem] w-auto' : client.name === 'TARDA' ? 'h-[4.235rem] w-auto' : client.name === 'Pacida' ? 'h-[2.42rem] w-auto' : client.name === 'CMA' ? 'h-[2.42rem] w-auto' : client.name === 'ICPAK' ? 'h-[2.42rem] w-auto' : 'h-[3.63rem] w-auto'} object-contain filter brightness-0 invert hover:brightness-100 hover:invert-0 transition-all duration-300 opacity-60 hover:opacity-100`}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'block';
@@ -191,15 +170,15 @@ const HeroSection = () => {
               {clients.map((client, index) => (
                 <motion.div
                   key={`second-${index}`}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, ...(isDesktop ? { scale: 0.8 } : {}) }}
+                  animate={{ opacity: 1, ...(isDesktop ? { scale: 1 } : {}) }}
                   transition={{ delay: 1.6 + index * 0.1, duration: 0.5 }}
-                  className="flex-shrink-0 mx-8 flex items-center justify-center h-16"
+                  className="flex-shrink-0 mx-8 flex items-center justify-center h-[4.84rem]"
                 >
                   <img 
                     src={client.logo} 
                     alt={client.name}
-                    className={`${client.name === 'WSUP' ? 'h-16 w-40' : client.name === 'KEBS' ? 'h-16 w-auto' : client.name === 'Consolidated Bank' ? 'h-16 w-auto' : client.name === 'Kenya Development Corporation' ? 'h-16 w-auto' : client.name === 'TARDA' ? 'h-14 w-auto' : client.name === 'Pacida' ? 'h-8 w-auto' : client.name === 'CMA' ? 'h-8 w-auto' : client.name === 'ICPAK' ? 'h-8 w-auto' : 'h-12 w-auto'} object-contain filter brightness-0 invert hover:brightness-100 hover:invert-0 transition-all duration-300 opacity-60 hover:opacity-100`}
+                    className={`${client.name === 'WSUP' ? 'h-[4.84rem] w-[12.1rem]' : client.name === 'KEBS' ? 'h-[4.84rem] w-auto' : client.name === 'Consolidated Bank' ? 'h-[4.84rem] w-auto' : client.name === 'Kenya Development Corporation' ? 'h-[4.84rem] w-auto' : client.name === 'TARDA' ? 'h-[4.235rem] w-auto' : client.name === 'Pacida' ? 'h-[2.42rem] w-auto' : client.name === 'CMA' ? 'h-[2.42rem] w-auto' : client.name === 'ICPAK' ? 'h-[2.42rem] w-auto' : 'h-[3.63rem] w-auto'} object-contain filter brightness-0 invert hover:brightness-100 hover:invert-0 transition-all duration-300 opacity-60 hover:opacity-100`}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'block';

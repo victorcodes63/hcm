@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cookie, X, Settings, Check, Shield } from 'lucide-react';
 
@@ -12,6 +13,7 @@ interface CookiePreferences {
 }
 
 export default function CookieConsent() {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
@@ -77,6 +79,8 @@ export default function CookieConsent() {
     }));
   };
 
+  // Never show cookie banner on ATS/dashboard (including login)
+  if (pathname?.startsWith('/dashboard')) return null;
   if (!isVisible) return null;
 
   return (

@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SectionTitle from '@/components/SectionTitle';
+import ServicePageCard from '@/components/ServicePageCard';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function HRCompliancePage() {
   const complianceServices = [
@@ -123,12 +127,9 @@ export default function HRCompliancePage() {
   };
 
   const industries = [
-    { name: 'Government', icon: Building },
-    { name: 'Banking & Finance', icon: Building },
-    { name: 'Manufacturing', icon: Building },
-    { name: 'Healthcare', icon: Building },
-    { name: 'Education', icon: Building },
-    { name: 'Technology', icon: Building }
+    "Banking & Financial Services", "Technology & IT", "Healthcare & Pharmaceuticals",
+    "Manufacturing & Engineering", "Government & Public Sector", "NGOs & Development",
+    "Education & Training", "Retail & Consumer Goods", "Energy & Utilities", "Real Estate & Construction"
   ];
 
   return (
@@ -156,13 +157,13 @@ export default function HRCompliancePage() {
             transition={{ duration: 0.8 }}
             className="max-w-4xl mx-auto text-center"
           >
-            <h1 className="text-4xl md:text-6xl font-heading font-bold mb-6 text-primary-900">
-              HR Compliance & Legal
-            </h1>
-            <p className="text-xl md:text-2xl text-primary-800 leading-relaxed mb-8">
-              Ensure your organization meets all Kenyan labor laws and regulations. 
-              Comprehensive compliance support and legal advisory services.
-            </p>
+            <SectionTitle
+              label="HR compliance & legal"
+              title="HR compliance & legal."
+              subtitle="Ensure your organisation meets all Kenyan labour laws and regulations. Comprehensive compliance support and legal advisory services."
+              variant="hero"
+              className="mb-8"
+            />
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/contact"
@@ -193,46 +194,17 @@ export default function HRCompliancePage() {
             viewport={{ once: true }}
             className="max-w-6xl mx-auto"
           >
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                Comprehensive HR Compliance Solutions
-            </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Stay compliant with all Kenyan labor laws and regulations. Our expert team ensures your organization meets every statutory requirement.
-              </p>
-            </div>
+            <SectionTitle
+              label="Our services"
+              title="Comprehensive HR compliance solutions."
+              subtitle="Stay compliant with all Kenyan labour laws and regulations. Our expert team ensures your organisation meets every statutory requirement."
+              variant="section"
+              className="mb-16"
+            />
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {complianceServices.map((service, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-neutral-100 hover:border-primary-200 p-8"
-                >
-                  <div className="w-16 h-16 bg-secondary-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <service.icon className="w-8 h-8 text-secondary-500" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-primary-900 mb-4">
-                    {service.title}
-                  </h3>
-                  
-                  <p className="text-neutral-600 mb-6 leading-relaxed">
-                    {service.description}
-                  </p>
-                  
-                  <ul className="space-y-3">
-                    {service.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start text-neutral-600">
-                        <CheckCircle className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
+                <ServicePageCard key={index} item={service} index={index} />
               ))}
             </div>
           </motion.div>
@@ -268,8 +240,8 @@ export default function HRCompliancePage() {
                   viewport={{ once: true }}
                   className="text-center"
                 >
-                  <div className="w-16 h-16 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-                    <benefit.icon className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mx-auto mb-6 border border-secondary-100">
+                    <benefit.icon className="w-8 h-8 text-secondary-500" />
                   </div>
                   <h3 className="text-xl font-bold text-primary-900 mb-4">
                     {benefit.title}
@@ -423,155 +395,66 @@ export default function HRCompliancePage() {
         </div>
       </section>
 
-      {/* Industries Served */}
-      <section className="py-20 bg-neutral-50">
+      {/* Industries Section */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-6xl mx-auto"
-          >
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
-                Industries We Serve
-              </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Our compliance expertise spans across various industries, each with unique regulatory requirements.
-              </p>
-            </div>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Industries" title="Industries we serve." subtitle="Our compliance expertise spans across various industries, each with unique regulatory requirements." variant="section" />
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {industries.map((industry, index) => (
+              <motion.div key={index} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05, duration: 0.4 }} viewport={{ once: true }} className="bg-secondary-50/80 rounded-lg p-4 text-center border border-secondary-100/60 hover:bg-secondary-100/80 transition-colors duration-300">
+                <div className="text-sm font-medium text-primary-900">{industry}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {industries.map((industry, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 text-center group"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <industry.icon className="w-8 h-8 text-primary-600" />
+      {/* CTA Card */}
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="container mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}>
+            <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="relative h-56 lg:h-auto lg:min-h-[340px] order-1">
+                  <Image src="/images/about/Smiling%20African%20American%20Woman%20Business%20Suit.PNG" alt="Professional HR consultation" fill className="object-cover object-top" sizes="(max-width: 1024px) 100vw, 50vw" />
+                </div>
+                <div className="p-8 lg:p-10 flex flex-col justify-center order-2">
+                  <h3 className="text-2xl lg:text-3xl font-heading font-bold text-primary-900 mb-4">Ready to Ensure Full Compliance?</h3>
+                  <p className="text-neutral-600 leading-relaxed mb-6">Let our expert team help you navigate the complex world of HR compliance. Protect your organisation and ensure fair treatment of your employees.</p>
+                  <p className="text-xl font-semibold text-secondary-500 mb-4">Take the next step</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link href="/services" className="bg-primary-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-800 transition text-center">View All Services</Link>
+                    <Link href="/contact" className="border border-primary-900 text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-900 hover:text-white transition text-center">Schedule Consultation</Link>
                   </div>
-                  <h3 className="text-xl font-bold text-primary-900">
-                    {industry.name}
-                  </h3>
-                </motion.div>
-              ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Download Resources */}
-      <section className="py-12 bg-secondary-500">
+      {/* Download Resources Section */}
+      <section className="py-12 bg-secondary-500 text-white">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-6xl mx-auto"
-          >
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold text-white mb-6">
-                Download Our Compliance Resources
-              </h2>
-              <p className="text-xl text-orange-100 max-w-3xl mx-auto">
-                Access our comprehensive guides and templates to help your organization stay compliant.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  title: 'HR Compliance Checklist',
-                  description: 'Comprehensive checklist covering all Kenyan labor law requirements and statutory obligations.',
-                  icon: CheckCircle,
-                  link: '/downloads/hr-compliance-checklist.pdf'
-                },
-                {
-                  title: 'Employment Contract Templates',
-                  description: 'Ready-to-use employment contract templates that comply with Kenyan labor laws.',
-                  icon: FileText,
-                  link: '/downloads/employment-contracts.pdf'
-                },
-                {
-                  title: 'Disciplinary Procedures Guide',
-                  description: 'Step-by-step guide for implementing fair and legally compliant disciplinary procedures.',
-                  icon: Gavel,
-                  link: '/downloads/disciplinary-procedures.pdf'
-                }
-              ].map((resource, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-br from-secondary-100 to-secondary-200 rounded-xl flex items-center justify-center mb-6">
-                    <resource.icon className="w-8 h-8 text-secondary-600" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-primary-900 mb-4">
-                    {resource.title}
-                  </h3>
-                  
-                  <p className="text-neutral-600 leading-relaxed flex-grow">
-                    {resource.description}
-                  </p>
-                  
-                  <a
-                    href={resource.link}
-                    className="mt-auto inline-flex items-center px-6 py-3 bg-secondary-500 text-white rounded-lg font-semibold hover:bg-secondary-600 transition-colors duration-300"
-                  >
-                    <Download className="mr-2 w-5 h-5" />
-                    Download PDF
-                  </a>
-                </motion.div>
-              ))}
-            </div>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-16">
+            <SectionTitle label="Resources" title="Download our resources." subtitle="Access our company profile and client list to learn more about Eagle HR and the organisations we partner with." variant="dark" className="mb-16" />
           </motion.div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto text-center"
-          >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-white mb-6">
-              Ready to Ensure Full Compliance?
-            </h2>
-            <p className="text-xl text-primary-200 mb-8 leading-relaxed">
-              Let our expert team help you navigate the complex world of HR compliance. 
-              Protect your organization and ensure fair treatment of your employees.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/contact"
-                className="inline-flex items-center px-8 py-4 bg-secondary-500 text-white rounded-lg font-semibold text-lg hover:bg-secondary-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Schedule Consultation
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </a>
-              <a
-                href="mailto:info@eaglehr.co.ke"
-                className="inline-flex items-center px-8 py-4 bg-white/20 text-white rounded-lg font-semibold text-lg hover:bg-white/30 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 backdrop-blur-sm"
-              >
-                Send Email
-              </a>
-            </div>
-          </motion.div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in HR compliance.</p>
+              <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building className="w-8 h-8 text-white" /></div>
+              <h3 className="text-xl font-semibold mb-4">Client List</h3>
+              <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
+              <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
+            </motion.div>
+          </div>
         </div>
       </section>
 
