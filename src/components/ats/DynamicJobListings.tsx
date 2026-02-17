@@ -189,60 +189,59 @@ const DynamicJobListings = ({
     <div className="w-full">
       {/* Search and Filters */}
       {showSearch && (
-        <div className="mb-8 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl border border-primary-200">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search for jobs, companies, or keywords..."
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            
-            {/* Location Filter */}
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-              <select 
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="pl-10 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl border border-primary-200">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Search row: input + button on mobile */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative min-w-0">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search jobs, companies, keywords..."
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                className="w-full sm:w-auto px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 flex items-center justify-center gap-2 shrink-0"
               >
-                <option value="">All Locations</option>
-                <option value="Nairobi">Nairobi</option>
-                <option value="Mombasa">Mombasa</option>
-                <option value="Kisumu">Kisumu</option>
-                <option value="Nakuru">Nakuru</option>
-                <option value="Remote">Remote</option>
-              </select>
+                <Search className="w-5 h-5" />
+                Search
+              </button>
             </div>
-            
-            {/* Category Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-              <select 
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="pl-10 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white min-w-[150px]"
-              >
-                <option value="">All Categories</option>
-                {categoryOptions.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+            {/* Filters: full-width dropdowns on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-row gap-3">
+              <div className="relative min-w-0">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white text-sm sm:text-base"
+                >
+                  <option value="">All Locations</option>
+                  <option value="Nairobi">Nairobi</option>
+                  <option value="Mombasa">Mombasa</option>
+                  <option value="Kisumu">Kisumu</option>
+                  <option value="Nakuru">Nakuru</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+              <div className="relative min-w-0">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white text-sm sm:text-base"
+                >
+                  <option value="">All Categories</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            
-            {/* Search Button */}
-            <button 
-              onClick={handleSearch}
-              className="px-8 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 flex items-center justify-center"
-            >
-              <Search className="w-5 h-5 mr-2" />
-              Search
-            </button>
           </div>
         </div>
       )}
@@ -276,64 +275,64 @@ const DynamicJobListings = ({
                   onClick={() => setActiveJob(isActive ? null : index)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-500 ${
+                  className={`w-full text-left p-4 sm:p-6 rounded-xl border-2 transition-all duration-500 ${
                     isActive 
                       ? `bg-gradient-to-r ${colors.bgColor} border-${colors.color.split('-')[1]}-300 shadow-lg` 
                       : 'bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                       <motion.div
                         whileHover={{ rotate: 360 }}
                         transition={{ duration: 0.6 }}
-                        className={`w-12 h-12 bg-gradient-to-br ${colors.color} rounded-lg flex items-center justify-center shadow-lg`}
+                        className={`w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-gradient-to-br ${colors.color} rounded-lg flex items-center justify-center shadow-lg`}
                       >
-                        <Icon className="w-6 h-6 text-white" />
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </motion.div>
-                      
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-heading font-bold mb-2 text-primary-900">
+                        <h3 className="text-base sm:text-xl font-heading font-bold text-primary-900 leading-snug break-words">
                           {job.title}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-4 text-sm">
-                          <span className="flex items-center text-neutral-600">
-                            <Building2 className="w-4 h-4 mr-1" />
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-sm text-neutral-600">
+                          <span className="flex items-center shrink-0">
+                            <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 shrink-0" />
                             {job.company}
                           </span>
-                          <span className="flex items-center text-neutral-600">
-                            <MapPin className="w-4 h-4 mr-1" />
+                          <span className="flex items-center shrink-0">
+                            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 shrink-0" />
                             {job.location}
                           </span>
-                          <span className="flex items-center text-neutral-600">
-                            <Clock className="w-4 h-4 mr-1" />
+                          <span className="flex items-center shrink-0">
+                            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 shrink-0" />
                             {job.type}
                           </span>
-                          <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-xs font-medium">
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="bg-primary-100 text-primary-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
                             {job.category}
                           </span>
                           {job.applicationDeadline && (
-                            <span className="text-amber-700 font-medium">
+                            <span className="text-amber-700 text-xs sm:text-sm font-medium">
                               Apply by: {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           )}
                           {job.salary && (
-                            <span className="text-green-600 font-medium">
+                            <span className="text-green-600 text-xs sm:text-sm font-medium">
                               {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm text-neutral-500">{formatDate(job.postedDate)}</span>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t border-neutral-100 sm:border-0 pt-2 sm:pt-0">
+                      <span className="text-xs sm:text-sm text-neutral-500">{formatDate(job.postedDate)}</span>
                       <motion.div
                         animate={{ rotate: isActive ? 180 : 0 }}
                         transition={{ duration: 0.3 }}
                         className="flex-shrink-0"
                       >
-                        <ChevronDown className="w-6 h-6 text-neutral-500" />
+                        <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-500" />
                       </motion.div>
                     </div>
                   </div>
@@ -349,8 +348,8 @@ const DynamicJobListings = ({
                       transition={{ duration: 0.4, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className={`bg-gradient-to-br ${colors.bgColor} rounded-b-xl p-6 border-l-2 border-r-2 border-b-2 border-${colors.color.split('-')[1]}-300`}>
-                        <div className="grid md:grid-cols-2 gap-6">
+                      <div className={`bg-gradient-to-br ${colors.bgColor} rounded-b-xl p-4 sm:p-6 border-l-2 border-r-2 border-b-2 border-${colors.color.split('-')[1]}-300`}>
+                        <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                           {/* Left Column - Job Description */}
                           <div>
                             <h4 className="text-lg font-semibold text-primary-900 mb-4">Job Description:</h4>

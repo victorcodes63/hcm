@@ -65,7 +65,7 @@ export default function CareersPage() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 min-h-[60vh] flex flex-col justify-center overflow-hidden">
+      <section className="relative pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 min-h-[50vh] sm:min-h-[60vh] flex flex-col justify-center overflow-hidden">
         {/* Background Image with Reduced Opacity */}
         <div className="absolute inset-0">
           <div 
@@ -126,38 +126,45 @@ export default function CareersPage() {
       </section>
 
       {/* Search Section */}
-      <section className="py-12 bg-white border-b border-neutral-200">
+      <section className="py-8 sm:py-12 bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search Bar */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search for jobs, companies, or keywords..."
-                  className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative min-w-0">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search for jobs, companies, or keywords..."
+                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                  />
+                </div>
+                <a
+                  href="#job-openings"
+                  className="w-full sm:w-auto px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 flex items-center justify-center gap-2 shrink-0"
+                >
+                  <Search className="w-5 h-5" />
+                  Search
+                </a>
               </div>
-              
-              {/* Location Filter */}
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
-                <select className="pl-10 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white">
-                  <option>All Locations</option>
-                  <option>Nairobi</option>
-                  <option>Mombasa</option>
-                  <option>Kisumu</option>
-                  <option>Nakuru</option>
-                  <option>Remote</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                  <select className="w-full pl-10 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white text-base">
+                    <option>All Locations</option>
+                    <option>Nairobi</option>
+                    <option>Mombasa</option>
+                    <option>Kisumu</option>
+                    <option>Nakuru</option>
+                    <option>Remote</option>
+                  </select>
+                </div>
+                <div className="relative">
+                  <select className="w-full pl-4 pr-8 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white text-base">
+                    <option>All Categories</option>
+                  </select>
+                </div>
               </div>
-              
-              {/* Search Button */}
-              <button className="px-8 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 flex items-center justify-center">
-                <Search className="w-5 h-5 mr-2" />
-                Search
-              </button>
             </div>
           </div>
         </div>

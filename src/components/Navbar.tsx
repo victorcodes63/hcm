@@ -185,12 +185,12 @@ const Navbar = () => {
     >
         <div className="container mx-auto px-4 sm:px-6 md:px-5 max-w-full min-w-0">
           <div className="relative flex items-center justify-between h-16 md:h-20 min-w-0">
-            {/* Logo */}
-            <Link href="/" className="flex items-center z-10">
+            {/* Logo - extra padding to avoid clipping on mobile */}
+            <Link href="/" className="flex items-center z-10 py-1 overflow-visible">
               <motion.img
                 src="/images/logo/logo_dark_ubxaCll.png"
                 alt="Eagle HR Consultants"
-                className="w-12 h-12 md:w-14 md:h-14 object-contain"
+                className="w-12 h-12 md:w-14 md:h-14 object-contain object-center"
                 whileHover={isDesktop ? { scale: 1.05 } : undefined}
                 transition={{ duration: 0.3 }}
               />
