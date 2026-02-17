@@ -27,8 +27,10 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import SectionTitle from '@/components/SectionTitle';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 export default function RecruitmentPage() {
+  const isDesktop = useIsDesktop();
   const recruitmentServices = [
     {
       icon: Target,
@@ -236,9 +238,9 @@ export default function RecruitmentPage() {
             {recruitmentServices.map((service, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
+                initial={isDesktop ? { opacity: 0, y: 30 } : { opacity: 1, y: 0 }}
+                whileInView={isDesktop ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+                transition={isDesktop ? { delay: index * 0.1, duration: 0.6 } : { duration: 0 }}
                 viewport={{ once: true }}
                 className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-neutral-100 hover:border-primary-200 overflow-hidden"
               >
