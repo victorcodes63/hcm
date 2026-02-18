@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseStaffSession } from '@/lib/auth-session';
+import { ensureUniqueSlug, insightSlugBase } from '@/lib/slug';
 
 function requireStaff(request: NextRequest): NextResponse | null {
   const raw = request.cookies.get('staff_session')?.value;
@@ -16,6 +17,7 @@ function requireStaff(request: NextRequest): NextResponse | null {
 
 function toJson(insight: {
   id: string;
+  slug: string | null;
   title: string;
   excerpt: string;
   body: string | null;
@@ -30,6 +32,7 @@ function toJson(insight: {
 }) {
   return {
     id: insight.id,
+    slug: insight.slug ?? null,
     title: insight.title,
     excerpt: insight.excerpt,
     body: insight.body ?? null,
@@ -45,7 +48,7 @@ function toJson(insight: {
   };
 }
 
-/** GET: fetch single insight (staff only, for edit page). */
+/** GET: fetch single insight by id (staff only, for edit page). */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -66,8 +69,8 @@ export async function GET(
       );
     }
 
-    const insight = await prisma.insight.findUnique({
-      where: { id },
+    const insight = await prisma.insight.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
     });
     if (!insight) {
       return NextResponse.json({ error: 'Insight not found.' }, { status: 404 });
@@ -103,7 +106,7 @@ export async function PATCH(
   }
 
   const b = body as Record<string, unknown>;
-  const updates: { title?: string; excerpt?: string; body?: string | null; author?: string; category?: string; url?: string; image?: string; imageTitle?: string | null } = {};
+  const updates: { title?: string; excerpt?: string; body?: string | null; author?: string; category?: string; url?: string; image?: string; imageTitle?: string | null; slug?: string } = {};
   if (typeof b.title === 'string') updates.title = b.title.trim();
   if (typeof b.excerpt === 'string') updates.excerpt = b.excerpt.trim();
   if (b.body !== undefined) updates.body = typeof b.body === 'string' ? b.body.trim() || null : null;
@@ -119,6 +122,22 @@ export async function PATCH(
         { error: 'Insights are not available without a database.' },
         { status: 503 }
       );
+    }
+
+    const existing = await prisma.insight.findUnique({
+      where: { id },
+      select: { slug: true, title: true },
+    });
+    if (existing?.slug == null) {
+      const baseSlug = insightSlugBase(updates.title ?? existing.title, id.slice(0, 8));
+      const slug = await ensureUniqueSlug(baseSlug, async (s) => {
+        const other = await prisma.insight.findFirst({
+          where: { slug: s, id: { not: id } },
+        });
+        return !!other;
+      });
+      updates.slug = slug;
+      if (!updates.url) updates.url = `/insights/${slug}`;
     }
 
     const insight = await prisma.insight.update({

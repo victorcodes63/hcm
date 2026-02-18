@@ -4,6 +4,14 @@ import crypto from 'crypto';
 const OAUTH_STATE_COOKIE = 'staff_oauth_state';
 const OAUTH_STATE_MAX_AGE = 60 * 10; // 10 minutes
 
+/** Cookie domain so state/session work when start is on www and callback on apex (or vice versa). */
+function getCookieDomain(requestUrl: string): string | undefined {
+  if (process.env.NODE_ENV !== 'production') return undefined;
+  const host = new URL(requestUrl).hostname.toLowerCase();
+  if (host === 'eaglehr.co.ke' || host === 'www.eaglehr.co.ke') return '.eaglehr.co.ke';
+  return undefined;
+}
+
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
     return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, '');
@@ -40,12 +48,14 @@ export async function GET(request: NextRequest) {
   authUrl.searchParams.set('prompt', 'select_account');
 
   const response = NextResponse.redirect(authUrl);
+  const cookieDomain = getCookieDomain(request.url);
   response.cookies.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: OAUTH_STATE_MAX_AGE,
     path: '/',
+    ...(cookieDomain && { domain: cookieDomain }),
   });
   return response;
 }

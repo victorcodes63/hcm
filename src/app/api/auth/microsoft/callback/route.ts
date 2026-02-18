@@ -9,6 +9,14 @@ const OAUTH_STATE_COOKIE = 'staff_oauth_state';
 const ALLOWED_DOMAIN = (process.env.STAFF_ALLOWED_DOMAIN || 'eaglehr.co.ke').toLowerCase();
 const OAUTH_DEBUG = process.env.MS_OAUTH_DEBUG === 'true';
 
+/** Cookie domain so state/session work when start is on www and callback on apex (or vice versa). */
+function getCookieDomain(requestUrl: string): string | undefined {
+  if (process.env.NODE_ENV !== 'production') return undefined;
+  const host = new URL(requestUrl).hostname.toLowerCase();
+  if (host === 'eaglehr.co.ke' || host === 'www.eaglehr.co.ke') return '.eaglehr.co.ke';
+  return undefined;
+}
+
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
     return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, '');
@@ -48,20 +56,17 @@ function logOAuthDebug(step: string, details: Record<string, unknown>) {
 
 function denyToLogin(request: NextRequest, reason: string) {
   const denied = NextResponse.redirect(new URL(`/dashboard/login?error=${reason}`, request.url));
-  denied.cookies.set(OAUTH_STATE_COOKIE, '', {
+  const cookieDomain = getCookieDomain(request.url);
+  const cookieOpts = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     maxAge: 0,
     path: '/',
-  });
-  denied.cookies.set(STAFF_SESSION_COOKIE, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/',
-  });
+    ...(cookieDomain && { domain: cookieDomain }),
+  };
+  denied.cookies.set(OAUTH_STATE_COOKIE, '', cookieOpts);
+  denied.cookies.set(STAFF_SESSION_COOKIE, '', cookieOpts);
   return denied;
 }
 
@@ -227,12 +232,14 @@ export async function GET(request: NextRequest) {
 
     logOAuthDebug('login_success', { resolvedEmail: email, userId: user.id, role: user.role });
     const response = NextResponse.redirect(dashboardUrl);
+    const cookieDomain = getCookieDomain(request.url);
     response.cookies.set(STAFF_SESSION_COOKIE, `ms:${user.id}:${user.role}:${email}`, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: STAFF_SESSION_MAX_AGE,
       path: '/',
+      ...(cookieDomain && { domain: cookieDomain }),
     });
     response.cookies.set(OAUTH_STATE_COOKIE, '', {
       httpOnly: true,
@@ -240,6 +247,7 @@ export async function GET(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 0,
       path: '/',
+      ...(cookieDomain && { domain: cookieDomain }),
     });
     return response;
   } catch (error) {

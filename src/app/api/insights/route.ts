@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseStaffSession } from '@/lib/auth-session';
+import { ensureUniqueSlug, insightSlugBase } from '@/lib/slug';
 
 /** GET: list insights (public). Ordered by publishedAt desc. */
 export async function GET() {
@@ -14,6 +15,7 @@ export async function GET() {
     return NextResponse.json(
       list.map((i) => ({
         id: i.id,
+        slug: i.slug ?? null,
         title: i.title,
         excerpt: i.excerpt,
         body: i.body ?? null,
@@ -82,14 +84,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const baseSlug = insightSlugBase(title);
+    const slug = await ensureUniqueSlug(baseSlug, async (s) => {
+      const existing = await prisma.insight.findUnique({ where: { slug: s } });
+      return !!existing;
+    });
+    const internalUrl = `/insights/${slug}`;
+
     const insight = await prisma.insight.create({
       data: {
+        slug,
         title,
         excerpt,
         body: articleBody ?? undefined,
         author: author || 'Eagle HR',
         category: category || 'Uncategorized',
-        url: url || '#',
+        url: url?.trim() ? url : internalUrl,
         image: image || '/images/insights/featured-images/placeholder.png',
         imageTitle: imageTitle ?? undefined,
       },
@@ -97,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       id: insight.id,
+      slug: insight.slug ?? null,
       title: insight.title,
       excerpt: insight.excerpt,
       body: insight.body ?? null,

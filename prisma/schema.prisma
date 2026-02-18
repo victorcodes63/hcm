@@ -178,12 +178,13 @@ enum UserRole {
 // Insights / blog articles managed by staff; shown on public /insights page
 model Insight {
   id        String   @id @default(cuid())
+  slug      String?  @unique // URL-safe e.g. pay-transparency for /insights/[slug]
   title     String   @db.Text
   excerpt   String   @db.Text
-  body      String?  @db.Text // optional full article content; when set, shown in accordion on /insights
+  body      String?  @db.Text // optional full article content; shown on /insights/[slug]
   author    String   // e.g. "Eagle HR" or staff name
   category  String   // e.g. "Uncategorized", "Job Hunting Tips", "HR Outsourcing"
-  url       String   @db.Text // link to full article (external or future /insights/[slug])
+  url       String   @db.Text // external link when no slug; else /insights/[slug]
   image    String   @db.Text // path or URL for featured image (from upload or external)
   imageTitle String?  // optional caption/title for the featured image, stored like CV metadata
   publishedAt DateTime @default(now()) // used for ordering and "date" display
@@ -192,4 +193,5 @@ model Insight {
 
   @@index([publishedAt(sort: Desc)])
   @@index([category])
+  @@index([slug])
 }

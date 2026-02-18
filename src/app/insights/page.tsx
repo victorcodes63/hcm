@@ -1,7 +1,8 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
@@ -17,12 +18,12 @@ import {
   TrendingUp,
   Users,
   Shield,
-  Loader2,
-  ChevronDown
+  Loader2
 } from 'lucide-react';
 
 interface BlogPost {
   id: string;
+  slug: string | null;
   title: string;
   excerpt: string;
   body: string | null;
@@ -38,7 +39,6 @@ export default function InsightsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [postsFromApi, setPostsFromApi] = useState<BlogPost[] | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/insights')
@@ -46,8 +46,9 @@ export default function InsightsPage() {
       .then((data) => {
         const arr = Array.isArray(data) ? data : [];
         setPostsFromApi(
-          arr.map((i: { id: string; title: string; excerpt: string; body?: string | null; date?: string; publishedAt?: string; author: string; category: string; url: string; image: string }) => ({
+          arr.map((i: { id: string; slug?: string | null; title: string; excerpt: string; body?: string | null; date?: string; publishedAt?: string; author: string; category: string; url: string; image: string }) => ({
             id: i.id,
+            slug: i.slug ?? null,
             title: i.title,
             excerpt: i.excerpt,
             body: i.body ?? null,
@@ -273,46 +274,26 @@ export default function InsightsPage() {
                           </div>
                         </div>
                         
-                        <button
-                          type="button"
-                          onClick={() => setExpandedId(expandedId === post.id ? null : post.id)}
-                          className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 w-fit"
-                        >
-                          {expandedId === post.id ? 'Show less' : 'Read full article'}
-                          <motion.span
-                            animate={{ rotate: expandedId === post.id ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
+                        {post.slug ? (
+                          <Link
+                            href={`/insights/${post.slug}`}
+                            className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 w-fit"
                           >
-                            <ChevronDown className="w-4 h-4 ml-2" />
-                          </motion.span>
-                        </button>
+                            Read full article
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </Link>
+                        ) : post.url && post.url !== '#' ? (
+                          <a
+                            href={post.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300 w-fit"
+                          >
+                            Read full article
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </a>
+                        ) : null}
                       </div>
-
-                      <AnimatePresence>
-                        {expandedId === post.id && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.35, ease: 'easeInOut' }}
-                            className="overflow-hidden border-t border-neutral-200"
-                          >
-                            <div className="p-8 bg-neutral-50/80">
-                              <div className="max-w-3xl mx-auto prose prose-neutral prose-lg">
-                                {(post.body && post.body.trim()) ? (
-                                  <div className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
-                                    {post.body}
-                                  </div>
-                                ) : (
-                                  <p className="text-neutral-700 leading-relaxed">
-                                    {post.excerpt}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </motion.article>
                   ))}
 

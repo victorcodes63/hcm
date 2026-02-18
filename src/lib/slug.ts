@@ -34,6 +34,18 @@ export function jobSlugBase(title: string, location: string, idSuffix?: string):
 }
 
 /**
+ * Base slug for insight/article URLs (e.g. "Pay transparency" -> "pay-transparency").
+ */
+export function insightSlugBase(title: string, idSuffix?: string): string {
+  const base = slugify(title) || 'insight';
+  if (idSuffix) {
+    const suffix = idSuffix.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase();
+    return suffix ? `${base}-${suffix}` : base;
+  }
+  return base;
+}
+
+/**
  * Returns a slug that is unique according to the provided existence check.
  * If the base slug is taken, appends -2, -3, ... until an available one is found.
  */
