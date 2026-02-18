@@ -3,11 +3,8 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { put } from '@vercel/blob';
 
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-];
+// PDF only so CVs can be previewed in the dashboard (Word .doc/.docx are not reliably previewable in-browser)
+const ALLOWED_TYPES = ['application/pdf'];
 // Vercel serverless body limit is 4.5MB; keep under for server uploads to Blob
 const MAX_SIZE = 4.5 * 1024 * 1024;
 
@@ -20,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Use PDF or Word (DOC/DOCX).' },
+        { error: 'CV must be a PDF file so we can preview it. Please upload a PDF.' },
         { status: 400 }
       );
     }
@@ -31,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = path.extname(file.name) || '.pdf';
+    const ext = '.pdf';
     const safeName = `resumes/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 

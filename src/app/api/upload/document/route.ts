@@ -3,13 +3,8 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { put } from '@vercel/blob';
 
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/png',
-];
+// PDF only for certificates/documents (education, professional certs, memberships)
+const ALLOWED_TYPES = ['application/pdf'];
 // Vercel serverless body limit is 4.5MB; keep under for server uploads to Blob
 const MAX_SIZE = 4.5 * 1024 * 1024;
 
@@ -22,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Use PDF, Word (DOC/DOCX), or image (JPEG/PNG).' },
+        { error: 'Only PDF files are accepted for certificates and documents.' },
         { status: 400 }
       );
     }
@@ -33,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = path.extname(file.name) || '.pdf';
+    const ext = '.pdf';
     const safeName = `documents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 

@@ -18,6 +18,7 @@ function toJson(insight: {
   id: string;
   title: string;
   excerpt: string;
+  body: string | null;
   author: string;
   category: string;
   url: string;
@@ -31,6 +32,7 @@ function toJson(insight: {
     id: insight.id,
     title: insight.title,
     excerpt: insight.excerpt,
+    body: insight.body ?? null,
     date: insight.publishedAt.toISOString().split('T')[0],
     author: insight.author,
     category: insight.category,
@@ -101,9 +103,10 @@ export async function PATCH(
   }
 
   const b = body as Record<string, unknown>;
-  const updates: { title?: string; excerpt?: string; author?: string; category?: string; url?: string; image?: string; imageTitle?: string | null } = {};
+  const updates: { title?: string; excerpt?: string; body?: string | null; author?: string; category?: string; url?: string; image?: string; imageTitle?: string | null } = {};
   if (typeof b.title === 'string') updates.title = b.title.trim();
   if (typeof b.excerpt === 'string') updates.excerpt = b.excerpt.trim();
+  if (b.body !== undefined) updates.body = typeof b.body === 'string' ? b.body.trim() || null : null;
   if (typeof b.author === 'string') updates.author = b.author.trim();
   if (typeof b.category === 'string') updates.category = b.category.trim();
   if (typeof b.url === 'string') updates.url = b.url.trim();

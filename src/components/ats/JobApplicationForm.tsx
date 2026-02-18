@@ -209,6 +209,32 @@ function parseSalaryForSubmit(value: string): string {
   return value.replace(/\D/g, '');
 }
 
+/** Compute total work experience years from employment entries (start/end dates). */
+function totalWorkExperienceYears(
+  entries: { startDate?: string; endDate?: string; isCurrentJob?: boolean }[]
+): number {
+  if (!entries?.length) return 0;
+  const yearsBetween = (startDate: string, endDate: string): number => {
+    if (!startDate?.trim()) return 0;
+    const start = new Date(startDate.trim());
+    if (isNaN(start.getTime())) return 0;
+    const endStr = (endDate ?? '').trim().toLowerCase();
+    const end =
+      !endStr || endStr === 'present' || endStr === 'current'
+        ? new Date()
+        : new Date(endDate.trim());
+    if (isNaN(end.getTime())) return 0;
+    const months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+    return Math.max(0, Math.round((months / 12) * 10) / 10);
+  };
+  return entries.reduce((sum, e) => {
+    const end = e.isCurrentJob ? 'present' : (e.endDate ?? '');
+    return sum + yearsBetween(e.startDate ?? '', end);
+  }, 0);
+}
+
 interface JobApplicationFormProps {
   job: JobListing;
   onSuccess?: (applicationId: string) => void;
@@ -252,6 +278,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
   const employmentMax = 10;
 
   // Stage 4: Attachments
+  const [coverLetter, setCoverLetter] = useState('');
   const [professionalCertificationsList, setProfessionalCertificationsList] = useState<ProfessionalCertificationEntry[]>(() => [{ ...EMPTY_PROF_CERT }]);
   const [professionalCertFiles, setProfessionalCertFiles] = useState<(File | null)[]>(() => [null]);
   const [professionalMemberships, setProfessionalMemberships] = useState<ProfessionalMembershipEntry[]>(() => [{ ...EMPTY_MEMBERSHIP }]);
@@ -312,10 +339,29 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     const e: Record<string, string> = {};
     education.forEach((entry, i) => {
       const hasContent = entry.institution.trim() || entry.grade.trim() || (entry.discipline ?? '').trim();
-      if (hasContent && !educationFiles[i]) {
-        e[`edu_cert_${i}`] = `Certificate is required when institution or grade is filled`;
+      if (hasContent && !educationFiles[i] && !entry.certificatePath) {
+        e[`edu_cert_${i}`] = 'Certificate is required when institution or grade is filled';
+      }
+      if (entry.institution.trim() && !entry.grade.trim()) {
+        e[`edu_grade_${i}`] = 'Grade is required when institution is filled';
+      }
+      if (entry.grade.trim() && !entry.institution.trim()) {
+        e[`edu_institution_${i}`] = 'Institution is required when grade is filled';
+      }
+      if ((entry.institution.trim() || entry.grade.trim()) && !(entry.discipline ?? '').trim()) {
+        e[`edu_discipline_${i}`] = 'Discipline is required';
       }
     });
+    const hasCompleteEntry = education.some(
+      (entry, i) =>
+        entry.institution.trim() &&
+        entry.grade.trim() &&
+        (entry.discipline ?? '').trim() &&
+        (educationFiles[i] || entry.certificatePath)
+    );
+    if (!hasCompleteEntry) {
+      e.education = 'Please add at least one education entry with institution, grade, discipline, and certificate.';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -328,6 +374,16 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
       e.salaryExpectations = 'Please enter a valid amount (numbers only)';
     } else if (salaryDigits.length > 12) {
       e.salaryExpectations = 'Please enter a reasonable amount';
+    }
+    const completeEntries = employment.filter(
+      (entry) =>
+        entry.jobTitle.trim() &&
+        entry.companyName.trim() &&
+        entry.startDate.trim() &&
+        (entry.isCurrentJob || entry.endDate.trim())
+    );
+    if (completeEntries.length === 0) {
+      e.employment = 'Please add at least one work experience entry (job title, company, start date, and end date or “Current job”).';
     }
     employment.forEach((entry, i) => {
       const hasAny = entry.jobTitle.trim() || entry.companyName.trim() || entry.industry.trim() || entry.endDate;
@@ -499,6 +555,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
       };
 
       const salaryValue = parseSalaryForSubmit(profile.salaryExpectations);
+      const experienceYears = totalWorkExperienceYears(employmentPayload);
       const application = await submitApplicationFull({
         jobId: job.id,
         candidate: {
@@ -508,8 +565,10 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
           phone: profile.phone.trim(),
           nationality: profile.nationality.trim(),
           homeCounty: profile.homeCounty.trim(),
+          experience: Math.round(experienceYears * 10) / 10,
         },
         salaryExpectations: salaryValue ? formatSalaryDisplay(salaryValue) : '',
+        coverLetter: coverLetter.trim() || undefined,
         resumePath: resumePath || undefined,
         formData,
       });
@@ -621,29 +680,44 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
     });
   };
 
-  const allowedFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+  const cvAllowedType = 'application/pdf';
   const maxFileSize = 5 * 1024 * 1024;
 
-  const handleFile = (
-    file: File | null,
+  /** PDF-only handler for certificates/documents: rejects .doc/.docx immediately and resets input. */
+  const handleDocumentFile = (
+    e: React.ChangeEvent<HTMLInputElement>,
     setter: (f: File | null) => void,
     errorKey: string
   ) => {
+    const input = e.target;
+    const file = input.files?.[0] ?? null;
     if (!file) {
       setter(null);
-      setErrors((e) => ({ ...e, [errorKey]: '' }));
+      setErrors((err) => ({ ...err, [errorKey]: '' }));
       return;
     }
-    if (!allowedFileTypes.includes(file.type)) {
-      setErrors((e) => ({ ...e, [errorKey]: 'Use PDF, Word, or image (JPEG/PNG).' }));
+    const ext = (file.name.split('.').pop() ?? '').toLowerCase();
+    const isWord = ext === 'doc' || ext === 'docx' || file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (isWord) {
+      setter(null);
+      input.value = '';
+      setErrors((err) => ({ ...err, [errorKey]: 'Only PDF files are accepted. Word documents (.doc, .docx) are not accepted.' }));
+      return;
+    }
+    if (ext !== 'pdf' || file.type !== 'application/pdf') {
+      setter(null);
+      input.value = '';
+      setErrors((err) => ({ ...err, [errorKey]: 'Only PDF files are accepted.' }));
       return;
     }
     if (file.size > maxFileSize) {
-      setErrors((e) => ({ ...e, [errorKey]: 'File must be under 5MB.' }));
+      setter(null);
+      input.value = '';
+      setErrors((err) => ({ ...err, [errorKey]: 'File must be under 5MB.' }));
       return;
     }
     setter(file);
-    setErrors((e) => ({ ...e, [errorKey]: '' }));
+    setErrors((err) => ({ ...err, [errorKey]: '' }));
   };
 
   const steps = [
@@ -666,7 +740,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-xl max-w-2xl w-full my-8 shadow-xl"
+        className="bg-white rounded-xl max-w-4xl w-full my-8 shadow-xl"
       >
         <div className="sticky top-0 bg-white border-b border-neutral-200 px-4 sm:px-6 py-4 rounded-t-xl z-10">
           <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0">
@@ -869,13 +943,14 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   <GraduationCap className="w-5 h-5" />
                   Education
                 </h3>
-                <p className="text-sm text-neutral-600">Add institution, grade, and discipline. Certificate is required when you fill any field.</p>
+                <p className="text-sm text-neutral-600">Add at least one education entry with institution, grade, discipline, and certificate.</p>
+                {showError('education')}
                 {EDUCATION_LEVELS_SINGLE.map(({ value, label }, idx) => (
                   <div key={`${value}-${idx}`} className="border border-neutral-200 rounded-lg p-4 space-y-3">
                     <h4 className="text-sm font-medium text-neutral-800">{label}</h4>
                     <div className="grid md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-neutral-600 mb-1">Institution</label>
+                        <label className="block text-xs text-neutral-600 mb-1">Institution *</label>
                         <input
                           type="text"
                           value={education[idx]?.institution ?? ''}
@@ -883,42 +958,40 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                           className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
                           placeholder="Institution name"
                         />
+                        {showError(`edu_institution_${idx}`)}
                       </div>
                       <div>
-                        <label className="block text-xs text-neutral-600 mb-1">Grade</label>
+                        <label className="block text-xs text-neutral-600 mb-1">Grade *</label>
                         <input
                           type="text"
                           value={education[idx]?.grade ?? ''}
                           onChange={(e) => setEducationEntry(idx, 'grade', e.target.value)}
                           className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-                          placeholder="Grade / class"
+                          placeholder={value === 'high_school' ? 'A' : 'Grade / class'}
                         />
+                        {showError(`edu_grade_${idx}`)}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-neutral-600 mb-1">Discipline</label>
+                      <label className="block text-xs text-neutral-600 mb-1">Discipline *</label>
                       <input
                         type="text"
                         value={education[idx]?.discipline ?? ''}
                         onChange={(e) => setEducationEntry(idx, 'discipline', e.target.value)}
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-                        placeholder="e.g. Sciences, Commerce, Nursing, Engineering"
+                        placeholder={value === 'high_school' ? 'KCSE/GCSE' : 'e.g. Sciences, Commerce, Nursing, Engineering'}
                       />
+                      {showError(`edu_discipline_${idx}`)}
                     </div>
                     <div>
                       <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                       <input
                         type="file"
-                        accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                        onChange={(e) =>
-                          handleFile(
-                            e.target.files?.[0] ?? null,
-                            (f) => setEducationFile(idx, f),
-                            `edu_cert_${idx}`
-                          )
-                        }
+                        accept=".pdf,application/pdf"
+                        onChange={(e) => handleDocumentFile(e, (f) => setEducationFile(idx, f), `edu_cert_${idx}`)}
                         className="w-full text-sm"
                       />
+                      <p className="text-xs text-neutral-500 mt-1">PDF only</p>
                       {educationFiles[idx] && (
                         <p className="text-xs text-neutral-500 mt-1">{educationFiles[idx]?.name}</p>
                       )}
@@ -953,7 +1026,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                             </div>
                             <div className="grid md:grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Institution</label>
+                                <label className="block text-xs text-neutral-600 mb-1">Institution *</label>
                                 <input
                                   type="text"
                                   value={education[idx]?.institution ?? ''}
@@ -961,42 +1034,40 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
                                   placeholder="Institution name"
                                 />
+                                {showError(`edu_institution_${idx}`)}
                               </div>
                               <div>
-                                <label className="block text-xs text-neutral-600 mb-1">Grade</label>
+                                <label className="block text-xs text-neutral-600 mb-1">Grade *</label>
                                 <input
                                   type="text"
                                   value={education[idx]?.grade ?? ''}
                                   onChange={(e) => setEducationEntry(idx, 'grade', e.target.value)}
                                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-                                  placeholder="Grade / class"
+                                  placeholder={value === 'high_school' ? 'A' : 'Grade / class'}
                                 />
+                                {showError(`edu_grade_${idx}`)}
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs text-neutral-600 mb-1">Discipline</label>
+                              <label className="block text-xs text-neutral-600 mb-1">Discipline *</label>
                               <input
                                 type="text"
                                 value={education[idx]?.discipline ?? ''}
                                 onChange={(e) => setEducationEntry(idx, 'discipline', e.target.value)}
                                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-                                placeholder="e.g. Sciences, Commerce, Nursing, Engineering"
+                                placeholder={value === 'high_school' ? 'KCSE/GCSE' : 'e.g. Sciences, Commerce, Nursing, Engineering'}
                               />
+                              {showError(`edu_discipline_${idx}`)}
                             </div>
                             <div>
                               <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                               <input
                                 type="file"
-                                accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                                onChange={(e) =>
-                                  handleFile(
-                                    e.target.files?.[0] ?? null,
-                                    (f) => setEducationFile(idx, f),
-                                    `edu_cert_${idx}`
-                                  )
-                                }
+                                accept=".pdf,application/pdf"
+                                onChange={(e) => handleDocumentFile(e, (f) => setEducationFile(idx, f), `edu_cert_${idx}`)}
                                 className="w-full text-sm"
                               />
+                              <p className="text-xs text-neutral-500 mt-1">PDF only</p>
                               {educationFiles[idx] && <p className="text-xs text-neutral-500 mt-1">{educationFiles[idx]?.name}</p>}
                               {showError(`edu_cert_${idx}`)}
                             </div>
@@ -1021,7 +1092,8 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   <Briefcase className="w-5 h-5" />
                   Employment history
                 </h3>
-                <p className="text-sm text-neutral-600">Add up to 10 relevant work experience entries: job title, company, industry, type, and dates.</p>
+                <p className="text-sm text-neutral-600">Add up to 10 relevant work experience entries: job title, company, industry, type, and dates. At least one complete entry is required.</p>
+                {showError('employment')}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum expected salary *</label>
                   <input
@@ -1168,15 +1240,52 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   Attachments
                 </h3>
                 <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Cover letter (optional)</label>
+                  <textarea
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    placeholder="Why are you a good fit for this role? Add a brief cover letter for the employer."
+                    rows={5}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[100px] text-sm"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">CV *</label>
                   <div className="border-2 border-dashed border-neutral-300 rounded-lg p-4 text-center">
                     <input
                       type="file"
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,application/pdf"
                       onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null;
-                        handleFile(f, setCvFile, 'cv');
-                        if (f) setCvPath('');
+                        const input = e.target;
+                        const f = input.files?.[0] ?? null;
+                        if (!f) {
+                          setCvFile(null);
+                          setErrors((err) => ({ ...err, cv: '' }));
+                          return;
+                        }
+                        const ext = (f.name.split('.').pop() ?? '').toLowerCase();
+                        const isWord = ext === 'doc' || ext === 'docx' || f.type === 'application/msword' || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                        if (isWord) {
+                          setCvFile(null);
+                          input.value = '';
+                          setErrors((err) => ({ ...err, cv: 'CV must be a PDF file. Word documents (.doc, .docx) are not accepted.' }));
+                          return;
+                        }
+                        if (ext !== 'pdf' || f.type !== cvAllowedType) {
+                          setCvFile(null);
+                          input.value = '';
+                          setErrors((err) => ({ ...err, cv: 'CV must be a PDF file so we can preview it in your application.' }));
+                          return;
+                        }
+                        if (f.size > maxFileSize) {
+                          setCvFile(null);
+                          input.value = '';
+                          setErrors((err) => ({ ...err, cv: 'File must be under 5MB.' }));
+                          return;
+                        }
+                        setCvFile(f);
+                        setCvPath('');
+                        setErrors((err) => ({ ...err, cv: '' }));
                       }}
                       className="hidden"
                       id="cv-upload"
@@ -1186,7 +1295,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       <p className="text-sm text-neutral-600">
                         {cvFile ? cvFile.name : cvPath ? 'CV uploaded' : 'Click to upload CV'}
                       </p>
-                      <p className="text-xs text-neutral-500">PDF or Word, max 5MB</p>
+                      <p className="text-xs text-neutral-500">PDF only, max 5MB (required for preview)</p>
                     </label>
                   </div>
                   {showError('cv')}
@@ -1222,12 +1331,11 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                         <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                         <input
                           type="file"
-                          accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                          onChange={(e) =>
-                            handleFile(e.target.files?.[0] ?? null, (f) => setProfCertFile(i, f), `prof_cert_${i}`)
-                          }
+                          accept=".pdf,application/pdf"
+                          onChange={(e) => handleDocumentFile(e, (f) => setProfCertFile(i, f), `prof_cert_${i}`)}
                           className="w-full text-sm"
                         />
+                        <p className="text-xs text-neutral-500 mt-1">PDF only</p>
                         {professionalCertFiles[i] && <p className="text-xs text-neutral-500 mt-1">{professionalCertFiles[i]?.name}</p>}
                         {showError(`prof_cert_${i}`)}
                       </div>
@@ -1272,12 +1380,11 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                         <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                         <input
                           type="file"
-                          accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                          onChange={(e) =>
-                            handleFile(e.target.files?.[0] ?? null, (f) => setMembershipFile(i, f), `prof_mem_${i}`)
-                          }
+                          accept=".pdf,application/pdf"
+                          onChange={(e) => handleDocumentFile(e, (f) => setMembershipFile(i, f), `prof_mem_${i}`)}
                           className="w-full text-sm"
                         />
+                        <p className="text-xs text-neutral-500 mt-1">PDF only</p>
                         {professionalMembershipFiles[i] && <p className="text-xs text-neutral-500 mt-1">{professionalMembershipFiles[i]?.name}</p>}
                         {showError(`prof_mem_${i}`)}
                       </div>
@@ -1387,6 +1494,11 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   </div>
                   <div>
                     <p className="font-medium text-neutral-800">Attachments</p>
+                    {coverLetter.trim() && (
+                      <p className="text-neutral-600 mb-1">
+                        Cover letter: {coverLetter.trim().slice(0, 80)}{coverLetter.trim().length > 80 ? '…' : ''}
+                      </p>
+                    )}
                     <p className="text-neutral-600">
                       CV: {cvFile?.name ?? (cvPath ? 'Uploaded' : '—')}
                     </p>

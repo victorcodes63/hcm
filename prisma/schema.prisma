@@ -178,6 +178,7 @@ model Insight {
   id        String   @id @default(cuid())
   title     String   @db.Text
   excerpt   String   @db.Text
+  body      String?  @db.Text // optional full article content; when set, shown in accordion on /insights
   author    String   // e.g. "Eagle HR" or staff name
   category  String   // e.g. "Uncategorized", "Job Hunting Tips", "HR Outsourcing"
   url       String   @db.Text // link to full article (external or future /insights/[slug])

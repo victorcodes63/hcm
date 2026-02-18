@@ -24,6 +24,7 @@ export default function NewInsightPage() {
 
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [body, setBody] = useState('');
   const [author, setAuthor] = useState('Eagle HR');
   const [category, setCategory] = useState('Uncategorized');
   const [url, setUrl] = useState('');
@@ -73,6 +74,7 @@ export default function NewInsightPage() {
         body: JSON.stringify({
           title: trimmedTitle,
           excerpt: trimmedExcerpt,
+          body: body.trim() || null,
           author: author.trim() || 'Eagle HR',
           category: category || 'Uncategorized',
           url: url.trim() || '#',
@@ -159,6 +161,20 @@ export default function NewInsightPage() {
               required
               rows={4}
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[100px] text-base"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="body" className="block text-sm font-medium text-primary-900 mb-2">
+              Full article body (optional)
+            </label>
+            <textarea
+              id="body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Full article content. When set, readers can expand to read it on the Insights page instead of following an external link."
+              rows={12}
+              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[200px] text-base"
             />
           </div>
 

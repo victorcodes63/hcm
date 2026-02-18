@@ -16,6 +16,7 @@ export async function GET() {
         id: i.id,
         title: i.title,
         excerpt: i.excerpt,
+        body: i.body ?? null,
         date: i.publishedAt.toISOString().split('T')[0],
         author: i.author,
         category: i.category,
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
   const b = body as Record<string, unknown>;
   const title = typeof b.title === 'string' ? b.title.trim() : '';
   const excerpt = typeof b.excerpt === 'string' ? b.excerpt.trim() : '';
+  const articleBody = typeof b.body === 'string' ? b.body.trim() || null : null;
   const author = typeof b.author === 'string' ? b.author.trim() : 'Eagle HR';
   const category = typeof b.category === 'string' ? b.category.trim() : 'Uncategorized';
   const url = typeof b.url === 'string' ? b.url.trim() : '';
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         excerpt,
+        body: articleBody ?? undefined,
         author: author || 'Eagle HR',
         category: category || 'Uncategorized',
         url: url || '#',
@@ -96,6 +99,7 @@ export async function POST(request: NextRequest) {
       id: insight.id,
       title: insight.title,
       excerpt: insight.excerpt,
+      body: insight.body ?? null,
       date: insight.publishedAt.toISOString().split('T')[0],
       author: insight.author,
       category: insight.category,

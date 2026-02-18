@@ -4,7 +4,7 @@ import {
   createInMemoryApplication,
   getInMemoryApplications,
 } from '@/lib/applications-store';
-import { getInMemoryJobSummary } from '@/lib/jobs-store';
+import { getInMemoryJobSummary, getInMemoryJobRaw } from '@/lib/jobs-store';
 import { sendApplicationReceivedEmail } from '@/lib/email';
 import { reportApiError } from '@/lib/monitoring';
 import type { ApplicationWithDetails } from '@/types/dashboard';
@@ -74,6 +74,32 @@ async function sendConfirmationEmailNonBlocking(params: {
       message: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+/** Compute total work experience years from employment history (used when client sends 0). */
+function totalWorkExperienceYears(
+  employmentHistory?: { startDate?: string; endDate?: string; isCurrentJob?: boolean }[]
+): number {
+  if (!employmentHistory?.length) return 0;
+  const yearsBetween = (startDate: string, endDate: string): number => {
+    if (!startDate?.trim()) return 0;
+    const start = new Date(startDate.trim());
+    if (isNaN(start.getTime())) return 0;
+    const endStr = (endDate ?? '').trim().toLowerCase();
+    const end =
+      !endStr || endStr === 'present' || endStr === 'current'
+        ? new Date()
+        : new Date(endDate.trim());
+    if (isNaN(end.getTime())) return 0;
+    const months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+    return Math.max(0, Math.round((months / 12) * 10) / 10);
+  };
+  return employmentHistory.reduce((sum, e) => {
+    const end = e.isCurrentJob ? 'present' : (e.endDate ?? '');
+    return sum + yearsBetween(e.startDate ?? '', end);
+  }, 0);
 }
 
 export async function GET(request: NextRequest) {
@@ -283,8 +309,12 @@ export async function POST(request: NextRequest) {
   const location = typeof cand.location === 'string' ? cand.location.trim() || undefined : undefined;
   const nationality = typeof cand.nationality === 'string' ? cand.nationality.trim() || undefined : undefined;
   const homeCounty = typeof cand.homeCounty === 'string' ? cand.homeCounty.trim() || undefined : undefined;
-  const experience = typeof cand.experience === 'number' ? cand.experience : Number(cand.experience) || 0;
+  let experience = typeof cand.experience === 'number' ? cand.experience : Number(cand.experience) || 0;
   const education = typeof cand.education === 'string' ? cand.education.trim() || undefined : undefined;
+  const formDataForExp = formDataRaw && typeof formDataRaw === 'object' && formDataRaw !== null ? (formDataRaw as { employmentHistory?: { startDate?: string; endDate?: string; isCurrentJob?: boolean }[] }) : null;
+  if (experience === 0 && formDataForExp?.employmentHistory?.length) {
+    experience = totalWorkExperienceYears(formDataForExp.employmentHistory);
+  }
 
   if (!jobId) {
     return NextResponse.json({ error: 'jobId is required.' }, { status: 400 });
@@ -343,6 +373,13 @@ export async function POST(request: NextRequest) {
       const job = await prisma.job.findUnique({ where: { id: jobId } });
       if (!job) {
         return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
+      }
+      const deadline = job.applicationDeadline;
+      if (deadline && new Date(deadline) < new Date()) {
+        return NextResponse.json(
+          { error: 'The application deadline for this job has passed.' },
+          { status: 400 }
+        );
       }
 
       const existingApplication = await prisma.application.findFirst({
@@ -492,6 +529,14 @@ export async function POST(request: NextRequest) {
   const jobSummary = getInMemoryJobSummary(jobId);
   if (!jobSummary) {
     return NextResponse.json({ error: 'Job not found.' }, { status: 404 });
+  }
+  const inMemoryJob = getInMemoryJobRaw(jobId);
+  const inMemDeadline = inMemoryJob?.applicationDeadline;
+  if (inMemDeadline && new Date(inMemDeadline) < new Date()) {
+    return NextResponse.json(
+      { error: 'The application deadline for this job has passed.' },
+      { status: 400 }
+    );
   }
 
   const existingInMemoryApplication = getInMemoryApplications({ jobId }).find(

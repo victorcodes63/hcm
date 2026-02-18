@@ -1126,64 +1126,87 @@ export default function DashboardApplicationsPage() {
                     </div>
                   </div>
 
-                  {(selectedApp.candidate.resumePath || selectedApp.resumePath) && (
-                    <div className="pt-4 border-t border-neutral-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
-                          Resume
-                        </h3>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
-                            className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
-                            title="Zoom out"
-                            aria-label="Zoom out"
-                          >
-                            <ZoomOut className="w-4 h-4" />
-                          </button>
-                          <span className="text-xs text-neutral-500 min-w-[2.5rem] text-center tabular-nums">
-                            {pdfZoom}%
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
-                            className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
-                            title="Zoom in"
-                            aria-label="Zoom in"
-                          >
-                            <ZoomIn className="w-4 h-4" />
-                          </button>
+                  {(selectedApp.candidate.resumePath || selectedApp.resumePath) && (() => {
+                    const resumeUrl = (selectedApp.resumePath || selectedApp.candidate.resumePath) || '';
+                    const isPdf = /\.pdf($|\?)/i.test(resumeUrl);
+                    return (
+                      <div className="pt-4 border-t border-neutral-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
+                            Resume
+                          </h3>
+                          {isPdf && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
+                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                                title="Zoom out"
+                                aria-label="Zoom out"
+                              >
+                                <ZoomOut className="w-4 h-4" />
+                              </button>
+                              <span className="text-xs text-neutral-500 min-w-[2.5rem] text-center tabular-nums">
+                                {pdfZoom}%
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
+                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                                title="Zoom in"
+                                aria-label="Zoom in"
+                              >
+                                <ZoomIn className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-auto min-h-[280px] h-[45vh] max-h-[380px]">
-                        <div
-                          className="origin-top-left"
-                          style={{
-                            transform: `scale(${pdfZoom / 100})`,
-                            width: `${(100 * 100) / pdfZoom}%`,
-                            height: `${(360 * 100) / pdfZoom}px`,
-                            minHeight: `${(280 * 100) / pdfZoom}px`,
-                          }}
+                        <div className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-auto min-h-[280px] h-[45vh] max-h-[380px]">
+                          {isPdf ? (
+                            <div
+                              className="origin-top-left"
+                              style={{
+                                transform: `scale(${pdfZoom / 100})`,
+                                width: `${(100 * 100) / pdfZoom}%`,
+                                height: `${(360 * 100) / pdfZoom}px`,
+                                minHeight: `${(280 * 100) / pdfZoom}px`,
+                              }}
+                            >
+                              <iframe
+                                title="Resume preview"
+                                src={resumeUrl}
+                                className="w-full border-0 min-h-[280px] h-[360px]"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center">
+                              <FileText className="w-12 h-12 text-neutral-300 mb-3" />
+                              <p className="text-sm text-neutral-600 mb-1">Preview not available for this file type.</p>
+                              <p className="text-xs text-neutral-500 mb-4">Download the file to view it.</p>
+                              <a
+                                href={resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+                              >
+                                <FileText className="w-4 h-4" />
+                                Download resume
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                        <a
+                          href={resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
                         >
-                          <iframe
-                            title="Resume preview"
-                            src={(selectedApp.resumePath || selectedApp.candidate.resumePath) || ''}
-                            className="w-full border-0 min-h-[280px] h-[360px]"
-                          />
-                        </div>
+                          <FileText className="w-4 h-4" />
+                          {isPdf ? 'View resume in new tab' : 'Open resume in new tab'}
+                        </a>
                       </div>
-                      <a
-                        href={(selectedApp.resumePath || selectedApp.candidate.resumePath) || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
-                      >
-                        <FileText className="w-4 h-4" />
-                        View resume in new tab
-                      </a>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <div>
                     <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-2">

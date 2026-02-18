@@ -43,13 +43,16 @@ export default function JobApplicationPage() {
     setShowApplicationForm(false);
   };
 
+  const isExpired =
+    !!job?.applicationDeadline && new Date(job.applicationDeadline) < new Date();
+
   if (loading) {
     return (
       <main className="min-h-screen min-w-0 overflow-x-hidden">
         <Navbar />
         <div className="pt-28 pb-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-3xl mx-auto">
+          <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+            <div className="max-w-2xl mx-auto">
               <div className="animate-pulse space-y-6">
                 <div className="h-4 bg-neutral-200 rounded w-32" />
                 <div className="bg-white rounded-xl border border-neutral-200 p-8">
@@ -99,117 +102,155 @@ export default function JobApplicationPage() {
     <main className="min-h-screen min-w-0 overflow-x-hidden">
       <Navbar />
       
-      {/* Job Header */}
+      {/* Job Header + Layout */}
       <section className="pt-28 pb-10 bg-neutral-50">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto">
-            <Link
-              href="/careers"
-              className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-primary-600 font-medium mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Job Board
-            </Link>
+        <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+          <Link
+            href="/careers"
+            className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-primary-600 font-medium mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Job Board
+          </Link>
 
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-              <div className="p-6 sm:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                  <div className="min-w-0">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-primary-900 mb-3">{job.title}</h1>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
-                      <span className="flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-neutral-400 shrink-0" />
-                        {job.company}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
-                        {job.location}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
-                        {job.type}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
-                        {job.category}
-                      </span>
-                      {job.applicationDeadline && (
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+            {/* Main content - job details */}
+            <div className="flex-1 min-w-0 lg:max-w-[65%]">
+              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+                <div className="p-6 sm:p-8">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-900 mb-3">{job.title}</h1>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-neutral-400 shrink-0" />
+                      {job.company}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                      {job.location}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
+                      {job.type}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
+                      {job.category}
+                    </span>
+                    {job.applicationDeadline && (
+                      isExpired ? (
+                        <span className="text-xs text-neutral-500 font-medium">
+                          Closed · Was {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      ) : (
                         <span className="text-xs text-amber-700 font-medium">
                           Apply by {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
-                      )}
-                    </div>
+                      )
+                    )}
                   </div>
-                  {!applicationSubmitted && (
-                    <button
-                      onClick={() => setShowApplicationForm(true)}
-                      className="shrink-0 w-full sm:w-auto px-6 py-3 bg-primary-900 text-white text-sm font-semibold rounded-lg hover:bg-primary-800 transition-colors"
-                    >
-                      Apply Now
-                    </button>
+                  {job.salary && (
+                    <p className="mt-4 pt-4 border-t border-neutral-100 text-sm text-neutral-600">
+                      <span className="font-medium text-neutral-700">Salary:</span>{' '}
+                      {job.salary.currency} {job.salary.min.toLocaleString()} – {job.salary.max.toLocaleString()}
+                    </p>
                   )}
                 </div>
-                {job.salary && (
-                  <p className="mt-4 pt-4 border-t border-neutral-100 text-sm text-neutral-600">
-                    <span className="font-medium text-neutral-700">Salary:</span>{' '}
-                    {job.salary.currency} {job.salary.min.toLocaleString()} – {job.salary.max.toLocaleString()}
+              </div>
+
+              {/* Job Details - description, requirements, responsibilities, benefits */}
+              <div className="mt-8 space-y-8">
+                <div>
+                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Job Description</h2>
+                  <p className="text-neutral-700 leading-relaxed">
+                    {job.description}
                   </p>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Requirements</h2>
+                  <ul className="space-y-2">
+                    {job.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                        <span className="text-neutral-700">{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Key Responsibilities</h2>
+                  <ul className="space-y-2">
+                    {job.responsibilities.map((resp, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                        <span className="text-neutral-700">{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {job.benefits.length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-primary-900 mb-3">Benefits</h2>
+                    <ul className="space-y-2">
+                      {job.benefits.map((benefit, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Star className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                          <span className="text-neutral-700">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Job Details */}
-      <section className="py-10 sm:py-12 bg-white">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto space-y-10">
-            <div>
-              <h2 className="text-lg font-semibold text-primary-900 mb-3">Job Description</h2>
-              <p className="text-neutral-700 leading-relaxed">
-                {job.description}
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-primary-900 mb-3">Requirements</h2>
-              <ul className="space-y-2">
-                {job.requirements.map((req, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-primary-900 mb-3">Key Responsibilities</h2>
-              <ul className="space-y-2">
-                {job.responsibilities.map((resp, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                    <span className="text-neutral-700">{resp}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {job.benefits.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-primary-900 mb-3">Benefits</h2>
-                <ul className="space-y-2">
-                  {job.benefits.map((benefit, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Star className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                      <span className="text-neutral-700">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
+            {/* Sidebar - sticky apply card or expired message */}
+            <aside className="lg:w-[320px] shrink-0">
+              <div className="lg:sticky lg:top-28">
+                <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-6">
+                  <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-4">
+                    {isExpired ? 'Application closed' : 'Apply for this role'}
+                  </h3>
+                  <p className="text-neutral-700 text-sm mb-4">
+                    {job.title} · {job.company}
+                  </p>
+                  {isExpired ? (
+                    <>
+                      <p className="text-neutral-600 text-sm mb-4">
+                        Sorry, this job posting has expired.
+                      </p>
+                      <Link
+                        href="/careers"
+                        className="block w-full text-center px-6 py-3 bg-neutral-100 text-neutral-700 text-sm font-semibold rounded-lg hover:bg-neutral-200 transition-colors"
+                      >
+                        Browse other jobs
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      {job.applicationDeadline && (
+                        <p className="text-xs text-amber-700 font-medium mb-4">
+                          Apply by {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
+                      {!applicationSubmitted ? (
+                        <button
+                          onClick={() => setShowApplicationForm(true)}
+                          className="w-full px-6 py-3 bg-primary-900 text-white text-sm font-semibold rounded-lg hover:bg-primary-800 transition-colors"
+                        >
+                          Apply Now
+                        </button>
+                      ) : (
+                        <p className="text-sm text-emerald-600 font-medium">Application submitted</p>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            )}
+            </aside>
           </div>
         </div>
       </section>
@@ -217,7 +258,7 @@ export default function JobApplicationPage() {
       {/* Application Success Message */}
       {applicationSubmitted && (
         <section className="py-10 sm:py-12 bg-neutral-50">
-          <div className="container mx-auto px-4 sm:px-6">
+          <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
             <div className="max-w-xl mx-auto text-center bg-white rounded-xl p-8 border border-neutral-200 shadow-sm">
               <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-7 h-7 text-emerald-600" />
@@ -245,8 +286,8 @@ export default function JobApplicationPage() {
         </section>
       )}
 
-      {/* Application Form Modal */}
-      {showApplicationForm && (
+      {/* Application Form Modal - only when not expired */}
+      {showApplicationForm && !isExpired && (
         <JobApplicationForm
           job={job}
           onSuccess={handleApplicationSuccess}

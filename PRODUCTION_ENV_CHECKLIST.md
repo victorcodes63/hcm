@@ -17,7 +17,14 @@ Use this checklist before deploying the ATS to production.
 - [ ] `MS_CLIENT_SECRET` set (secret **value**, not secret ID)
 - [ ] Azure redirect URI includes:
   - [ ] `https://<your-domain>/api/auth/microsoft/callback`
+- [ ] **NEXT_PUBLIC_SITE_URL** is set to `https://eaglehr.co.ke` for **Production and Preview** (so the app always sends that callback URI to Microsoft; otherwise Preview uses the deployment URL and Entra rejects it)
 - [ ] `MS_OAUTH_DEBUG` is unset or `false` in production
+
+## 2b) File uploads (Vercel Blob)
+
+- [ ] **BLOB_READ_WRITE_TOKEN** is set (Vercel adds this when you create a Blob store)
+- [ ] In Vercel: Project → **Storage** → **Create Database** or **Blob** → create a Blob store and link it to the project
+- [ ] Without this, CV and certificate uploads fail in production with “Failed to upload CV”
 
 ## 3) Email (SMTP)
 
