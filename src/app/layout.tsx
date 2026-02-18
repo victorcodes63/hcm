@@ -10,8 +10,13 @@ const figtree = Figtree({
   display: 'swap',
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, '') || 'https://www.eaglehr.co.ke';
+
 export const metadata: Metadata = {
-  title: "Eagle HR Consultants - Leading HR Excellence in Kenya",
+  title: {
+    default: "Eagle HR Consultants - Leading HR Excellence in Kenya",
+    template: "%s | Eagle HR Consultants",
+  },
   description: "Transform your organization with Kenya's premier HR consulting firm. Expert recruitment, training, HR outsourcing, and advisory services that drive success.",
   keywords: "HR consulting, recruitment, training, HR outsourcing, Kenya, Nairobi, human resources, executive search, payroll management",
   authors: [{ name: "Eagle HR Consultants" }],
@@ -22,18 +27,18 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://eagle-hr-website.vercel.app'),
+  metadataBase: new URL(siteUrl),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: "Eagle HR Consultants - Leading HR Excellence in Kenya",
     description: "Transform your organization with Kenya's premier HR consulting firm. Expert recruitment, training, HR outsourcing, and advisory services that drive success.",
-    url: 'https://eagle-hr-website.vercel.app',
+    url: '/',
     siteName: 'Eagle HR Consultants',
     images: [
       {
-        url: 'https://eagle-hr-website.vercel.app/og-image.svg',
+        url: '/og-image.svg',
         width: 1200,
         height: 630,
         alt: 'Eagle HR Consultants - Professional HR Services in Kenya',
@@ -46,7 +51,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Eagle HR Consultants - Leading HR Excellence in Kenya",
     description: "Transform your organization with Kenya's premier HR consulting firm. Expert recruitment, training, HR outsourcing, and advisory services that drive success.",
-    images: ['https://eagle-hr-website.vercel.app/og-image.svg'],
+    images: ['/og-image.svg'],
     creator: '@eaglehr',
     site: '@eaglehr',
   },
@@ -62,7 +67,9 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
+    google:
+      process.env.GOOGLE_SITE_VERIFICATION?.trim() ||
+      'DUsQ5vrza5zxhMwhGNFVVkzCxPU-Pon8Ybj8fh28uoY',
   },
   icons: {
     icon: [
