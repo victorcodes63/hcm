@@ -353,7 +353,7 @@ const DynamicJobListings = ({
                           {/* Left Column - Job Description */}
                           <div>
                             <h4 className="text-lg font-semibold text-primary-900 mb-4">Job Description:</h4>
-                            <p className="text-neutral-700 leading-relaxed mb-6">
+                            <p className="text-neutral-700 leading-relaxed mb-6 whitespace-pre-line">
                               {job.description}
                             </p>
                             
@@ -392,21 +392,25 @@ const DynamicJobListings = ({
                               ))}
                             </ul>
                             
-                            <h4 className="text-lg font-semibold text-primary-900 mb-3">Benefits:</h4>
-                            <ul className="space-y-2 mb-6">
-                              {job.benefits.map((benefit, benefitIndex) => (
-                                <motion.li
-                                  key={benefitIndex}
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.4, delay: benefitIndex * 0.1 }}
-                                  className="flex items-start space-x-2"
-                                >
-                                  <Star className="w-5 h-5 text-secondary-500 flex-shrink-0 mt-0.5" />
-                                  <span className="text-neutral-700">{benefit}</span>
-                                </motion.li>
-                              ))}
-                            </ul>
+                            {Array.isArray(job.benefits) && job.benefits.length > 0 && (
+                              <>
+                                <h4 className="text-lg font-semibold text-primary-900 mb-3">Benefits:</h4>
+                                <ul className="space-y-2 mb-6">
+                                  {job.benefits.map((benefit, benefitIndex) => (
+                                    <motion.li
+                                      key={benefitIndex}
+                                      initial={{ opacity: 0, x: -20 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ duration: 0.4, delay: benefitIndex * 0.1 }}
+                                      className="flex items-start space-x-2"
+                                    >
+                                      <Star className="w-5 h-5 text-secondary-500 flex-shrink-0 mt-0.5" />
+                                      <span className="text-neutral-700">{benefit}</span>
+                                    </motion.li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
                           </div>
                         </div>
                         

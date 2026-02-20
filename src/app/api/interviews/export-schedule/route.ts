@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     table col.col-meeting { width: 18%; }
     table col.col-timein { width: 12%; }
     th, td {
-      border: 1px solid #c5c9ce;
+      border: 1px solid #000000;
       padding: 12px 14px;
       text-align: left;
       vertical-align: top;

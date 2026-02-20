@@ -48,7 +48,13 @@ export async function POST(request: NextRequest) {
     updates.durationMinutes = b.durationMinutes;
   }
   if (b.type !== undefined && VALID_TYPES.includes(b.type as InterviewType)) updates.type = b.type;
-  if (b.locationOrLink !== undefined) updates.locationOrLink = b.locationOrLink ?? null;
+  if (b.locationOrLink !== undefined) {
+    const loc = typeof b.locationOrLink === 'string' ? b.locationOrLink.trim() : '';
+    if (!loc) {
+      return NextResponse.json({ error: 'locationOrLink is required when updating (e.g. Zoom link or office address).' }, { status: 400 });
+    }
+    updates.locationOrLink = loc;
+  }
   if (b.notes !== undefined) updates.notes = b.notes ?? null;
   if (b.status !== undefined && ['scheduled', 'completed', 'cancelled'].includes(b.status)) {
     updates.status = b.status;

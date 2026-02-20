@@ -169,7 +169,7 @@ export default function JobApplicationPage() {
               <div className="mt-8 space-y-8">
                 <div>
                   <h2 className="text-lg font-semibold text-primary-900 mb-3">Job Description</h2>
-                  <p className="text-neutral-700 leading-relaxed">
+                  <p className="text-neutral-700 leading-relaxed whitespace-pre-line">
                     {job.description}
                   </p>
                 </div>

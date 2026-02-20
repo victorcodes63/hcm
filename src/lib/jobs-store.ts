@@ -168,6 +168,7 @@ export function updateInMemoryJob(id: string, input: UpdateJobInput): JobListing
     ...(input.salaryPublic !== undefined && { salaryPublic: input.salaryPublic }),
     ...(input.applicationDeadline !== undefined && { applicationDeadline: input.applicationDeadline }),
     ...(input.slug !== undefined && { slug: input.slug }),
+    ...(input.isActive !== undefined && { isActive: input.isActive }),
   };
   jobs[index] = updated;
   return toListing(updated, false);
@@ -196,6 +197,7 @@ export interface CreateJobInput {
   salaryPublic?: boolean;
   applicationDeadline?: string | null;
   slug?: string;
+  isActive?: boolean;
 }
 
 export function createInMemoryJob(input: CreateJobInput): JobListing {

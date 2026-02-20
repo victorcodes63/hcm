@@ -24,6 +24,9 @@ import {
   GraduationCap,
   Award,
   ExternalLink,
+  Download,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import type {
   ApplicationWithDetails,
@@ -343,6 +346,10 @@ export default function DashboardApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloadingCvs, setDownloadingCvs] = useState(false);
+  const [sendingRejections, setSendingRejections] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -569,6 +576,102 @@ export default function DashboardApplicationsPage() {
     [allApplications]
   );
 
+  const selectedApplications = useMemo(
+    () => filteredApplications.filter((a) => selectedIds.has(a.id)),
+    [filteredApplications, selectedIds]
+  );
+  const selectedForDownload = useMemo(
+    () =>
+      selectedApplications.filter(
+        (a) =>
+          a.status === 'shortlisted' &&
+          (a.resumePath || a.candidate.resumePath)
+      ),
+    [selectedApplications]
+  );
+  const selectedForRejection = useMemo(
+    () => selectedApplications.filter((a) => a.status === 'rejected'),
+    [selectedApplications]
+  );
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setBulkResult(null);
+  };
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredApplications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredApplications.map((a) => a.id)));
+    }
+    setBulkResult(null);
+  };
+
+  const handleBulkDownloadCvs = async () => {
+    if (selectedForDownload.length === 0) return;
+    setDownloadingCvs(true);
+    setBulkResult(null);
+    try {
+      const res = await fetch('/api/applications/bulk-download-cvs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationIds: selectedForDownload.map((a) => a.id),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setBulkResult(data.error || 'Download failed.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shortlisted-cvs-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setBulkResult(`Downloaded ${selectedForDownload.length} CV(s).`);
+      setSelectedIds(new Set());
+    } catch {
+      setBulkResult('Download failed.');
+    } finally {
+      setDownloadingCvs(false);
+    }
+  };
+
+  const handleBulkSendRejections = async () => {
+    if (selectedForRejection.length === 0) return;
+    setSendingRejections(true);
+    setBulkResult(null);
+    try {
+      const res = await fetch('/api/applications/bulk-send-rejections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationIds: selectedForRejection.map((a) => a.id),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBulkResult(data.error || 'Failed to send rejection emails.');
+        return;
+      }
+      setBulkResult(`Sent ${data.sent} rejection email(s).${data.failed ? ` ${data.failed} failed.` : ''}`);
+      setSelectedIds(new Set());
+      setRefreshNonce((n) => n + 1);
+    } catch {
+      setBulkResult('Failed to send rejection emails.');
+    } finally {
+      setSendingRejections(false);
+    }
+  };
+
   const handleStatusChange = async (
     applicationId: string,
     newStatus: ApplicationStatus
@@ -728,7 +831,7 @@ export default function DashboardApplicationsPage() {
               ))}
             </select>
           </div>
-          <div className="flex justify-end items-center gap-2 mt-3">
+          <div className="flex flex-wrap justify-end items-center gap-2 mt-3">
             {hasActiveFilters && (
               <button
                 type="button"
@@ -737,6 +840,45 @@ export default function DashboardApplicationsPage() {
               >
                 Clear filters
               </button>
+            )}
+            {selectedIds.size > 0 && (
+              <>
+                <span className="text-sm text-neutral-600">{selectedIds.size} selected</span>
+                {selectedForDownload.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkDownloadCvs}
+                    disabled={downloadingCvs}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 text-sm font-medium transition-colors disabled:opacity-50"
+                    title="Download CVs for shortlisted candidates"
+                  >
+                    {downloadingCvs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    Download CVs ({selectedForDownload.length})
+                  </button>
+                )}
+                {selectedForRejection.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkSendRejections}
+                    disabled={sendingRejections}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-800 hover:bg-red-100 text-sm font-medium transition-colors disabled:opacity-50"
+                    title="Send rejection emails to rejected applicants"
+                  >
+                    {sendingRejections ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Send rejection emails ({selectedForRejection.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setSelectedIds(new Set()); setBulkResult(null); }}
+                  className="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 text-sm font-medium transition-colors"
+                >
+                  Clear selection
+                </button>
+              </>
+            )}
+            {bulkResult && (
+              <span className="text-sm text-neutral-600">{bulkResult}</span>
             )}
             <a
               href={exportParams ? `/api/applications/export?${exportParams}` : '/api/applications/export'}
@@ -875,6 +1017,15 @@ export default function DashboardApplicationsPage() {
             <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="border-b border-neutral-200 bg-neutral-50/80">
+                  <th className="w-10 px-5 py-3">
+                    <input
+                      type="checkbox"
+                      checked={filteredApplications.length > 0 && selectedIds.size === filteredApplications.length}
+                      onChange={toggleSelectAll}
+                      className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      aria-label="Select all"
+                    />
+                  </th>
                   <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
                     Candidate
                   </th>
@@ -903,6 +1054,15 @@ export default function DashboardApplicationsPage() {
                   animate={{ opacity: 1 }}
                   className="hover:bg-neutral-50/70 transition-colors"
                 >
+                  <td className="px-5 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(app.id)}
+                      onChange={() => toggleSelect(app.id)}
+                      className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      aria-label={`Select ${app.candidate.firstName} ${app.candidate.lastName}`}
+                    />
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">

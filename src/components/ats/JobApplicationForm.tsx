@@ -419,7 +419,12 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
       }
     });
     professionalMemberships.forEach((entry, i) => {
-      const hasContent = entry.name.trim() || entry.membershipNo.trim();
+      const hasName = entry.name.trim().length > 0;
+      const hasMembershipNo = entry.membershipNo.trim().length > 0;
+      const hasContent = hasName || hasMembershipNo;
+      if (hasName && !hasMembershipNo) {
+        e[`prof_mem_no_${i}`] = 'Membership number is required when membership name is provided';
+      }
       if (hasContent && !professionalMembershipFiles[i]) {
         e[`prof_mem_${i}`] = 'Certificate is required when membership details are filled';
       }
@@ -1351,7 +1356,7 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                       + Add membership
                     </button>
                   </div>
-                  <p className="text-xs text-neutral-600 mb-2">Membership number and certificate are required when you fill any field.</p>
+                  <p className="text-xs text-neutral-600 mb-2">When you provide a membership name, membership number is required. Certificate is required when membership details are filled.</p>
                   {professionalMemberships.map((entry, i) => (
                     <div key={i} className="border border-neutral-200 rounded-lg p-3 mb-3 space-y-2">
                       <div className="flex justify-between items-center">
@@ -1369,13 +1374,16 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm mb-2"
                         placeholder="e.g. Institute of Certified Public Accountants"
                       />
-                      <input
-                        type="text"
-                        value={entry.membershipNo}
-                        onChange={(e) => setMembershipEntry(i, 'membershipNo', e.target.value)}
-                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-                        placeholder="Membership number"
-                      />
+                      <div>
+                        <input
+                          type="text"
+                          value={entry.membershipNo}
+                          onChange={(e) => setMembershipEntry(i, 'membershipNo', e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-lg text-sm ${showError(`prof_mem_no_${i}`) ? 'border-red-500' : 'border-neutral-300'}`}
+                          placeholder="Membership number (required when name is provided)"
+                        />
+                        {showError(`prof_mem_no_${i}`)}
+                      </div>
                       <div>
                         <label className="block text-xs text-neutral-600 mb-1">Certificate * (required if above filled)</label>
                         <input

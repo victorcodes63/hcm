@@ -2,11 +2,52 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, Search, MapPin, FileText, Loader2 } from 'lucide-react';
+import {
+  Users,
+  Search,
+  MapPin,
+  FileText,
+  Loader2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Mail,
+  Phone,
+  Building2,
+  ZoomIn,
+  ZoomOut,
+  User,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Download,
+} from 'lucide-react';
 import type { CandidateSummary } from '@/types/dashboard';
+import type { CandidateWithDetails } from '@/app/api/candidates/[id]/route';
+import { WorkExperienceTab, EducationTab, CertificationsTab } from '@/components/dashboard/CandidateDetailTabs';
 
 const inputBase =
   'h-10 px-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white';
+
+type CandidateDetailTab = 'general' | 'experience' | 'education' | 'certifications';
+
+const CANDIDATE_TABS: { id: CandidateDetailTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'general', label: 'General & CV', icon: User },
+  { id: 'experience', label: 'Work experience', icon: Briefcase },
+  { id: 'education', label: 'Education', icon: GraduationCap },
+  { id: 'certifications', label: 'Certifications', icon: Award },
+];
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return d.toLocaleDateString();
+}
 
 export default function DashboardCandidatesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +60,14 @@ export default function DashboardCandidatesPage() {
   const [jobOptions, setJobOptions] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateSummary | null>(null);
+  const [candidateDetails, setCandidateDetails] = useState<CandidateWithDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailTab, setDetailTab] = useState<CandidateDetailTab>('general');
+  const [pdfZoom, setPdfZoom] = useState(100);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloadingResumes, setDownloadingResumes] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +97,76 @@ export default function DashboardCandidatesPage() {
     return () => { cancelled = true; };
   }, [jobFilter, minExperience, maxExperience, educationFilter, employerCompanyFilter, searchQuery]);
 
+  useEffect(() => {
+    if (!selectedCandidate) {
+      setCandidateDetails(null);
+      return;
+    }
+    setDetailTab('general');
+    setLoadingDetails(true);
+    fetch(`/api/candidates/${selectedCandidate.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setCandidateDetails(data as CandidateWithDetails | null))
+      .catch(() => setCandidateDetails(null))
+      .finally(() => setLoadingDetails(false));
+  }, [selectedCandidate?.id]);
+
   const filtered = candidates;
+  const selectedWithResume = filtered.filter(
+    (c) => selectedIds.has(c.id) && c.resumePath
+  );
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setBulkResult(null);
+  };
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((c) => c.id)));
+    }
+    setBulkResult(null);
+  };
+
+  const handleBulkDownloadResumes = async () => {
+    if (selectedWithResume.length === 0) return;
+    setDownloadingResumes(true);
+    setBulkResult(null);
+    try {
+      const res = await fetch('/api/candidates/bulk-download-resumes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateIds: selectedWithResume.map((c) => c.id),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setBulkResult(data.error || 'Download failed.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `candidate-resumes-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setBulkResult(`Downloaded ${selectedWithResume.length} resume(s).`);
+      setSelectedIds(new Set());
+    } catch {
+      setBulkResult('Download failed.');
+    } finally {
+      setDownloadingResumes(false);
+    }
+  };
+
   const hasActiveFilters =
     jobFilter || minExperience.trim() || maxExperience.trim() || educationFilter.trim() || employerCompanyFilter.trim();
   const clearFilters = () => {
@@ -112,6 +230,33 @@ export default function DashboardCandidatesPage() {
               </button>
             )}
           </div>
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-neutral-100">
+              <span className="text-sm text-neutral-600">{selectedIds.size} selected</span>
+              {selectedWithResume.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDownloadResumes}
+                  disabled={downloadingResumes}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 text-sm font-medium transition-colors disabled:opacity-50"
+                  title="Download resumes for selected candidates"
+                >
+                  {downloadingResumes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Download resumes ({selectedWithResume.length})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setSelectedIds(new Set()); setBulkResult(null); }}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50 text-sm font-medium transition-colors"
+              >
+                Clear selection
+              </button>
+              {bulkResult && (
+                <span className="text-sm text-neutral-600">{bulkResult}</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-4 bg-neutral-50/60">
@@ -203,6 +348,15 @@ export default function DashboardCandidatesPage() {
             <table className="w-full min-w-[760px]">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50/80">
+                <th className="w-10 px-5 py-3">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
                   Candidate
                 </th>
@@ -223,6 +377,15 @@ export default function DashboardCandidatesPage() {
             <tbody className="divide-y divide-neutral-100">
               {filtered.map((candidate) => (
                 <tr key={candidate.id} className="hover:bg-neutral-50/70 transition-colors">
+                  <td className="px-5 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(candidate.id)}
+                      onChange={() => toggleSelect(candidate.id)}
+                      className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      aria-label={`Select ${candidate.firstName} ${candidate.lastName}`}
+                    />
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -259,6 +422,14 @@ export default function DashboardCandidatesPage() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCandidate(candidate)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
                       {candidate.resumePath && (
                         <a
                           href={candidate.resumePath}
@@ -279,6 +450,246 @@ export default function DashboardCandidatesPage() {
         </div>
         </div>
       )}
+
+      {selectedCandidate && (() => {
+        const currentIndex = filtered.findIndex((c) => c.id === selectedCandidate.id);
+        const total = filtered.length;
+        const hasPrev = currentIndex > 0;
+        const hasNext = currentIndex >= 0 && currentIndex < total - 1;
+        const prevCand = hasPrev ? filtered[currentIndex - 1] : null;
+        const nextCand = hasNext ? filtered[currentIndex + 1] : null;
+        const details = candidateDetails;
+        const resumeUrl = details?.resumePath || selectedCandidate.resumePath || '';
+
+        return (
+          <>
+            <div
+              className="fixed inset-0 bg-neutral-900/20 z-40"
+              onClick={() => setSelectedCandidate(null)}
+              aria-hidden
+            />
+            <div className="fixed right-0 top-0 bottom-0 w-[66.666vw] min-w-[24rem] max-w-[56rem] bg-white border-l border-neutral-200 shadow-sm z-50 flex flex-col rounded-l-xl">
+              <div className="sticky top-0 z-10 bg-white border-b border-neutral-200 rounded-tl-xl">
+                <div className="px-4 py-3 flex items-center justify-between gap-2">
+                  <h2 className="text-base font-semibold text-primary-900 truncate min-w-0">
+                    Candidate profile
+                  </h2>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => prevCand && setSelectedCandidate(prevCand)}
+                      disabled={!hasPrev}
+                      className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                      aria-label="Previous candidate"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-xs text-neutral-500 tabular-nums min-w-[4rem] text-center">
+                      {currentIndex + 1} of {total}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => nextCand && setSelectedCandidate(nextCand)}
+                      disabled={!hasNext}
+                      className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                      aria-label="Next candidate"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCandidate(null)}
+                      className="p-2 text-neutral-500 hover:text-neutral-700 rounded-lg hover:bg-neutral-100 transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex border-t border-neutral-100">
+                  {CANDIDATE_TABS.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setDetailTab(id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs font-medium transition-colors border-b-2 ${
+                        detailTab === id
+                          ? 'border-transparent text-neutral-900'
+                          : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden sm:inline truncate">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5">
+                {loadingDetails ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+                  </div>
+                ) : detailTab === 'general' && details ? (
+                  <div className="space-y-5">
+                    <div>
+                      <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-2">
+                        Candidate
+                      </h3>
+                      <p className="text-xl font-semibold text-primary-900">
+                        {details.firstName} {details.lastName}
+                      </p>
+                      <div className="mt-2 space-y-1 text-sm text-neutral-600">
+                        <p className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-neutral-400 shrink-0" />
+                          {details.email}
+                        </p>
+                        {details.phone && (
+                          <p className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-neutral-400 shrink-0" />
+                            {details.phone}
+                          </p>
+                        )}
+                        {details.location && (
+                          <p className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                            {details.location}
+                          </p>
+                        )}
+                        {details.nationality && <p>Nationality: {details.nationality}</p>}
+                        {details.homeCounty && <p>Home county: {details.homeCounty}</p>}
+                        {details.formData?.gender && <p>Gender: {details.formData.gender}</p>}
+                        <p>
+                          {details.experience} years experience
+                          {details.education && ` · ${details.education}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {resumeUrl && (
+                      <div className="pt-4 border-t border-neutral-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
+                            Resume
+                          </h3>
+                          {/\.pdf($|\?)/i.test(resumeUrl) && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
+                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                                title="Zoom out"
+                                aria-label="Zoom out"
+                              >
+                                <ZoomOut className="w-4 h-4" />
+                              </button>
+                              <span className="text-xs text-neutral-500 min-w-[2.5rem] text-center tabular-nums">
+                                {pdfZoom}%
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
+                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                                title="Zoom in"
+                                aria-label="Zoom in"
+                              >
+                                <ZoomIn className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-auto min-h-[280px] h-[45vh] max-h-[380px]">
+                          {/\.pdf($|\?)/i.test(resumeUrl) ? (
+                            <div
+                              className="origin-top-left"
+                              style={{
+                                transform: `scale(${pdfZoom / 100})`,
+                                width: `${(100 * 100) / pdfZoom}%`,
+                                height: `${(360 * 100) / pdfZoom}px`,
+                                minHeight: `${(280 * 100) / pdfZoom}px`,
+                              }}
+                            >
+                              <iframe
+                                title="Resume preview"
+                                src={resumeUrl}
+                                className="w-full border-0 min-h-[280px] h-[360px]"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center">
+                              <FileText className="w-12 h-12 text-neutral-300 mb-3" />
+                              <p className="text-sm text-neutral-600 mb-1">Preview not available for this file type.</p>
+                              <a
+                                href={resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+                              >
+                                <FileText className="w-4 h-4" />
+                                Download resume
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                        <a
+                          href={resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View resume in new tab
+                        </a>
+                      </div>
+                    )}
+
+                    {details.previousApplications && details.previousApplications.length > 0 && (
+                      <div className="pt-4 border-t border-neutral-100">
+                        <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-2">
+                          Previous applications
+                        </h3>
+                        <p className="text-xs text-neutral-500 mb-3">
+                          Roles this candidate has applied to previously — useful when reaching out for urgent roles.
+                        </p>
+                        <ul className="space-y-2">
+                          {details.previousApplications.map((app) => (
+                            <li
+                              key={app.id}
+                              className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-neutral-50 border border-neutral-100"
+                            >
+                              <div>
+                                <p className="font-medium text-primary-900 text-sm">{app.jobTitle}</p>
+                                <p className="text-xs text-neutral-600 flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" />
+                                  {app.company} · Applied {formatDate(app.appliedDate)}
+                                </p>
+                              </div>
+                              <span className="text-xs px-2 py-0.5 rounded bg-neutral-200 text-neutral-700">
+                                {app.status}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <Link
+                          href="/dashboard/applications"
+                          className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
+                        >
+                          View in Applications
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ) : detailTab === 'experience' && details ? (
+                  <WorkExperienceTab formData={details.formData} />
+                ) : detailTab === 'education' && details ? (
+                  <EducationTab formData={details.formData} />
+                ) : detailTab === 'certifications' && details ? (
+                  <CertificationsTab formData={details.formData} />
+                ) : null}
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

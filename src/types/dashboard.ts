@@ -133,6 +133,8 @@ export type InterviewType = 'phone' | 'video' | 'onsite';
 
 export type InterviewDurationMinutes = 30 | 45 | 60;
 
+export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined' | 'reschedule_requested' | 'withdrawn';
+
 export interface InterviewWithDetails {
   id: string;
   applicationId: string;
@@ -144,6 +146,9 @@ export interface InterviewWithDetails {
   status: InterviewStatus;
   inviteSentAt: string | null;
   officialLetterPath: string | null;
+  confirmationStatus: ConfirmationStatus;
+  confirmationNotes: string | null;
+  confirmationAt: string | null;
   createdAt: string;
   updatedAt: string;
   application: {

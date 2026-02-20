@@ -7,6 +7,7 @@
 import nodemailer from 'nodemailer';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import { createInterviewToken } from '@/lib/interview-token';
 
 const FROM_NAME = (process.env.SMTP_FROM_NAME && process.env.SMTP_FROM_NAME.trim()) || 'Eagle HR Recruitment';
 const FROM_EMAIL = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || '';
@@ -16,6 +17,12 @@ const BASE_URL =
   (typeof process.env.NEXT_PUBLIC_SITE_URL === 'string' && process.env.NEXT_PUBLIC_SITE_URL.trim()) ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
   'https://www.eaglehr.co.ke';
+/** For confirm/reschedule links: use localhost in dev (so links work when testing locally). */
+const INVITE_LINK_BASE =
+  (typeof process.env.INVITE_LINK_BASE === 'string' && process.env.INVITE_LINK_BASE.trim()) ||
+  (process.env.NODE_ENV === 'development' && !process.env.VERCEL_URL
+    ? 'http://localhost:3000'
+    : BASE_URL.replace(/\/$/, ''));
 const LOGO_URL = `${BASE_URL.replace(/\/$/, '')}/images/logo/logo_dark_ubxaCll.png`;
 const LOGO_CID = 'eaglehr-logo';
 const LOGO_FILE_PATH = resolve(process.cwd(), 'public/images/logo/logo_dark_ubxaCll.png');
@@ -348,10 +355,95 @@ export async function sendApplicationReceivedEmail(params: {
 }
 
 /**
+ * Send "application not successful" / rejection email to an applicant.
+ * Professional, sympathetic tone; encourages future applications.
+ */
+export async function sendApplicationRejectedEmail(params: {
+  to: string;
+  applicantFirstName: string;
+  jobTitle: string;
+  companyName: string;
+}): Promise<EmailSendResult> {
+  const { to, applicantFirstName, jobTitle, companyName } = params;
+  const applicant = applicantFirstName || 'Applicant';
+  const subject = `Update on your application – ${jobTitle} at ${companyName}`;
+  const smtpLogoAsset = getSmtpLogoAsset();
+  const graphLogoAsset = getGraphLogoAsset();
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #1f2937;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; background-color: #ffffff;">
+        <tr>
+          <td style="padding: 32px 24px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
+            <img src="${graphLogoAsset.src}" alt="Eagle HR Consultants" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 40px 32px 32px;">
+            <p style="margin: 0 0 20px; font-size: 17px; line-height: 1.6; color: #1f2937;">Dear ${applicant},</p>
+            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.65; color: #374151;">Thank you for your interest in the position of <strong style="color: #0B1D39;">${jobTitle}</strong> at ${companyName} and for the time you invested in your application.</p>
+            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.65; color: #374151;">After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs for this role.</p>
+            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #374151;">We encourage you to apply for future vacancies that match your skills and experience. We keep all applications on file and will consider you for suitable opportunities as they arise.</p>
+            <p style="margin: 0 0 8px; font-size: 16px; line-height: 1.5; color: #1f2937;">Sincerely,</p>
+            <p style="margin: 0 0 2px; font-size: 16px; font-weight: 600; color: #0B1D39;">Recruitment Team</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">Eagle HR Consultants</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">Eagle HR Consultants recruits and hires people from a range of backgrounds. If you need special arrangements or accommodations during the recruitment process, kindly reach out as soon as possible.</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  const graphResult = await sendViaMicrosoftGraph({
+    to,
+    subject,
+    html,
+    attachments: graphLogoAsset.attachments,
+  });
+  if (graphResult.sent) return graphResult;
+
+  const transporter = getTransporter();
+  if (!transporter) return graphResult;
+  if (!FROM_EMAIL) {
+    return {
+      sent: false,
+      reason: 'from_email_missing',
+      error: 'From email is missing. Set SMTP_USER or SMTP_FROM_EMAIL.',
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+
+  try {
+    const info = (await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to,
+      subject,
+      html,
+      attachments: smtpLogoAsset.attachments,
+    })) as { messageId?: string };
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      sent: false,
+      reason: 'smtp_error',
+      error: message,
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+}
+
+/**
  * Send official interview invitation to candidate. From recruitment@, CC account holder.
  * Optional: attach official letter PDF (e.g. for government clients).
+ * Includes links for candidate to confirm attendance or request reschedule.
  */
 export async function sendInterviewInviteEmail(params: {
+  interviewId: string;
   to: string;
   cc?: string;
   candidateFirstName: string;
@@ -361,9 +453,11 @@ export async function sendInterviewInviteEmail(params: {
   durationMinutes: number;
   type: string; // phone | video | onsite
   locationOrLink?: string | null;
+  notes?: string | null;
   officialLetterPath?: string | null; // e.g. /uploads/documents/xxx.pdf
 }): Promise<EmailSendResult> {
   const {
+    interviewId,
     to,
     cc,
     candidateFirstName,
@@ -373,8 +467,13 @@ export async function sendInterviewInviteEmail(params: {
     durationMinutes,
     type,
     locationOrLink,
+    notes,
     officialLetterPath,
   } = params;
+  const token = createInterviewToken(interviewId);
+  const confirmUrl = `${INVITE_LINK_BASE}/interview/confirm/${token}`;
+  const rescheduleUrl = `${INVITE_LINK_BASE}/interview/reschedule/${token}`;
+  const withdrawUrl = `${INVITE_LINK_BASE}/interview/withdraw/${token}`;
   const candidateName = candidateFirstName || 'Candidate';
   const typeLabel = type === 'phone' ? 'Phone' : type === 'video' ? 'Video' : 'On-site';
   const date = new Date(scheduledAt);
@@ -394,35 +493,82 @@ export async function sendInterviewInviteEmail(params: {
   const graphLogoAsset = getGraphLogoAsset();
 
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #1f2937;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; background-color: #ffffff;">
+        <!-- Header -->
         <tr>
-          <td style="padding: 24px 0 32px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-            <img src="${graphLogoAsset.src}" alt="Eagle HR Consultants" width="180" style="display: inline-block; max-width: 180px; height: auto;" />
+          <td style="padding: 32px 24px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
+            <img src="${graphLogoAsset.src}" alt="Eagle HR Consultants" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
           </td>
         </tr>
+        <!-- Content -->
         <tr>
-          <td style="padding: 32px 0 24px;">
-            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">Dear ${candidateName},</p>
-            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">We are pleased to invite you for an interview for the position of <strong>${jobTitle}</strong> at ${companyName}.</p>
-            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;"><strong>Interview details</strong></p>
-            <ul style="margin: 0 0 16px; padding-left: 20px; font-size: 16px; line-height: 1.8;">
-              <li>Date: ${dateStr}</li>
-              <li>Time: ${timeStr}</li>
-              <li>Duration: ${durationStr}</li>
-              <li>Type: ${typeLabel}</li>
-              <li>${locationLine}</li>
-            </ul>
-            ${officialLetterPath ? '<p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">An official invitation letter is attached to this email.</p>' : ''}
-            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6;">Please confirm your availability. If you have any questions or need to reschedule, reply to this email at your earliest convenience.</p>
-            <p style="margin: 0 0 8px; font-size: 16px; line-height: 1.6;">Sincerely,</p>
-            <p style="margin: 0 0 4px; font-size: 16px; line-height: 1.6;"><strong>Recruitment Team</strong></p>
-            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #0B1D39;"><strong>Eagle HR Consultants</strong></p>
+          <td style="padding: 40px 32px 32px;">
+            <p style="margin: 0 0 20px; font-size: 17px; line-height: 1.6; color: #1f2937;">Dear ${candidateName},</p>
+            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #374151;">We are pleased to invite you for an interview for the position of <strong style="color: #0B1D39;">${jobTitle}</strong> at ${companyName}.</p>
+            
+            <!-- Interview details box -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 28px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <tr>
+                <td style="padding: 24px;">
+                  <p style="margin: 0 0 16px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b;">Interview details</p>
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                    <tr><td style="padding: 4px 0; font-size: 15px; line-height: 1.5; color: #334155;"><strong style="color: #475569;">Date:</strong> ${dateStr}</td></tr>
+                    <tr><td style="padding: 4px 0; font-size: 15px; line-height: 1.5; color: #334155;"><strong style="color: #475569;">Time:</strong> ${timeStr}</td></tr>
+                    <tr><td style="padding: 4px 0; font-size: 15px; line-height: 1.5; color: #334155;"><strong style="color: #475569;">Duration:</strong> ${durationStr}</td></tr>
+                    <tr><td style="padding: 4px 0; font-size: 15px; line-height: 1.5; color: #334155;"><strong style="color: #475569;">Type:</strong> ${typeLabel}</td></tr>
+                    <tr><td style="padding: 4px 0; font-size: 15px; line-height: 1.5; color: #334155;"><strong style="color: #475569;">${locationOrLink?.trim() ? 'Location / Link:' : 'Location:'}</strong> ${locationOrLink?.trim() || 'To be shared separately'}</td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            ${notes?.trim() ? `
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 24px; background-color: #fffbeb; border-radius: 8px; border: 1px solid #fde68a;">
+              <tr>
+                <td style="padding: 20px 24px;">
+                  <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e;">Additional notes</p>
+                  <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #78350f; white-space: pre-wrap;">${notes.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+                </td>
+              </tr>
+            </table>
+            ` : ''}
+            ${officialLetterPath ? '<p style="margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: #64748b;">An official invitation letter is attached to this email.</p>' : ''}
+            
+            <!-- Action buttons -->
+            <p style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #374151;">Please confirm your availability:</p>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 12px;">
+              <tr>
+                <td>
+                  <a href="${confirmUrl}" style="display: block; width: 100%; padding: 14px 24px; background-color: #ffffff; color: #000000 !important; text-decoration: none; font-size: 15px; font-weight: 600; text-align: center; border-radius: 8px; border: 2px solid #16a34a;">Confirm attendance</a>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 12px;">
+              <tr>
+                <td>
+                  <a href="${rescheduleUrl}" style="display: block; width: 100%; padding: 14px 24px; background-color: #475569; color: #ffffff !important; text-decoration: none; font-size: 15px; font-weight: 500; text-align: center; border-radius: 8px; border: none;">Cannot attend / Request reschedule</a>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 20px;">
+              <tr>
+                <td>
+                  <a href="${withdrawUrl}" style="display: block; width: 100%; padding: 12px 24px; background-color: transparent; color: #b91c1c !important; text-decoration: none; font-size: 14px; font-weight: 500; text-align: center; border-radius: 8px; border: 2px solid #b91c1c;">Withdraw from role</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin: 0 0 32px; font-size: 13px; line-height: 1.5; color: #94a3b8;">You can also reply to this email if you prefer.</p>
+            
+            <!-- Signature -->
+            <p style="margin: 0 0 4px; font-size: 16px; line-height: 1.5; color: #1f2937;">Sincerely,</p>
+            <p style="margin: 0 0 2px; font-size: 16px; font-weight: 600; color: #0B1D39;">Recruitment Team</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">Eagle HR Consultants</p>
           </td>
         </tr>
+        <!-- Footer -->
         <tr>
-          <td style="padding: 24px 0; border-top: 1px solid #e5e7eb;">
-            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">Eagle HR Consultants recruits and hires people from a range of backgrounds. If you need special arrangements or accommodations during the recruitment process, kindly reach out as soon as possible.</p>
+          <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">Eagle HR Consultants recruits and hires people from a range of backgrounds. If you need special arrangements or accommodations during the recruitment process, kindly reach out as soon as possible.</p>
           </td>
         </tr>
       </table>
@@ -483,6 +629,96 @@ export async function sendInterviewInviteEmail(params: {
       sent: false,
       reason: 'smtp_error',
       error: message,
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+}
+
+const SUBJECT_LABELS: Record<string, string> = {
+  recruitment: 'Recruitment & Executive Search',
+  outsourcing: 'HR Outsourcing',
+  training: 'Training & Development',
+  advisory: 'HR Advisory & Policy',
+  payroll: 'Payroll Management',
+  general: 'General Inquiry',
+};
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Send contact form submission to info@eaglehr.co.ke.
+ */
+export async function sendContactFormEmail(params: {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  subject: string;
+  message: string;
+}): Promise<EmailSendResult> {
+  const { name, email, phone, company, subject, message } = params;
+  const subjectLabel = SUBJECT_LABELS[subject] || subject;
+  const to = 'info@eaglehr.co.ke';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
+      <h2 style="margin: 0 0 16px; font-size: 18px; color: #0B1D39;">New contact form submission</h2>
+      <p style="margin: 0 0 8px; font-size: 14px; color: #6b7280;">Subject: ${subjectLabel}</p>
+      <table cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 8px 0; font-weight: 600; width: 120px;">Name</td><td style="padding: 8px 0;">${escapeHtml(name)}</td></tr>
+        <tr><td style="padding: 8px 0; font-weight: 600;">Email</td><td style="padding: 8px 0;"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td></tr>
+        ${phone ? `<tr><td style="padding: 8px 0; font-weight: 600;">Phone</td><td style="padding: 8px 0;"><a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></td></tr>` : ''}
+        ${company ? `<tr><td style="padding: 8px 0; font-weight: 600;">Company</td><td style="padding: 8px 0;">${escapeHtml(company)}</td></tr>` : ''}
+      </table>
+      <div style="margin: 16px 0; padding: 16px; background: #f9fafb; border-radius: 8px;">
+        <p style="margin: 0 0 8px; font-weight: 600;">Message</p>
+        <p style="margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${escapeHtml(message)}</p>
+      </div>
+      <p style="margin: 16px 0 0; font-size: 12px; color: #9ca3af;">Sent via Eagle HR website contact form</p>
+    </div>
+  `;
+
+  const emailSubject = `[Contact Form] ${subjectLabel} – ${name}`;
+
+  const graphResult = await sendViaMicrosoftGraph({
+    to,
+    subject: emailSubject,
+    html,
+  });
+  if (graphResult.sent) return graphResult;
+
+  const transporter = getTransporter();
+  if (!transporter) return graphResult;
+  if (!FROM_EMAIL) {
+    return {
+      sent: false,
+      reason: 'from_email_missing',
+      error: 'From email is missing. Set SMTP_USER or SMTP_FROM_EMAIL.',
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+
+  try {
+    const info = (await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to,
+      subject: emailSubject,
+      html,
+    })) as { messageId?: string };
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return {
+      sent: false,
+      reason: 'smtp_error',
+      error: errMsg,
       diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
     };
   }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { Send, AlertCircle } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { ContactFormData } from '@/types';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 

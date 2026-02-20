@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import type { InterviewWithDetails, CreateInterviewBody, InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
+import type { InterviewWithDetails, CreateInterviewBody, InterviewType, InterviewDurationMinutes, ConfirmationStatus } from '@/types/dashboard';
 
 const VALID_DURATIONS: InterviewDurationMinutes[] = [30, 45, 60];
 
@@ -94,6 +94,9 @@ export async function GET(request: NextRequest) {
       status: i.status,
       inviteSentAt: i.inviteSentAt?.toISOString() ?? null,
       officialLetterPath: i.officialLetterPath,
+      confirmationStatus: (i.confirmationStatus ?? 'pending') as ConfirmationStatus,
+      confirmationNotes: i.confirmationNotes,
+      confirmationAt: i.confirmationAt?.toISOString() ?? null,
       createdAt: i.createdAt.toISOString(),
       updatedAt: i.updatedAt.toISOString(),
       application: {
@@ -170,6 +173,9 @@ export async function POST(request: NextRequest) {
   if (!VALID_TYPES.includes(type)) {
     return NextResponse.json({ error: 'type must be one of: phone, video, onsite.' }, { status: 400 });
   }
+  if (!locationOrLink || locationOrLink.length === 0) {
+    return NextResponse.json({ error: 'locationOrLink is required (e.g. Zoom link or office address).' }, { status: 400 });
+  }
 
   try {
     if (!process.env.DATABASE_URL) {
@@ -212,6 +218,9 @@ export async function POST(request: NextRequest) {
       status: interview.status,
       inviteSentAt: interview.inviteSentAt?.toISOString() ?? null,
       officialLetterPath: interview.officialLetterPath,
+      confirmationStatus: (interview.confirmationStatus ?? 'pending') as ConfirmationStatus,
+      confirmationNotes: interview.confirmationNotes,
+      confirmationAt: interview.confirmationAt?.toISOString() ?? null,
       createdAt: interview.createdAt.toISOString(),
       updatedAt: interview.updatedAt.toISOString(),
       application: {

@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       const candidate = interview.application.candidate;
       const job = interview.application.job;
       const result = await sendInterviewInviteEmail({
+        interviewId: interview.id,
         to: candidate.email,
         cc: ccEmail,
         candidateFirstName: candidate.firstName,
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
         durationMinutes: interview.durationMinutes,
         type: interview.type,
         locationOrLink: interview.locationOrLink,
+        notes: interview.notes,
         officialLetterPath: interview.officialLetterPath,
       });
       if (result.sent) {

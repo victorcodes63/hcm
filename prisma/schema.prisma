@@ -120,24 +120,35 @@ model Application {
 }
 
 model Interview {
-  id                 String          @id @default(cuid())
-  applicationId      String
-  scheduledAt        DateTime
-  durationMinutes    Int             @default(45) // 30 | 45 | 60
-  type               String          // phone | video | onsite
-  locationOrLink     String?         @db.Text // meeting link or address
-  notes              String?         @db.Text
-  status             InterviewStatus @default(scheduled)
-  inviteSentAt       DateTime?       // when official invite email was sent
-  officialLetterPath String?         // optional PDF for government clients
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  id                   String              @id @default(cuid())
+  applicationId        String
+  scheduledAt          DateTime
+  durationMinutes      Int                 @default(45) // 30 | 45 | 60
+  type                 String              // phone | video | onsite
+  locationOrLink       String?             @db.Text // meeting link or address
+  notes                String?             @db.Text
+  status               InterviewStatus     @default(scheduled)
+  inviteSentAt         DateTime?           // when official invite email was sent
+  officialLetterPath   String?             // optional PDF for government clients
+  confirmationStatus   ConfirmationStatus  @default(pending) // candidate response to invite
+  confirmationNotes    String?             @db.Text // e.g. reschedule reason
+  confirmationAt       DateTime?           // when candidate responded
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
   @@index([scheduledAt])
   @@index([status])
+}
+
+enum ConfirmationStatus {
+  pending
+  confirmed
+  declined
+  reschedule_requested
+  withdrawn
 }
 
 enum ApplicationStatus {

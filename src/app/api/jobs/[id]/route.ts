@@ -218,6 +218,8 @@ export async function PATCH(
           ? b.educationQualification.trim() || null
           : undefined
       : undefined;
+  const isActive = typeof b.isActive === 'boolean' ? b.isActive : undefined;
+
   const requiredCertifications =
     b.requiredCertifications !== undefined
       ? b.requiredCertifications === null || b.requiredCertifications === ''
@@ -299,6 +301,7 @@ export async function PATCH(
   if (educationLevel !== undefined) payload.educationLevel = educationLevel;
   if (educationQualification !== undefined) payload.educationQualification = educationQualification;
   if (requiredCertifications !== undefined) payload.requiredCertifications = requiredCertifications;
+  if (isActive !== undefined) payload.isActive = isActive;
 
   try {
     if (process.env.DATABASE_URL) {
@@ -325,6 +328,7 @@ export async function PATCH(
         ...(payload.educationLevel !== undefined && { educationLevel: payload.educationLevel }),
         ...(payload.educationQualification !== undefined && { educationQualification: payload.educationQualification }),
         ...(payload.requiredCertifications !== undefined && { requiredCertifications: payload.requiredCertifications }),
+        ...(payload.isActive !== undefined && { isActive: payload.isActive }),
       };
       if (existing?.slug == null) {
         const baseSlug = jobSlugBase(

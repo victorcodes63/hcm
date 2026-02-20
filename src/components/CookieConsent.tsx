@@ -81,6 +81,8 @@ export default function CookieConsent() {
 
   // Never show cookie banner on ATS/dashboard (including login)
   if (pathname?.startsWith('/dashboard')) return null;
+  // Hide on interview action pages (confirm/reschedule/withdraw) opened from email links
+  if (pathname?.startsWith('/interview/')) return null;
   if (!isVisible) return null;
 
   return (

@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Linkedin } from 'lucide-react';
 import { TeamMember as TeamMemberType } from '@/types';
 import Image from 'next/image';
 
@@ -29,25 +28,6 @@ const TeamMember = ({ member, index }: TeamMemberProps) => {
             className="object-cover"
           />
         </div>
-        
-        {/* Social Links Overlay */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 1 }}
-          className="absolute inset-0 bg-primary-900/80 backdrop-blur-sm flex items-center justify-center"
-        >
-          {member.linkedin && (
-            <a
-              href={member.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-secondary-500 hover:text-primary-900 transition-all duration-300 shadow-lg hover:shadow-xl"
-              aria-label={`Connect with ${member.name} on LinkedIn`}
-            >
-              <Linkedin className="w-6 h-6 text-primary-900" />
-            </a>
-          )}
-        </motion.div>
       </div>
 
       {/* Content */}

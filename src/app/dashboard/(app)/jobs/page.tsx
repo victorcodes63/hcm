@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Briefcase, Plus, ArrowRight, ExternalLink, Pencil, Search, Filter } from 'lucide-react';
+import { Briefcase, Plus, ArrowRight, ExternalLink, Pencil, Search, Filter, Loader2 } from 'lucide-react';
 import { JobListing } from '@/types/ats';
 
 export default function DashboardJobsPage() {
@@ -13,6 +13,7 @@ export default function DashboardJobsPage() {
   const [filterCompany, setFilterCompany] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,20 +53,46 @@ export default function DashboardJobsPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [jobs]);
 
+  const isJobExpired = (job: JobListing) =>
+    !!job.applicationDeadline && new Date(job.applicationDeadline) < new Date();
+  const getJobEffectiveStatus = (job: JobListing): 'active' | 'expired' | 'closed' => {
+    if (isJobExpired(job)) return 'expired';
+    if (!job.isActive) return 'closed';
+    return 'active';
+  };
+
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       const q = searchQuery.trim().toLowerCase();
       if (q && !job.title.toLowerCase().includes(q) && !(job.referenceId ?? '').toLowerCase().includes(q)) return false;
       if (filterCompany && job.company !== filterCompany) return false;
       if (filterCategory && job.category !== filterCategory) return false;
-      if (filterStatus === 'active' && !job.isActive) return false;
-      if (filterStatus === 'inactive' && job.isActive) return false;
+      const status = getJobEffectiveStatus(job);
+      if (filterStatus === 'active' && status !== 'active') return false;
+      if (filterStatus === 'inactive' && status === 'active') return false;
       return true;
     });
   }, [jobs, searchQuery, filterCompany, filterCategory, filterStatus]);
 
   const totalApplications = jobs.reduce((sum, j) => sum + (j.applicationCount ?? 0), 0);
-  const activeCount = jobs.filter((j) => j.isActive).length;
+  const activeCount = jobs.filter((j) => getJobEffectiveStatus(j) === 'active').length;
+
+  const toggleJobStatus = async (job: JobListing) => {
+    setTogglingId(job.id);
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !job.isActive }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setJobs((prev) => prev.map((j) => (j.id === job.id ? updated : j)));
+      }
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   return (
     <div className="w-full min-w-0">
@@ -162,7 +189,7 @@ export default function DashboardJobsPage() {
               >
                 <option value="all">All statuses</option>
                 <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="inactive">No longer accepting</option>
               </select>
             </div>
           </div>
@@ -289,13 +316,31 @@ export default function DashboardJobsPage() {
                       {job.applicationCount ?? 0}
                     </td>
                     <td className="px-4 sm:px-5 py-3">
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
-                          job.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'
-                        }`}
-                      >
-                        {job.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                      {getJobEffectiveStatus(job) === 'expired' ? (
+                        <span
+                          className="inline-flex px-2 py-1 rounded-md text-xs font-medium bg-neutral-100 text-neutral-600"
+                          title="Application deadline has passed"
+                        >
+                          Expired
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleJobStatus(job)}
+                          disabled={!!togglingId}
+                          className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors disabled:opacity-60 ${
+                            job.isActive
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                              : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                          }`}
+                          title={job.isActive ? 'Click to stop accepting applications' : 'Click to reopen for applications'}
+                        >
+                          {togglingId === job.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : null}
+                          {job.isActive ? 'Active' : 'No longer accepting'}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 sm:px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">

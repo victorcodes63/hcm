@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:stable": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
@@ -13,6 +14,9 @@
     "db:studio": "prisma studio",
     "db:reset-for-go-live": "node prisma/reset-for-go-live.js",
     "db:seed-candidates": "node prisma/seed-candidates.js",
+    "db:seed-full-dev": "node prisma/seed-full-dev.js",
+    "db:seed-staff": "node prisma/seed-staff.js",
+    "db:seed-invite-recipients": "node prisma/seed-two-invite-recipients.js",
     "db:seed-insights": "node prisma/seed-insights.js",
     "db:update-resume-paths": "node prisma/update-resume-paths.js",
     "smoke:test": "node scripts/smoke-test.mjs"
@@ -23,6 +27,7 @@
     "@prisma/client": "^5.22.0",
     "@types/nodemailer": "^7.0.2",
     "@vercel/blob": "^2.2.0",
+    "archiver": "^7.0.1",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.23.24",

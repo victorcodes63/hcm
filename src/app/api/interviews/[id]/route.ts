@@ -58,6 +58,9 @@ function toInterviewWithDetails(i: Awaited<ReturnType<typeof prisma.interview.fi
     status: i.status,
     inviteSentAt: i.inviteSentAt?.toISOString() ?? null,
     officialLetterPath: i.officialLetterPath,
+    confirmationStatus: (i.confirmationStatus ?? 'pending') as import('@/types/dashboard').ConfirmationStatus,
+    confirmationNotes: i.confirmationNotes,
+    confirmationAt: i.confirmationAt?.toISOString() ?? null,
     createdAt: i.createdAt.toISOString(),
     updatedAt: i.updatedAt.toISOString(),
     application: {
@@ -127,7 +130,13 @@ export async function PATCH(
     updates.durationMinutes = b.durationMinutes;
   }
   if (b.type !== undefined && VALID_TYPES.includes(b.type)) updates.type = b.type;
-  if (b.locationOrLink !== undefined) updates.locationOrLink = b.locationOrLink ?? null;
+  if (b.locationOrLink !== undefined) {
+    const loc = typeof b.locationOrLink === 'string' ? b.locationOrLink.trim() : '';
+    if (!loc) {
+      return NextResponse.json({ error: 'locationOrLink is required (e.g. Zoom link or office address).' }, { status: 400 });
+    }
+    updates.locationOrLink = loc;
+  }
   if (b.notes !== undefined) updates.notes = b.notes ?? null;
   if (b.status !== undefined && ['scheduled', 'completed', 'cancelled'].includes(b.status)) {
     updates.status = b.status;

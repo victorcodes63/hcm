@@ -206,7 +206,7 @@ const FeaturedJobs = () => {
                 {/* Content Area - This will grow to fill available space */}
                 <div className="flex-1 flex flex-col">
                   {/* Job Description */}
-                  <p className="text-neutral-600 text-sm mb-4 line-clamp-3">
+                  <p className="text-neutral-600 text-sm mb-4 line-clamp-3 whitespace-pre-line">
                     {job.description}
                   </p>
 

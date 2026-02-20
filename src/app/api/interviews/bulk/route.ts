@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   const applicationIds = Array.isArray(b.applicationIds)
     ? b.applicationIds.filter((id): id is string => typeof id === 'string').slice(0, MAX_PER_SCHEDULE)
     : [];
-  const locationOrLink = typeof b.locationOrLink === 'string' ? b.locationOrLink.trim() || undefined : undefined;
+  const locationOrLink = typeof b.locationOrLink === 'string' ? b.locationOrLink.trim() || null : null;
 
   if (!jobId) {
     return NextResponse.json({ error: 'jobId is required.' }, { status: 400 });
@@ -79,6 +79,9 @@ export async function POST(request: NextRequest) {
   }
   if (!VALID_TYPES.includes(type)) {
     return NextResponse.json({ error: 'type must be one of: phone, video, onsite.' }, { status: 400 });
+  }
+  if (!locationOrLink || locationOrLink.length === 0) {
+    return NextResponse.json({ error: 'locationOrLink is required (e.g. Zoom link or office address).' }, { status: 400 });
   }
 
   const [hours, minutes] = startTimeStr.split(':').map((s) => parseInt(s, 10) || 0);
@@ -137,6 +140,9 @@ export async function POST(request: NextRequest) {
         status: interview.status,
         inviteSentAt: interview.inviteSentAt?.toISOString() ?? null,
         officialLetterPath: interview.officialLetterPath,
+        confirmationStatus: interview.confirmationStatus ?? 'pending',
+        confirmationNotes: interview.confirmationNotes,
+        confirmationAt: interview.confirmationAt?.toISOString() ?? null,
         createdAt: interview.createdAt.toISOString(),
         updatedAt: interview.updatedAt.toISOString(),
         application: {

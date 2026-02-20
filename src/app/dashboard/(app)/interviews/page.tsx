@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { CalendarCheck, Plus, Loader2, FileDown, Send, Filter, Pencil, Trash2, X, Video, ExternalLink } from 'lucide-react';
+import { CalendarCheck, Plus, Loader2, FileDown, Send, Filter, Pencil, Trash2, X, Video, ExternalLink, Search } from 'lucide-react';
 import type { InterviewWithDetails, InterviewStatus, InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
 import type { UserSummary } from '@/types/dashboard';
 
@@ -23,6 +23,14 @@ const STATUS_STYLES: Record<InterviewStatus, string> = {
   scheduled: 'bg-indigo-50 text-indigo-700',
   completed: 'bg-emerald-50 text-emerald-700',
   cancelled: 'bg-neutral-100 text-neutral-600',
+};
+
+const CONFIRM_STYLES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700',
+  confirmed: 'bg-emerald-50 text-emerald-700',
+  declined: 'bg-red-50 text-red-700',
+  reschedule_requested: 'bg-sky-50 text-sky-700',
+  withdrawn: 'bg-red-100 text-red-800',
 };
 
 function formatDateTime(iso: string) {
@@ -68,6 +76,14 @@ export default function DashboardInterviewsPage() {
 
   /** Job-first view: '' = none selected (show picker), 'all' = all jobs, or jobId */
   const [selectedJobView, setSelectedJobView] = useState<string>('');
+  const [jobsWithShortlisted, setJobsWithShortlisted] = useState<{ id: string; title: string; company?: string; clientId?: string | null; clientName?: string | null; shortlistedCount: number; scheduledCount: number }[]>([]);
+  const [jobsWithShortlistedLoading, setJobsWithShortlistedLoading] = useState(true);
+  const [jobCardsSearch, setJobCardsSearch] = useState('');
+  const [jobCardsClientFilter, setJobCardsClientFilter] = useState('');
+  const [jobCardsJobFilter, setJobCardsJobFilter] = useState('');
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [clientInputValue, setClientInputValue] = useState('');
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -137,6 +153,32 @@ export default function DashboardInterviewsPage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setJobsWithShortlistedLoading(true);
+    fetch('/api/interviews/jobs-with-shortlisted')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setJobsWithShortlisted(data);
+      })
+      .catch(() => { if (!cancelled) setJobsWithShortlisted([]); })
+      .finally(() => { if (!cancelled) setJobsWithShortlistedLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/clients')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) {
+          setClients(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const selectableForInvite = useMemo(() =>
     interviews.filter((i) => i.status === 'scheduled' && !i.inviteSentAt),
     [interviews]
@@ -200,6 +242,10 @@ export default function DashboardInterviewsPage() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditError(null);
+    if (!editForm.locationOrLink.trim()) {
+      setEditError('Location or meeting link is required so applicants know where to attend.');
+      return;
+    }
     setEditSaving(true);
     try {
       if (editInterview) {
@@ -207,7 +253,7 @@ export default function DashboardInterviewsPage() {
           scheduledAt: new Date(editForm.scheduledAt).toISOString(),
           durationMinutes: editForm.durationMinutes,
           type: editForm.type,
-          locationOrLink: editForm.locationOrLink.trim() || null,
+          locationOrLink: editForm.locationOrLink.trim(),
           notes: editForm.notes.trim() || null,
           status: editForm.status,
         };
@@ -229,7 +275,7 @@ export default function DashboardInterviewsPage() {
         }
         body.durationMinutes = editForm.durationMinutes;
         body.type = editForm.type;
-        body.locationOrLink = editForm.locationOrLink.trim() || null;
+        body.locationOrLink = editForm.locationOrLink.trim();
         body.notes = editForm.notes.trim() || null;
         body.status = editForm.status;
         const res = await fetch('/api/interviews/bulk-update', {
@@ -374,6 +420,55 @@ export default function DashboardInterviewsPage() {
     }
   };
 
+  const filteredJobCards = useMemo(() => {
+    let list = jobsWithShortlisted;
+    const q = jobCardsSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (j) =>
+          j.title.toLowerCase().includes(q) ||
+          (j.company ?? '').toLowerCase().includes(q) ||
+          (j.clientName ?? '').toLowerCase().includes(q)
+      );
+    }
+    if (jobCardsClientFilter) {
+      list = list.filter((j) => j.clientId === jobCardsClientFilter);
+    }
+    if (jobCardsJobFilter) {
+      list = list.filter((j) => j.id === jobCardsJobFilter);
+    }
+    return list;
+  }, [jobsWithShortlisted, jobCardsSearch, jobCardsClientFilter, jobCardsJobFilter]);
+
+  const jobFilterOptions = useMemo(() => {
+    let list = jobsWithShortlisted;
+    const q = jobCardsSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (j) =>
+          j.title.toLowerCase().includes(q) ||
+          (j.company ?? '').toLowerCase().includes(q) ||
+          (j.clientName ?? '').toLowerCase().includes(q)
+      );
+    }
+    if (jobCardsClientFilter) {
+      list = list.filter((j) => j.clientId === jobCardsClientFilter);
+    }
+    return list;
+  }, [jobsWithShortlisted, jobCardsSearch, jobCardsClientFilter]);
+
+  useEffect(() => {
+    if (jobCardsJobFilter && !jobFilterOptions.some((j) => j.id === jobCardsJobFilter)) {
+      setJobCardsJobFilter('');
+    }
+  }, [jobCardsJobFilter, jobFilterOptions]);
+
+  const clientSuggestions = useMemo(() => {
+    const v = clientInputValue.trim().toLowerCase();
+    if (!v) return clients.slice(0, 20);
+    return clients.filter((c) => c.name.toLowerCase().includes(v)).slice(0, 20);
+  }, [clients, clientInputValue]);
+
   const exportScheduleUrl = `/api/interviews/export-schedule?date=${exportDate}${selectedJobView && selectedJobView !== 'all' ? `&jobId=${encodeURIComponent(selectedJobView)}` : ''}`;
   const exportSelectedUrl = selectedCount > 0
     ? `/api/interviews/export-schedule?ids=${Array.from(selectedIds).join(',')}`
@@ -415,7 +510,7 @@ export default function DashboardInterviewsPage() {
           <p className="text-neutral-600 text-sm sm:text-base">
             {selectedJobTitle
               ? `Schedule and invites for this position.`
-              : 'Build the draft schedule (max 10 per day), export for approval, then send official invites from recruitment@ (CC you).'}
+              : 'Your central hub for scheduling, invites, and all interview-related content.'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
@@ -435,126 +530,312 @@ export default function DashboardInterviewsPage() {
         </div>
       )}
 
-      {/* Job selector: show when no job selected, or as switcher when viewing a schedule */}
-      <div className="mb-6">
-        <label htmlFor="interview-job-view" className="block text-sm font-medium text-primary-900 mb-2">
-          View schedule by job
-        </label>
-        <select
-          id="interview-job-view"
-          value={selectedJobView}
-          onChange={(e) => setSelectedJobView(e.target.value)}
-          className="px-4 py-2.5 border border-neutral-300 rounded-lg text-sm bg-white min-w-[220px] max-w-full"
-        >
-          <option value="">Select a job…</option>
-          <option value="all">All jobs</option>
-          {jobs.map((j) => (
-            <option key={j.id} value={j.id}>{j.title}</option>
-          ))}
-        </select>
-        {selectedJobView === '' && (
-          <p className="mt-2 text-sm text-neutral-500">
-            Choose a job above to view and manage its interview schedule.
+      {/* Job selector: cards when no job selected, dropdown when viewing a schedule */}
+      {selectedJobView === '' ? (
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-primary-900 mb-3">Select a vacancy to schedule interviews</h2>
+          <p className="text-sm text-neutral-600 mb-4">
+            Jobs with shortlisted candidates are listed below. Select one to view its schedule and manage invites.
           </p>
-        )}
-      </div>
+          {!jobsWithShortlistedLoading && jobsWithShortlisted.length > 0 && (
+            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Search by job title or company..."
+                  value={jobCardsSearch}
+                  onChange={(e) => setJobCardsSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  aria-label="Search vacancies"
+                />
+              </div>
+              <div className="relative flex-1 min-w-0">
+                <input
+                  type="text"
+                  placeholder="Filter by client..."
+                  value={clientInputValue}
+                  onChange={(e) => {
+                    setClientInputValue(e.target.value);
+                    setJobCardsClientFilter('');
+                    setClientDropdownOpen(true);
+                  }}
+                  onFocus={() => setClientDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setClientDropdownOpen(false), 200)}
+                  className={`w-full px-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm ${jobCardsClientFilter ? 'pr-9' : ''}`}
+                  aria-label="Filter by client"
+                />
+                {clientDropdownOpen && clientSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 py-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                    {clientSuggestions.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setJobCardsClientFilter(c.id);
+                          setClientInputValue(c.name);
+                          setClientDropdownOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-100"
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {jobCardsClientFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setJobCardsClientFilter('');
+                      setClientInputValue('');
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    aria-label="Clear client filter"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <select
+                value={jobCardsJobFilter}
+                onChange={(e) => setJobCardsJobFilter(e.target.value)}
+                className="flex-1 min-w-0 px-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white"
+                aria-label="Filter by job"
+              >
+                <option value="">All jobs</option>
+                {jobFilterOptions.map((j) => (
+                  <option key={j.id} value={j.id}>{j.title}</option>
+                ))}
+              </select>
+              {(jobCardsSearch || jobCardsClientFilter || jobCardsJobFilter) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setJobCardsSearch('');
+                    setJobCardsClientFilter('');
+                    setClientInputValue('');
+                    setJobCardsJobFilter('');
+                  }}
+                  className="shrink-0 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors flex items-center gap-1.5"
+                  aria-label="Clear all filters"
+                >
+                  <X className="w-4 h-4" />
+                  Clear filters
+                </button>
+              )}
+              </div>
+            </div>
+          )}
+          {jobsWithShortlistedLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+            </div>
+          ) : jobsWithShortlisted.length === 0 ? (
+            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-8 sm:p-12 text-center">
+              <CalendarCheck className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
+              <p className="text-neutral-600 mb-4">
+                No vacancies have shortlisted candidates yet. Shortlist applicants from the Applications page first.
+              </p>
+              <Link
+                href="/dashboard/applications"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+              >
+                Go to Applications
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredJobCards.length === 0 ? (
+                <p className="col-span-full text-sm text-neutral-500 py-8 text-center">
+                  No vacancies match your search or filters.
+                </p>
+              ) : null}
+              {filteredJobCards.map((j) => (
+                <motion.button
+                  key={j.id}
+                  type="button"
+                  onClick={() => setSelectedJobView(j.id)}
+                  className="text-left bg-white rounded-xl border border-neutral-200 shadow-sm hover:shadow-md hover:border-primary-300 p-4 sm:p-5 transition-all group"
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <h3 className="font-semibold text-primary-900 group-hover:text-primary-700 truncate">
+                    {j.title}
+                  </h3>
+                  {j.company && (
+                    <p className="text-sm text-neutral-600 mt-0.5 truncate">{j.company}</p>
+                  )}
+                  <div className="flex items-center gap-4 mt-3 text-sm">
+                    <span className="inline-flex items-center gap-1.5 text-indigo-700 font-medium">
+                      <span>{j.shortlistedCount}</span>
+                      <span>shortlisted</span>
+                    </span>
+                    {j.scheduledCount > 0 && (
+                      <span className="text-neutral-500">
+                        {j.scheduledCount} scheduled
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-primary-600 font-medium group-hover:underline">
+                    {j.scheduledCount > 0 ? 'View scheduled interviews' : 'Schedule interviews'} →
+                  </p>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mb-6 space-y-4">
+          <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="min-w-0 flex-1 sm:max-w-[280px]">
+                <label htmlFor="interview-job-view" className="block text-sm font-medium text-primary-900 mb-1.5">
+                  Switch job
+                </label>
+                <select
+                  id="interview-job-view"
+                  value={selectedJobView}
+                  onChange={(e) => setSelectedJobView(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">← Back to job list</option>
+                  <option value="all">All jobs</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>{j.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-wrap items-end gap-3 flex-1">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-neutral-500 shrink-0" aria-hidden />
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    aria-label="Date from"
+                  />
+                </div>
+                <span className="text-neutral-400 text-sm hidden sm:inline">to</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  aria-label="Date to"
+                />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  aria-label="Filter by status"
+                >
+                  <option value="">All statuses</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <select
+                  value={filterInviteSent}
+                  onChange={(e) => setFilterInviteSent(e.target.value)}
+                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  aria-label="Filter by invite sent"
+                >
+                  <option value="">Invite sent: any</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+                {(filterDateFrom || filterDateTo || filterStatus || filterInviteSent) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterDateFrom('');
+                      setFilterDateTo('');
+                      setFilterStatus('');
+                      setFilterInviteSent('');
+                    }}
+                    className="px-3 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors flex items-center gap-1.5 shrink-0"
+                    aria-label="Clear filters"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedJobView !== '' && !loading && interviews.length > 0 && (
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <Filter className="w-4 h-4 text-neutral-500" />
-            <input
-              type="date"
-              value={filterDateFrom}
-              onChange={(e) => setFilterDateFrom(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-            />
-            <span className="text-neutral-500">to</span>
-            <input
-              type="date"
-              value={filterDateTo}
-              onChange={(e) => setFilterDateTo(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-            />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-white"
-            >
-              <option value="">All statuses</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <select
-              value={filterInviteSent}
-              onChange={(e) => setFilterInviteSent(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-white"
-            >
-              <option value="">Invite sent: any</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </div>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <span className="text-sm text-neutral-600">Export draft schedule:</span>
-            <input
-              type="date"
-              value={exportDate}
-              onChange={(e) => setExportDate(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-            />
-            <a
-              href={exportScheduleUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-            >
-              <FileDown className="w-4 h-4" />
-              Open (print to PDF)
-            </a>
-            {exportSelectedUrl && (
-              <a
-                href={exportSelectedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-              >
-                <FileDown className="w-4 h-4" />
-                Export selected ({selectedCount}) to PDF
-              </a>
-            )}
-            {selectedCount > 0 && (
-              <>
+          <div className="mb-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-neutral-700">Export draft schedule</span>
+                <input
+                  type="date"
+                  value={exportDate}
+                  onChange={(e) => setExportDate(e.target.value)}
+                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  aria-label="Export date"
+                />
+                <a
+                  href={exportScheduleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Open (print to PDF)
+                </a>
+              </div>
+              {exportSelectedUrl && (
+                <a
+                  href={exportSelectedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Export selected ({selectedCount}) to PDF
+                </a>
+              )}
+              {selectedCount > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={openEditBulk}
+                    className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit selected ({selectedCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirm({ bulk: selectedCount })}
+                    className="inline-flex items-center gap-2 px-3 py-2.5 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete selected ({selectedCount})
+                  </button>
+                </>
+              )}
+              {selectedForInvite.length > 0 && (
                 <button
                   type="button"
-                  onClick={openEditBulk}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                  onClick={handleBulkSendInvites}
+                  disabled={sendingInvites}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50 transition-colors"
                 >
-                  <Pencil className="w-4 h-4" />
-                  Edit selected ({selectedCount})
+                  {sendingInvites ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Send {selectedForInvite.length} invite(s)
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirm({ bulk: selectedCount })}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete selected ({selectedCount})
-                </button>
-              </>
-            )}
-            {selectedForInvite.length > 0 && (
-              <button
-                type="button"
-                onClick={handleBulkSendInvites}
-                disabled={sendingInvites}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50"
-              >
-                {sendingInvites ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send {selectedForInvite.length} invite(s)
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </>
       )}
@@ -632,6 +913,9 @@ export default function DashboardInterviewsPage() {
                     Invite sent
                   </th>
                   <th className="px-4 py-3 text-xs font-semibold text-neutral-600 uppercase tracking-wider">
+                    Confirmation
+                  </th>
+                  <th className="px-4 py-3 text-xs font-semibold text-neutral-600 uppercase tracking-wider">
                     Location / link
                   </th>
                   <th className="px-4 py-3 text-xs font-semibold text-neutral-600 uppercase tracking-wider">
@@ -677,6 +961,18 @@ export default function DashboardInterviewsPage() {
                       {i.inviteSentAt
                         ? new Date(i.inviteSentAt).toLocaleDateString(undefined, { dateStyle: 'short' })
                         : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {i.inviteSentAt ? (
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${CONFIRM_STYLES[i.confirmationStatus ?? 'pending'] ?? CONFIRM_STYLES.pending}`}
+                          title={i.confirmationNotes ? `Notes: ${i.confirmationNotes}` : undefined}
+                        >
+                          {(i.confirmationStatus ?? 'pending').replace(/_/g, ' ')}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600 max-w-[180px] truncate">
                       {i.locationOrLink || '—'}
@@ -827,13 +1123,14 @@ export default function DashboardInterviewsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Location / link (optional)</label>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Location / link <span className="text-red-600">*</span></label>
                   <input
                     type="text"
                     value={editForm.locationOrLink}
                     onChange={(e) => setEditForm((f) => ({ ...f, locationOrLink: e.target.value }))}
                     placeholder="e.g. Zoom link or office address"
                     className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
+                    required
                   />
                 </div>
                 <div>
