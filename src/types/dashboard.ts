@@ -104,6 +104,8 @@ export interface ApplicationWithDetails {
   formData: ApplicationFormData | null;
   createdAt: string;
   updatedAt: string;
+  /** True if the currently authenticated staff user has opened this application's sidebar. Defaults to true for unauthenticated/in-memory contexts. */
+  viewedByMe?: boolean;
   candidate: CandidateSummary;
   job: JobSummary;
 }

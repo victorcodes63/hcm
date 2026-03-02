@@ -7,7 +7,10 @@ import {
 import { getInMemoryJobSummary, getInMemoryJobRaw } from '@/lib/jobs-store';
 import { sendApplicationReceivedEmail } from '@/lib/email';
 import { reportApiError } from '@/lib/monitoring';
+import { parseStaffSession } from '@/lib/auth-session';
 import type { ApplicationWithDetails } from '@/types/dashboard';
+
+const STAFF_SESSION_COOKIE = 'staff_session';
 
 function jobToSummary(job: {
   id: string;
@@ -103,6 +106,9 @@ function totalWorkExperienceYears(
 }
 
 export async function GET(request: NextRequest) {
+  const rawSession = request.cookies.get(STAFF_SESSION_COOKIE)?.value;
+  const currentUserId = rawSession ? parseStaffSession(rawSession).userId : undefined;
+
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId') || undefined;
   const clientId = searchParams.get('clientId') || undefined;
@@ -154,6 +160,9 @@ export async function GET(request: NextRequest) {
         include: {
           candidate: true,
           job: { include: { client: true } },
+          views: currentUserId
+            ? { where: { userId: currentUserId }, select: { userId: true } }
+            : false,
         },
         orderBy: { appliedDate: 'desc' },
       });
@@ -227,6 +236,9 @@ export async function GET(request: NextRequest) {
         formData: a.formData as ApplicationWithDetails['formData'],
         createdAt: a.createdAt.toISOString(),
         updatedAt: a.updatedAt.toISOString(),
+        viewedByMe: currentUserId
+          ? ((a as typeof a & { views?: { userId: string }[] }).views?.length ?? 0) > 0
+          : true,
         candidate: {
           id: a.candidate.id,
           firstName: a.candidate.firstName,

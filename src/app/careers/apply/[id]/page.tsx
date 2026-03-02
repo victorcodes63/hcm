@@ -7,7 +7,10 @@ import Footer from '@/components/Footer';
 import JobApplicationForm from '@/components/ats/JobApplicationForm';
 import { JobListing } from '@/types/ats';
 import { useATS } from '@/lib/ats-api';
-import { ArrowLeft, MapPin, Clock, Building2, CheckCircle, Star } from 'lucide-react';
+import {
+  ArrowLeft, MapPin, Clock, Building2, CheckCircle, Star,
+  Link2, Linkedin, Twitter, Check,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function JobApplicationPage() {
@@ -50,8 +53,23 @@ export default function JobApplicationPage() {
     setShowApplicationForm(false);
   };
 
+  const [copied, setCopied] = useState(false);
+
   const isExpired =
     !!job?.applicationDeadline && new Date(job.applicationDeadline) < new Date();
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = job ? `${job.title} at ${job.company}` : '';
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback: select the URL from address bar
+    }
+  };
 
   if (loading) {
     return (
@@ -110,7 +128,7 @@ export default function JobApplicationPage() {
       <Navbar />
       
       {/* Job Header + Layout */}
-      <section className="pt-28 pb-10 bg-neutral-50">
+      <section className="pt-28 pb-16 bg-primary-50">
         <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
           <Link
             href="/careers"
@@ -123,7 +141,7 @@ export default function JobApplicationPage() {
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
             {/* Main content - job details */}
             <div className="flex-1 min-w-0 lg:max-w-[65%]">
-              <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-2xl border border-primary-100 shadow-sm overflow-hidden">
                 <div className="p-6 sm:p-8">
                   <h1 className="text-2xl sm:text-3xl font-bold text-primary-900 mb-3">{job.title}</h1>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
@@ -144,17 +162,6 @@ export default function JobApplicationPage() {
                     <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
                       {job.category}
                     </span>
-                    {job.applicationDeadline && (
-                      isExpired ? (
-                        <span className="text-xs text-neutral-500 font-medium">
-                          Closed · Was {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-amber-700 font-medium">
-                          Apply by {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                      )
-                    )}
                   </div>
                   {job.salary && (
                     <p className="mt-4 pt-4 border-t border-neutral-100 text-sm text-neutral-600">
@@ -214,24 +221,28 @@ export default function JobApplicationPage() {
               </div>
             </div>
 
-            {/* Sidebar - sticky apply card or expired message */}
-            <aside className="lg:w-[320px] shrink-0">
-              <div className="lg:sticky lg:top-28">
-                <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-6">
-                  <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-4">
+            {/* Sidebar — two symmetrical sticky cards */}
+            <aside className="lg:w-[300px] shrink-0">
+              <div className="lg:sticky lg:top-28 space-y-4">
+
+                {/* Apply card */}
+                <div className="bg-white rounded-2xl border border-primary-100 shadow-sm p-6">
+                  <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1">
                     {isExpired ? 'Application closed' : 'Apply for this role'}
-                  </h3>
-                  <p className="text-neutral-700 text-sm mb-4">
-                    {job.title} · {job.company}
                   </p>
+                  <p className="text-base font-semibold text-primary-900 mb-0.5 leading-snug">
+                    {job.title}
+                  </p>
+                  <p className="text-sm text-neutral-500 mb-4">{job.company}</p>
+
                   {isExpired ? (
                     <>
-                      <p className="text-neutral-600 text-sm mb-4">
-                        Sorry, this job posting has expired.
+                      <p className="text-sm text-neutral-500 mb-4">
+                        This posting has closed. Browse current openings below.
                       </p>
                       <Link
                         href="/careers"
-                        className="block w-full text-center px-6 py-3 bg-neutral-100 text-neutral-700 text-sm font-semibold rounded-lg hover:bg-neutral-200 transition-colors"
+                        className="block w-full text-center px-6 py-3 bg-neutral-100 text-neutral-700 text-sm font-semibold rounded-xl hover:bg-neutral-200 transition-colors"
                       >
                         Browse other jobs
                       </Link>
@@ -239,23 +250,76 @@ export default function JobApplicationPage() {
                   ) : (
                     <>
                       {job.applicationDeadline && (
-                        <p className="text-xs text-amber-700 font-medium mb-4">
-                          Apply by {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <p className="text-sm text-amber-700 font-medium mb-4">
+                          Closes {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       )}
-                      {!applicationSubmitted ? (
+                      {applicationSubmitted ? (
+                        <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium py-3">
+                          <CheckCircle className="w-4 h-4" />
+                          Application submitted
+                        </div>
+                      ) : (
                         <button
+                          type="button"
                           onClick={() => setShowApplicationForm(true)}
-                          className="w-full px-6 py-3 bg-primary-900 text-white text-sm font-semibold rounded-lg hover:bg-primary-800 transition-colors"
+                          className="w-full px-6 py-3 bg-primary-900 text-white text-sm font-semibold rounded-xl hover:bg-primary-800 active:scale-95 transition-all"
                         >
                           Apply Now
                         </button>
-                      ) : (
-                        <p className="text-sm text-emerald-600 font-medium">Application submitted</p>
                       )}
                     </>
                   )}
                 </div>
+
+                {/* Share card */}
+                <div className="bg-white rounded-2xl border border-primary-100 shadow-sm p-6">
+                  <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4">
+                    Share this role
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Copy link */}
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-primary-50 hover:bg-primary-100 border border-primary-100 hover:border-primary-300 transition-all group"
+                      title="Copy link"
+                    >
+                      {copied
+                        ? <Check className="w-5 h-5 text-emerald-600" />
+                        : <Link2 className="w-5 h-5 text-primary-600 group-hover:text-primary-800" />
+                      }
+                      <span className="text-xs text-neutral-500 group-hover:text-neutral-700">
+                        {copied ? 'Copied!' : 'Copy link'}
+                      </span>
+                    </button>
+
+                    {/* LinkedIn */}
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-primary-50 hover:bg-[#0A66C2]/10 border border-primary-100 hover:border-[#0A66C2]/30 transition-all group"
+                      title="Share on LinkedIn"
+                    >
+                      <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                      <span className="text-xs text-neutral-500 group-hover:text-neutral-700">LinkedIn</span>
+                    </a>
+
+                    {/* X / Twitter */}
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareTitle} — apply now`)}&url=${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-primary-50 hover:bg-neutral-100 border border-primary-100 hover:border-neutral-300 transition-all group"
+                      title="Share on X"
+                    >
+                      <Twitter className="w-5 h-5 text-neutral-800" />
+                      <span className="text-xs text-neutral-500 group-hover:text-neutral-700">X / Twitter</span>
+                    </a>
+                  </div>
+                </div>
+
               </div>
             </aside>
           </div>

@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Client companies; jobs can be tied to a client and shown publicly or anonymously
+// Client companies; jobs can be tied to a client and shown publicly or anonymously (recruitment only)
 model Client {
   id           String   @id @default(cuid())
   name         String
@@ -24,6 +24,198 @@ model Client {
   jobs Job[]
 
   @@index([name])
+}
+
+// Outsourcing clients – companies we provide HR outsourcing for (separate from recruitment clients)
+model OutsourcingClient {
+  id           String   @id @default(cuid())
+  name         String
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+
+  // Tax & registration (Kenya)
+  kraPin                 String?
+  nssfEmployerNumber     String?
+  nhifEmployerNumber     String?
+  companyRegistrationNumber String?
+  vatNumber              String?
+
+  // Banking & billing
+  bankName               String?
+  bankAccountNumber      String?
+  bankBranch             String?
+  bankSwiftCode          String?
+  currency               String?  @default("KES")
+  billingCycle           String?  // monthly | bi_weekly | weekly
+  serviceFeeType         String?  // fixed | percentage | per_employee
+  serviceFeeAmount       Decimal? @db.Decimal(12, 2)
+  paymentTerms           String?  // e.g. Net 15, Net 30, due on receipt
+
+  // Address
+  postalAddress          String?
+  county                 String?
+
+  // Contract
+  contractStartDate      DateTime?
+  contractEndDate        DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  departments Department[]
+  employees   Employee[]
+
+  @@index([name])
+}
+
+// Departments within an outsourcing client
+model Department {
+  id                  String   @id @default(cuid())
+  outsourcingClientId String
+  name                String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  client    OutsourcingClient @relation(fields: [outsourcingClientId], references: [id], onDelete: Cascade)
+  employees Employee[]
+
+  @@index([outsourcingClientId])
+}
+
+// Employees of outsourcing clients (tied to client and optionally department)
+model Employee {
+  id                  String    @id @default(cuid())
+  outsourcingClientId String
+  departmentId        String?
+  firstName           String
+  lastName            String
+  email               String
+  phone               String?
+  idNumber            String?   // national ID
+  kraPin              String?   // Kenya Revenue Authority PIN
+  nssfNumber          String?   // National Social Security Fund
+  nhifNumber          String?   // National Hospital Insurance Fund
+  dateOfJoining       DateTime?
+  jobTitle            String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  client         OutsourcingClient @relation(fields: [outsourcingClientId], references: [id], onDelete: Cascade)
+  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  payrolls       Payroll[]
+  leaveBalances  LeaveBalance[]
+  leaveApplications LeaveApplication[]
+  attendances    Attendance[]
+
+  @@index([outsourcingClientId])
+  @@index([departmentId])
+  @@index([email])
+}
+
+// Payroll records (Kenyan jurisdiction: PAYE, NSSF, NHIF)
+model Payroll {
+  id          String   @id @default(cuid())
+  employeeId  String
+  month       Int      // 1-12
+  year        Int
+  basicPay    Decimal  @db.Decimal(12, 2)
+  allowances  Json     @default("[]") // [{ name, amount }]
+  deductions  Json     @default("[]") // [{ name, amount }]
+  grossPay    Decimal  @db.Decimal(12, 2)
+  paye        Decimal  @db.Decimal(12, 2) // PAYE tax
+  nssf        Decimal  @db.Decimal(12, 2)
+  nhif        Decimal  @db.Decimal(12, 2)
+  netPay      Decimal  @db.Decimal(12, 2)
+  status      PayrollStatus @default(draft)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@index([employeeId])
+  @@index([year, month])
+}
+
+enum PayrollStatus {
+  draft
+  approved
+  paid
+}
+
+// Leave types (Annual, Sick, Maternity, etc.)
+model LeaveType {
+  id          String   @id @default(cuid())
+  name        String   // e.g. Annual, Sick, Maternity, Paternity, Compassionate
+  daysPerYear Int      @default(21) // default annual entitlement for Kenyan employment
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leaveBalances      LeaveBalance[]
+  leaveApplications  LeaveApplication[]
+}
+
+// Leave balance per employee per type per year
+model LeaveBalance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  year        Int
+  balance     Int      @default(0) // days remaining
+  used        Int      @default(0) // days used
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType  LeaveType  @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+}
+
+// Leave applications
+model LeaveApplication {
+  id          String        @id @default(cuid())
+  employeeId  String
+  leaveTypeId String
+  startDate   DateTime
+  endDate     DateTime
+  days        Int
+  status      LeaveStatus   @default(pending)
+  reason      String?       @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+}
+
+// Attendance records (check-in/check-out)
+model Attendance {
+  id        String   @id @default(cuid())
+  employeeId String
+  date      DateTime @db.Date
+  checkIn   DateTime?
+  checkOut  DateTime?
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
 }
 
 // Jobs can be synced from external ATS or managed in-app; id can match external system
@@ -111,12 +303,25 @@ model Application {
   job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
   candidate  Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   interviews Interview[]
+  views      ApplicationView[]
 
   @@index([jobId])
   @@index([status])
   @@index([appliedDate(sort: Desc)])
   @@index([candidateId])
   @@index([jobId, status]) // for dashboard filters
+}
+
+model ApplicationView {
+  applicationId String
+  userId        String
+  viewedAt      DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, userId])
+  @@index([userId])
+  @@index([applicationId])
 }
 
 model Interview {

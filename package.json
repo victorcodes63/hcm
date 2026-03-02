@@ -18,6 +18,7 @@
     "db:seed-staff": "node prisma/seed-staff.js",
     "db:seed-invite-recipients": "node prisma/seed-two-invite-recipients.js",
     "db:seed-insights": "node prisma/seed-insights.js",
+    "db:seed-outsourcing-clients": "node prisma/seed-outsourcing-clients.js",
     "db:update-resume-paths": "node prisma/update-resume-paths.js",
     "smoke:test": "node scripts/smoke-test.mjs"
   },

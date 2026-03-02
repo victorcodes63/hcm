@@ -351,6 +351,13 @@ export default function DashboardApplicationsPage() {
   const [sendingRejections, setSendingRejections] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
 
+  const markAsViewed = (appId: string) => {
+    setApplications((prev) =>
+      prev.map((a) => (a.id === appId ? { ...a, viewedByMe: true } : a))
+    );
+    fetch(`/api/applications/${appId}/view`, { method: 'POST' }).catch(() => {});
+  };
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -1047,12 +1054,18 @@ export default function DashboardApplicationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
-              {filteredApplications.map((app) => (
+              {filteredApplications.map((app) => {
+                const isUnread = app.viewedByMe === false;
+                return (
                 <motion.tr
                   key={app.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="hover:bg-neutral-50/70 transition-colors"
+                  className={`transition-colors ${
+                    isUnread
+                      ? 'bg-primary-50 hover:bg-primary-100/60 border-l-2 border-l-primary-500'
+                      : 'hover:bg-neutral-50/70 border-l-2 border-l-transparent'
+                  }`}
                 >
                   <td className="px-5 py-3">
                     <input
@@ -1065,17 +1078,22 @@ export default function DashboardApplicationsPage() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary-700 font-semibold text-sm">
-                          {app.candidate.firstName[0]}
-                          {app.candidate.lastName[0]}
-                        </span>
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isUnread ? 'bg-primary-600' : 'bg-primary-100'}`}>
+                          <span className={`font-semibold text-sm ${isUnread ? 'text-white' : 'text-primary-700'}`}>
+                            {app.candidate.firstName[0]}
+                            {app.candidate.lastName[0]}
+                          </span>
+                        </div>
+                        {isUnread && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
+                        )}
                       </div>
                       <div>
-                        <p className="font-medium text-primary-900 text-sm">
+                        <p className={`text-sm ${isUnread ? 'font-bold text-primary-900' : 'font-medium text-neutral-600'}`}>
                           {app.candidate.firstName} {app.candidate.lastName}
                         </p>
-                        <p className="text-xs text-neutral-500">
+                        <p className={`text-xs ${isUnread ? 'text-primary-700' : 'text-neutral-400'}`}>
                           {app.candidate.email}
                         </p>
                       </div>
@@ -1083,18 +1101,18 @@ export default function DashboardApplicationsPage() {
                   </td>
                   <td className="px-5 py-3">
                     <div>
-                      <p className="font-medium text-primary-900 text-sm">
+                      <p className={`text-sm ${isUnread ? 'font-semibold text-primary-900' : 'font-medium text-neutral-600'}`}>
                         {app.job.title}
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className={`text-xs ${isUnread ? 'text-neutral-500' : 'text-neutral-400'}`}>
                         {app.job.company} · {app.job.location}
                       </p>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-neutral-600 text-sm">
+                  <td className={`px-5 py-3 text-sm ${isUnread ? 'text-neutral-700 font-medium' : 'text-neutral-400'}`}>
                     {app.job.clientName ?? '—'}
                   </td>
-                  <td className="px-5 py-3 text-neutral-600 text-sm tabular-nums">
+                  <td className={`px-5 py-3 text-sm tabular-nums ${isUnread ? 'text-neutral-700 font-medium' : 'text-neutral-400'}`}>
                     {formatDate(app.appliedDate)}
                   </td>
                   <td className="px-5 py-3">
@@ -1136,7 +1154,10 @@ export default function DashboardApplicationsPage() {
                   <td className="px-5 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => setSelectedApp(app)}
+                      onClick={() => {
+                        setSelectedApp(app);
+                        if (isUnread) markAsViewed(app.id);
+                      }}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -1144,7 +1165,7 @@ export default function DashboardApplicationsPage() {
                     </button>
                   </td>
                 </motion.tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>
