@@ -3,17 +3,19 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Clock, ArrowRight, ExternalLink, Star, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, ArrowRight, ExternalLink, Star } from 'lucide-react';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import SectionTitle from '@/components/SectionTitle';
+import { htmlToListPreviewItems } from '@/lib/job-list-html';
 
 type FeaturedJob = {
   id: string;
+  slug?: string;
   title: string;
   location: string;
   type: string;
   description: string;
-  requirements: string[];
+  requirements: string[] | string;
   postedDate: string;
 };
 
@@ -30,19 +32,21 @@ const FeaturedJobs = () => {
         if (cancelled || !Array.isArray(data)) return;
         const mapped: FeaturedJob[] = data.slice(0, 3).map((job: {
           id: string;
+          slug?: string;
           title: string;
           location: string;
           type: string;
           description: string;
-          requirements: string[];
+          requirements: string[] | string;
           postedDate: string;
         }) => ({
           id: job.id,
+          slug: job.slug,
           title: job.title,
           location: job.location,
           type: job.type,
           description: job.description,
-          requirements: Array.isArray(job.requirements) ? job.requirements : [],
+          requirements: Array.isArray(job.requirements) ? job.requirements : (typeof job.requirements === 'string' ? job.requirements : []),
           postedDate: job.postedDate,
         }));
         setFeaturedJobs(mapped);
@@ -211,22 +215,33 @@ const FeaturedJobs = () => {
                   </p>
 
                   {/* Requirements Preview */}
-                  <div className="mb-4 md:mb-6 flex-1">
-                    <h4 className="text-xs md:text-sm font-medium text-primary-900 mb-2 md:mb-3">Key Requirements:</h4>
-                    <ul className="space-y-1 md:space-y-2">
-                      {job.requirements.slice(0, 2).map((requirement, reqIndex) => (
-                        <li key={reqIndex} className="text-xs md:text-sm text-neutral-700 flex items-center">
-                          <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-secondary-500 rounded-full mr-2 md:mr-3 flex-shrink-0"></div>
-                          {requirement}
-                        </li>
-                      ))}
-                      {job.requirements.length > 2 && (
-                        <li className="text-xs md:text-sm text-neutral-600">
-                          +{job.requirements.length - 2} more requirements
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+                  {(() => {
+                    const reqItems = Array.isArray(job.requirements)
+                      ? job.requirements.slice(0, 2)
+                      : htmlToListPreviewItems(typeof job.requirements === 'string' ? job.requirements : '', 2);
+                    if (reqItems.length === 0) return null;
+                    const totalCount = Array.isArray(job.requirements)
+                      ? job.requirements.length
+                      : htmlToListPreviewItems(typeof job.requirements === 'string' ? job.requirements : '', 999).length;
+                    return (
+                      <div className="mb-4 md:mb-6 flex-1">
+                        <h4 className="text-xs md:text-sm font-medium text-primary-900 mb-2 md:mb-3">Key Requirements:</h4>
+                        <ul className="space-y-1 md:space-y-2">
+                          {reqItems.map((requirement, reqIndex) => (
+                            <li key={reqIndex} className="text-xs md:text-sm text-neutral-700 flex items-center">
+                              <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-secondary-500 rounded-full mr-2 md:mr-3 flex-shrink-0"></div>
+                              {requirement}
+                            </li>
+                          ))}
+                          {totalCount > 2 && (
+                            <li className="text-xs md:text-sm text-neutral-600">
+                              +{totalCount - 2} more requirements
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <Link

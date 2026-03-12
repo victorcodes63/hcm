@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { CalendarCheck, Plus, Loader2, FileDown, Send, Filter, Pencil, Trash2, X, Video, ExternalLink, Search } from 'lucide-react';
 import type { InterviewWithDetails, InterviewStatus, InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
+import { formatInNairobi, parseDateTimeAsNairobi, toDateTimeLocalNairobi } from '@/lib/timezone';
 import type { UserSummary } from '@/types/dashboard';
 
 const TYPE_LABELS: Record<InterviewType, string> = {
@@ -34,11 +35,7 @@ const CONFIRM_STYLES: Record<string, string> = {
 };
 
 function formatDateTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return formatInNairobi(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export default function DashboardInterviewsPage() {
@@ -89,6 +86,8 @@ export default function DashboardInterviewsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterInviteSent, setFilterInviteSent] = useState('');
   const [exportDate, setExportDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [exportDownloading, setExportDownloading] = useState<'date' | 'selected' | null>(null);
+  const [exportPreviewing, setExportPreviewing] = useState<'date' | 'selected' | null>(null);
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -206,10 +205,8 @@ export default function DashboardInterviewsPage() {
   };
 
   const openEditSingle = (i: InterviewWithDetails) => {
-    const d = new Date(i.scheduledAt);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     setEditForm({
-      scheduledAt: d.toISOString().slice(0, 16),
+      scheduledAt: toDateTimeLocalNairobi(i.scheduledAt),
       durationMinutes: (i.durationMinutes ?? 45) as InterviewDurationMinutes,
       type: i.type,
       locationOrLink: i.locationOrLink ?? '',
@@ -250,7 +247,7 @@ export default function DashboardInterviewsPage() {
     try {
       if (editInterview) {
         const body: Record<string, unknown> = {
-          scheduledAt: new Date(editForm.scheduledAt).toISOString(),
+          scheduledAt: parseDateTimeAsNairobi(editForm.scheduledAt).toISOString(),
           durationMinutes: editForm.durationMinutes,
           type: editForm.type,
           locationOrLink: editForm.locationOrLink.trim(),
@@ -270,7 +267,7 @@ export default function DashboardInterviewsPage() {
       } else {
         const body: Record<string, unknown> = { interviewIds: editIds };
         if (editForm.scheduledAt) {
-          const d = new Date(editForm.scheduledAt);
+          const d = parseDateTimeAsNairobi(editForm.scheduledAt);
           if (!Number.isNaN(d.getTime())) body.scheduledAt = d.toISOString();
         }
         body.durationMinutes = editForm.durationMinutes;
@@ -473,6 +470,45 @@ export default function DashboardInterviewsPage() {
   const exportSelectedUrl = selectedCount > 0
     ? `/api/interviews/export-schedule?ids=${Array.from(selectedIds).join(',')}`
     : null;
+
+  const handlePreviewPdf = async (url: string, type: 'date' | 'selected') => {
+    setExportPreviewing(type);
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${sep}format=pdf`);
+      if (!res.ok) throw new Error('Preview failed');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setExportPreviewing(null);
+    }
+  };
+
+  const handleDownloadPdf = async (url: string, type: 'date' | 'selected') => {
+    setExportDownloading(type);
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${sep}format=pdf`);
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition');
+      const match = disposition?.match(/filename="?([^";\n]+)"?/);
+      const filename = match?.[1] ?? `interview-schedule-${exportDate}.pdf`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setExportDownloading(null);
+    }
+  };
 
   return (
     <div className="w-full min-w-0">
@@ -689,11 +725,13 @@ export default function DashboardInterviewsPage() {
         </div>
       ) : (
         <div className="mb-6 space-y-4">
+          {/* Filters section */}
           <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+            <h3 className="text-sm font-semibold text-primary-900 mb-4">Filters</h3>
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
               <div className="min-w-0 flex-1 sm:max-w-[280px]">
                 <label htmlFor="interview-job-view" className="block text-sm font-medium text-primary-900 mb-1.5">
-                  Switch job
+                  Job
                 </label>
                 <select
                   id="interview-job-view"
@@ -711,22 +749,30 @@ export default function DashboardInterviewsPage() {
               <div className="flex flex-wrap items-end gap-3 flex-1">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-neutral-500 shrink-0" aria-hidden />
-                  <input
-                    type="date"
-                    value={filterDateFrom}
-                    onChange={(e) => setFilterDateFrom(e.target.value)}
-                    className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    aria-label="Date from"
-                  />
+                  <div>
+                    <label htmlFor="filter-date-from" className="sr-only">Date from</label>
+                    <input
+                      id="filter-date-from"
+                      type="date"
+                      value={filterDateFrom}
+                      onChange={(e) => setFilterDateFrom(e.target.value)}
+                      className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      aria-label="Date from"
+                    />
+                  </div>
                 </div>
                 <span className="text-neutral-400 text-sm hidden sm:inline">to</span>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  aria-label="Date to"
-                />
+                <div>
+                  <label htmlFor="filter-date-to" className="sr-only">Date to</label>
+                  <input
+                    id="filter-date-to"
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    aria-label="Date to"
+                  />
+                </div>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -772,71 +818,108 @@ export default function DashboardInterviewsPage() {
 
       {selectedJobView !== '' && !loading && interviews.length > 0 && (
         <>
-          <div className="mb-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-neutral-700">Export draft schedule</span>
-                <input
-                  type="date"
-                  value={exportDate}
-                  onChange={(e) => setExportDate(e.target.value)}
-                  className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  aria-label="Export date"
-                />
-                <a
-                  href={exportScheduleUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Open (print to PDF)
-                </a>
+          {/* Export schedule section */}
+          <div className="mb-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4 space-y-6">
+            <h3 className="text-sm font-semibold text-primary-900">Export schedule</h3>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-neutral-500 mb-2">Export a specific day&apos;s schedule as PDF</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label htmlFor="export-date" className="sr-only">Date for export</label>
+                  <input
+                    id="export-date"
+                    type="date"
+                    value={exportDate}
+                    onChange={(e) => setExportDate(e.target.value)}
+                    className="px-3 py-2.5 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    aria-label="Date for export"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handlePreviewPdf(exportScheduleUrl, 'date')}
+                    disabled={!!exportPreviewing || !!exportDownloading}
+                    className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {exportPreviewing === 'date' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf(exportScheduleUrl, 'date')}
+                    disabled={!!exportDownloading || !!exportPreviewing}
+                    className="inline-flex items-center gap-2 px-3 py-2.5 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {exportDownloading === 'date' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                    Download PDF
+                  </button>
+                </div>
               </div>
+
               {exportSelectedUrl && (
-                <a
-                  href={exportSelectedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
-                >
-                  <FileDown className="w-4 h-4" />
-                  Export selected ({selectedCount}) to PDF
-                </a>
-              )}
-              {selectedCount > 0 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={openEditBulk}
-                    className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit selected ({selectedCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteConfirm({ bulk: selectedCount })}
-                    className="inline-flex items-center gap-2 px-3 py-2.5 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete selected ({selectedCount})
-                  </button>
-                </>
-              )}
-              {selectedForInvite.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleBulkSendInvites}
-                  disabled={sendingInvites}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50 transition-colors"
-                >
-                  {sendingInvites ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Send {selectedForInvite.length} invite(s)
-                </button>
+                <div className="pt-3 border-t border-neutral-100">
+                  <p className="text-xs text-neutral-500 mb-2">Export only the interviews you&apos;ve selected in the table</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewPdf(exportSelectedUrl, 'selected')}
+                      disabled={!!exportPreviewing || !!exportDownloading}
+                      className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {exportPreviewing === 'selected' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                      Preview selected
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPdf(exportSelectedUrl, 'selected')}
+                      disabled={!!exportDownloading || !!exportPreviewing}
+                      className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {exportDownloading === 'selected' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                      Download selected ({selectedCount}) as PDF
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
+
+          {/* Bulk actions — only when rows selected */}
+          {selectedCount > 0 && (
+            <div className="mb-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+              <h3 className="text-sm font-semibold text-primary-900 mb-3">Bulk actions</h3>
+              <p className="text-xs text-neutral-500 mb-3">{selectedCount} interview{selectedCount !== 1 ? 's' : ''} selected</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openEditBulk}
+                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit selected
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm({ bulk: selectedCount })}
+                  className="inline-flex items-center gap-2 px-3 py-2.5 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete selected
+                </button>
+                {selectedForInvite.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkSendInvites}
+                    disabled={sendingInvites}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-900 text-white rounded-lg text-sm font-medium hover:bg-primary-800 disabled:opacity-50 transition-colors"
+                  >
+                    {sendingInvites ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Send {selectedForInvite.length} invite{selectedForInvite.length !== 1 ? 's' : ''}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -959,7 +1042,7 @@ export default function DashboardInterviewsPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
                       {i.inviteSentAt
-                        ? new Date(i.inviteSentAt).toLocaleDateString(undefined, { dateStyle: 'short' })
+                        ? formatInNairobi(new Date(i.inviteSentAt), { dateStyle: 'short' })
                         : '—'}
                     </td>
                     <td className="px-4 py-3">

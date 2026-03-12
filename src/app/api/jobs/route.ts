@@ -29,14 +29,15 @@ type PrismaJobForListing = {
   isActive: boolean;
   applicationCount: number;
   views: number;
+  applicationStartAt: Date | null;
   applicationDeadline: Date | null;
   _count?: { applications: number };
 };
 
 function prismaJobToListing(job: PrismaJobForListing): JobListing {
-  const requirements = Array.isArray(job.requirements) ? job.requirements : [];
-  const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
-  const benefits = Array.isArray(job.benefits) ? job.benefits : [];
+  const requirements = typeof job.requirements === 'string' ? job.requirements : (Array.isArray(job.requirements) ? job.requirements : []);
+  const responsibilities = typeof job.responsibilities === 'string' ? job.responsibilities : (Array.isArray(job.responsibilities) ? job.responsibilities : []);
+  const benefits = typeof job.benefits === 'string' ? job.benefits : (Array.isArray(job.benefits) ? job.benefits : []);
   const skills = Array.isArray(job.skills) ? job.skills : [];
   const salary =
     job.salary && typeof job.salary === 'object' && 'min' in job.salary && 'max' in job.salary
@@ -54,14 +55,15 @@ function prismaJobToListing(job: PrismaJobForListing): JobListing {
     category: job.category,
     postedDate: job.postedDate.toISOString(),
     description: job.description,
-    requirements: requirements as string[],
-    responsibilities: responsibilities as string[],
-    benefits: benefits as string[],
+    requirements: requirements as string[] | string,
+    responsibilities: responsibilities as string[] | string,
+    benefits: benefits as string[] | string,
     salary,
     experience: job.experience ?? '',
     education: job.education ?? '',
     skills: skills as string[],
     isActive: job.isActive,
+    applicationStartAt: job.applicationStartAt ? job.applicationStartAt.toISOString() : undefined,
     applicationDeadline: job.applicationDeadline ? job.applicationDeadline.toISOString() : undefined,
     applicationCount: typeof applicationCount === 'number' ? applicationCount : job.applicationCount,
     views: job.views,
@@ -86,6 +88,14 @@ export async function GET(request: NextRequest) {
                 OR: [
                   { applicationDeadline: null },
                   { applicationDeadline: { gt: now } },
+                ],
+                AND: [
+                  {
+                    OR: [
+                      { applicationStartAt: null },
+                      { applicationStartAt: { lte: now } },
+                    ],
+                  },
                 ],
               }
             : {}),
@@ -153,17 +163,28 @@ export async function POST(request: NextRequest) {
   const type = typeof b.type === 'string' ? b.type.trim() : 'Full Time';
   const category = typeof b.category === 'string' ? b.category.trim() : '';
   const description = typeof b.description === 'string' ? b.description.trim() : '';
-  const requirements = Array.isArray(b.requirements)
-    ? (b.requirements as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
-    : [];
-  const responsibilities = Array.isArray(b.responsibilities)
-    ? (b.responsibilities as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
-    : [];
-  const benefits = Array.isArray(b.benefits)
-    ? (b.benefits as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
-    : [];
+  const requirementsRaw = b.requirements;
+  const requirements = typeof requirementsRaw === 'string' && requirementsRaw.trim()
+    ? requirementsRaw.trim()
+    : Array.isArray(requirementsRaw)
+      ? (requirementsRaw as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+      : [];
+  const responsibilitiesRaw = b.responsibilities;
+  const responsibilities = typeof responsibilitiesRaw === 'string' && responsibilitiesRaw.trim()
+    ? responsibilitiesRaw.trim()
+    : Array.isArray(responsibilitiesRaw)
+      ? (responsibilitiesRaw as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+      : [];
+  const benefitsRaw = b.benefits;
+  const benefits = typeof benefitsRaw === 'string'
+    ? (benefitsRaw.trim() || undefined)
+    : Array.isArray(benefitsRaw)
+      ? (benefitsRaw as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+      : [];
 
-  if (!title || !description || requirements.length === 0 || responsibilities.length === 0) {
+  const hasReqs = typeof requirements === 'string' ? requirements.replace(/<[^>]+>/g, '').trim().length > 0 : requirements.length > 0;
+  const hasResp = typeof responsibilities === 'string' ? responsibilities.replace(/<[^>]+>/g, '').trim().length > 0 : responsibilities.length > 0;
+  if (!title || !description || !hasReqs || !hasResp) {
     return NextResponse.json(
       { error: 'Missing required fields: title, description, requirements, and responsibilities are required.' },
       { status: 400 }
@@ -255,6 +276,13 @@ export async function POST(request: NextRequest) {
     : [];
   const concealCompany = b.concealCompany === true;
   const salaryPublic = b.salaryPublic === true;
+  const applicationStartAt =
+    typeof b.applicationStartAt === 'string' && b.applicationStartAt.trim()
+      ? new Date(b.applicationStartAt.trim())
+      : undefined;
+  if (applicationStartAt !== undefined && Number.isNaN(applicationStartAt.getTime())) {
+    return NextResponse.json({ error: 'Invalid application start date/time.' }, { status: 400 });
+  }
   const applicationDeadline =
     typeof b.applicationDeadline === 'string' && b.applicationDeadline.trim()
       ? new Date(b.applicationDeadline.trim())
@@ -272,7 +300,7 @@ export async function POST(request: NextRequest) {
     description,
     requirements,
     responsibilities,
-    benefits: benefits.length ? benefits : undefined,
+    benefits: (typeof benefits === 'string' ? benefits.trim() : benefits.length) ? benefits : undefined,
     salary,
     experience,
     education,
@@ -284,6 +312,7 @@ export async function POST(request: NextRequest) {
     clientId: resolvedClientId,
     concealCompany,
     salaryPublic,
+    applicationStartAt: applicationStartAt ? applicationStartAt.toISOString() : undefined,
     applicationDeadline: applicationDeadline ? applicationDeadline.toISOString() : undefined,
   };
 
@@ -320,7 +349,7 @@ export async function POST(request: NextRequest) {
           description: input.description,
           requirements: input.requirements,
           responsibilities: input.responsibilities,
-          benefits: input.benefits ?? [],
+          benefits: (input.benefits !== undefined && input.benefits !== null && (typeof input.benefits === 'string' ? input.benefits.trim() : (input.benefits as unknown[]).length)) ? input.benefits : [],
           salary: input.salary ?? undefined,
           experience: input.experience ?? null,
           education: input.education ?? null,
@@ -332,6 +361,7 @@ export async function POST(request: NextRequest) {
           clientId: resolvedClientId ?? null,
           concealCompany: input.concealCompany ?? false,
           salaryPublic: input.salaryPublic ?? false,
+          applicationStartAt: applicationStartAt ?? null,
           applicationDeadline: applicationDeadline ?? null,
         },
       });

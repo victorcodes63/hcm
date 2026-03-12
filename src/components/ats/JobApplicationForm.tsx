@@ -1097,7 +1097,11 @@ export default function JobApplicationForm({ job, onSuccess, onClose }: JobAppli
                   <Briefcase className="w-5 h-5" />
                   Employment history
                 </h3>
-                <p className="text-sm text-neutral-600">Add up to 10 relevant work experience entries: job title, company, industry, type, and dates. At least one complete entry is required.</p>
+                <p className="text-sm font-bold text-amber-700">
+                  Add up to 10 relevant roles.
+                  <br />
+                  Applicants are required to provide a comprehensive summary of their work experience and qualifications. Kindly note that information will not be extracted from uploaded CVs. The details provided will significantly influence the shortlisting process.
+                </p>
                 {showError('employment')}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum expected salary *</label>

@@ -25,14 +25,15 @@ type PrismaJobForListing = {
   isActive: boolean;
   applicationCount: number;
   views: number;
+  applicationStartAt: Date | null;
   applicationDeadline: Date | null;
   _count?: { applications: number };
 };
 
 function prismaJobToListing(job: PrismaJobForListing): JobListing {
-  const requirements = Array.isArray(job.requirements) ? job.requirements : [];
-  const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
-  const benefits = Array.isArray(job.benefits) ? job.benefits : [];
+  const requirements = typeof job.requirements === 'string' ? job.requirements : (Array.isArray(job.requirements) ? job.requirements : []);
+  const responsibilities = typeof job.responsibilities === 'string' ? job.responsibilities : (Array.isArray(job.responsibilities) ? job.responsibilities : []);
+  const benefits = typeof job.benefits === 'string' ? job.benefits : (Array.isArray(job.benefits) ? job.benefits : []);
   const skills = Array.isArray(job.skills) ? job.skills : [];
   const salary =
     job.salary && typeof job.salary === 'object' && 'min' in job.salary && 'max' in job.salary
@@ -50,14 +51,15 @@ function prismaJobToListing(job: PrismaJobForListing): JobListing {
     category: job.category,
     postedDate: job.postedDate.toISOString(),
     description: job.description,
-    requirements: requirements as string[],
-    responsibilities: responsibilities as string[],
-    benefits: benefits as string[],
+    requirements: requirements as string[] | string,
+    responsibilities: responsibilities as string[] | string,
+    benefits: benefits as string[] | string,
     salary,
     experience: job.experience ?? '',
     education: job.education ?? '',
     skills: skills as string[],
     isActive: job.isActive,
+    applicationStartAt: job.applicationStartAt ? job.applicationStartAt.toISOString() : undefined,
     applicationDeadline: job.applicationDeadline ? job.applicationDeadline.toISOString() : undefined,
     applicationCount: typeof applicationCount === 'number' ? applicationCount : job.applicationCount,
     views: job.views,
@@ -88,6 +90,10 @@ export async function GET(
         });
       }
       if (job) {
+        const jobWithStart = job as { applicationStartAt?: Date | null };
+        if (!internal && jobWithStart.applicationStartAt != null && jobWithStart.applicationStartAt > new Date()) {
+          return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+        }
         const listing = prismaJobToListing(job as unknown as PrismaJobForListing);
         if (!internal) {
           if (job.concealCompany || job.client?.isAnonymous) listing.company = 'Confidential';
@@ -135,7 +141,12 @@ export async function GET(
     }
   } else {
     const job = getInMemoryJobById(id, true) ?? getInMemoryJobBySlugOrId(id, true);
-    if (job) return NextResponse.json(job);
+    if (job) {
+      if (job.applicationStartAt && job.applicationStartAt > new Date().toISOString()) {
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      }
+      return NextResponse.json(job);
+    }
   }
   return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 }
@@ -160,15 +171,24 @@ export async function PATCH(
   const type = typeof b.type === 'string' ? b.type.trim() : undefined;
   const category = typeof b.category === 'string' ? b.category.trim() : undefined;
   const description = typeof b.description === 'string' ? b.description.trim() : undefined;
-  const requirements = Array.isArray(b.requirements)
-    ? (b.requirements as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean) as string[]
-    : undefined;
-  const responsibilities = Array.isArray(b.responsibilities)
-    ? (b.responsibilities as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean) as string[]
-    : undefined;
-  const benefits = Array.isArray(b.benefits)
-    ? (b.benefits as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean) as string[]
-    : undefined;
+  const requirements = typeof b.requirements === 'string'
+    ? b.requirements.trim() || undefined
+    : Array.isArray(b.requirements)
+      ? (b.requirements as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+      : undefined;
+  const responsibilities = typeof b.responsibilities === 'string'
+    ? b.responsibilities.trim() || undefined
+    : Array.isArray(b.responsibilities)
+      ? (b.responsibilities as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+      : undefined;
+  const benefits =
+    !('benefits' in b)
+      ? undefined
+      : typeof b.benefits === 'string'
+        ? b.benefits.trim()
+        : Array.isArray(b.benefits)
+          ? (b.benefits as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : String(x))).filter(Boolean)
+          : '';
   const concealCompany = typeof b.concealCompany === 'boolean' ? b.concealCompany : undefined;
   const salaryPublic = typeof b.salaryPublic === 'boolean' ? b.salaryPublic : undefined;
   const salary =
@@ -179,6 +199,21 @@ export async function PATCH(
           currency: String((b.salary as { currency?: unknown }).currency || 'KES'),
         }
       : undefined;
+  const applicationStartAt =
+    b.applicationStartAt !== undefined
+      ? b.applicationStartAt === null || b.applicationStartAt === ''
+        ? null
+        : typeof b.applicationStartAt === 'string'
+          ? new Date(b.applicationStartAt.trim())
+          : undefined
+      : undefined;
+  if (
+    applicationStartAt !== undefined &&
+    applicationStartAt !== null &&
+    Number.isNaN(applicationStartAt.getTime())
+  ) {
+    return NextResponse.json({ error: 'Invalid application start date/time.' }, { status: 400 });
+  }
   const applicationDeadline =
     b.applicationDeadline !== undefined
       ? b.applicationDeadline === null || b.applicationDeadline === ''
@@ -294,6 +329,9 @@ export async function PATCH(
   if (concealCompany !== undefined) payload.concealCompany = concealCompany;
   if (salaryPublic !== undefined) payload.salaryPublic = salaryPublic;
   if (salary !== undefined) payload.salary = salary;
+  if (applicationStartAt !== undefined)
+    payload.applicationStartAt =
+      applicationStartAt === null ? null : applicationStartAt.toISOString();
   if (applicationDeadline !== undefined)
     payload.applicationDeadline =
       applicationDeadline === null ? null : applicationDeadline.toISOString();
@@ -323,6 +361,7 @@ export async function PATCH(
         ...(payload.concealCompany !== undefined && { concealCompany: payload.concealCompany }),
         ...(payload.salaryPublic !== undefined && { salaryPublic: payload.salaryPublic }),
         ...(payload.salary !== undefined && { salary: payload.salary }),
+        ...(payload.applicationStartAt !== undefined && { applicationStartAt: payload.applicationStartAt }),
         ...(payload.applicationDeadline !== undefined && { applicationDeadline: payload.applicationDeadline }),
         ...(payload.minYearsExperience !== undefined && { minYearsExperience: payload.minYearsExperience }),
         ...(payload.educationLevel !== undefined && { educationLevel: payload.educationLevel }),

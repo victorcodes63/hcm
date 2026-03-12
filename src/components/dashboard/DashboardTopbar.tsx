@@ -101,7 +101,7 @@ export default function DashboardTopbar({ currentUser }: DashboardTopbarProps) {
       : QUICK_ACTIONS_BASE;
 
   return (
-    <header className="sticky top-0 z-30 flex-shrink-0 h-16 bg-white border-b border-neutral-200 flex items-center justify-between gap-4 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
+    <header className="print:hidden sticky top-0 z-30 flex-shrink-0 h-16 bg-white border-b border-neutral-200 flex items-center justify-between gap-4 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16">
       {/* Search — opens command palette on focus or use Cmd+K / Ctrl+K */}
       <div className="flex-1 max-w-xl min-w-0">
         <div className="relative">

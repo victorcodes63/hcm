@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { dateTimeNairobi } from '@/lib/timezone';
 import type { InterviewWithDetails, InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
 
 const MAX_PER_SCHEDULE = 10;
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     type?: string;
     applicationIds?: string[];
     locationOrLink?: string;
+    notes?: string;
   };
   const jobId = typeof b.jobId === 'string' ? b.jobId.trim() : '';
   const dateStr = typeof b.date === 'string' ? b.date.trim() : '';
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
     ? b.applicationIds.filter((id): id is string => typeof id === 'string').slice(0, MAX_PER_SCHEDULE)
     : [];
   const locationOrLink = typeof b.locationOrLink === 'string' ? b.locationOrLink.trim() || null : null;
+  const notes = typeof b.notes === 'string' ? b.notes.trim() || null : null;
 
   if (!jobId) {
     return NextResponse.json({ error: 'jobId is required.' }, { status: 400 });
@@ -84,12 +87,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'locationOrLink is required (e.g. Zoom link or office address).' }, { status: 400 });
   }
 
-  const [hours, minutes] = startTimeStr.split(':').map((s) => parseInt(s, 10) || 0);
-  const baseDate = new Date(dateStr);
+  const baseDate = dateTimeNairobi(dateStr, startTimeStr);
   if (Number.isNaN(baseDate.getTime())) {
-    return NextResponse.json({ error: 'Invalid date.' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid date or start time.' }, { status: 400 });
   }
-  baseDate.setHours(hours, minutes, 0, 0);
 
   try {
     if (!process.env.DATABASE_URL) {
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
           durationMinutes,
           type,
           locationOrLink,
-          notes: null,
+          notes,
         },
         include: {
           application: {

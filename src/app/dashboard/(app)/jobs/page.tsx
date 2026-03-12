@@ -42,6 +42,10 @@ export default function DashboardJobsPage() {
     const d = new Date(dateString);
     return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   };
+  const formatDateTime = (dateString: string) => {
+    const d = new Date(dateString);
+    return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
 
   const companies = useMemo(() => {
     const set = new Set(jobs.map((j) => j.company).filter(Boolean));
@@ -309,7 +313,7 @@ export default function DashboardJobsPage() {
                     </td>
                     <td className="px-4 sm:px-5 py-3 text-neutral-500 text-sm tabular-nums whitespace-nowrap">
                       {job.applicationDeadline
-                        ? formatDate(job.applicationDeadline)
+                        ? formatDateTime(job.applicationDeadline)
                         : <span className="text-neutral-400">—</span>}
                     </td>
                     <td className="px-4 sm:px-5 py-3 text-neutral-600 text-sm tabular-nums">

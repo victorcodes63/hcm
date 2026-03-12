@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CalendarCheck, Users, Loader2, Search, X } from 'lucide-react';
 import type { InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
+import { parseDateTimeAsNairobi } from '@/lib/timezone';
 import type { ApplicationWithDetails } from '@/types/dashboard';
 
 const DURATION_OPTIONS: { value: InterviewDurationMinutes; label: string }[] = [
@@ -64,12 +65,27 @@ export default function ScheduleInterviewsPage() {
   const [bulkDuration, setBulkDuration] = useState<InterviewDurationMinutes>(45);
   const [bulkType, setBulkType] = useState<InterviewType>('video');
   const [bulkLocation, setBulkLocation] = useState('');
+  const [bulkNotes, setBulkNotes] = useState('');
   const [bulkSelectedAppIds, setBulkSelectedAppIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    setForm((f) => ({ ...f, scheduledAt: now.toISOString().slice(0, 16) }));
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Nairobi',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(now);
+    const y = parts.find((p) => p.type === 'year')?.value ?? '';
+    const m = parts.find((p) => p.type === 'month')?.value ?? '';
+    const d = parts.find((p) => p.type === 'day')?.value ?? '';
+    const h = parts.find((p) => p.type === 'hour')?.value ?? '';
+    const min = parts.find((p) => p.type === 'minute')?.value ?? '';
+    setForm((f) => ({ ...f, scheduledAt: `${y}-${m}-${d}T${h}:${min}` }));
   }, []);
 
   useEffect(() => {
@@ -221,7 +237,7 @@ export default function ScheduleInterviewsPage() {
       setFormError('Location or meeting link is required so applicants know where to attend.');
       return;
     }
-    const scheduledAt = new Date(form.scheduledAt);
+    const scheduledAt = parseDateTimeAsNairobi(form.scheduledAt);
     if (Number.isNaN(scheduledAt.getTime())) {
       setFormError('Please set a valid date and time.');
       return;
@@ -282,6 +298,7 @@ export default function ScheduleInterviewsPage() {
           type: bulkType,
           applicationIds: Array.from(bulkSelectedAppIds),
           locationOrLink: bulkLocation.trim(),
+          notes: bulkNotes.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -518,6 +535,19 @@ export default function ScheduleInterviewsPage() {
                   placeholder="e.g. Zoom link or office address"
                   className={inputClass}
                   required
+                />
+              </div>
+              <div>
+                <label htmlFor="bulk-notes" className="block text-sm font-medium text-primary-900 mb-1.5">
+                  Notes
+                </label>
+                <textarea
+                  id="bulk-notes"
+                  value={bulkNotes}
+                  onChange={(e) => setBulkNotes(e.target.value)}
+                  placeholder="e.g. Please bring ID, certificates, or other documents. These notes will be included in the invite email."
+                  rows={3}
+                  className={inputClass + ' resize-y'}
                 />
               </div>
             </div>

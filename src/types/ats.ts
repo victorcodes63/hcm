@@ -10,9 +10,9 @@ export interface JobListing {
   category: string;
   postedDate: string;
   description: string;
-  requirements: string[];
-  responsibilities: string[];
-  benefits: string[];
+  requirements: string[] | string;  // string = raw HTML (new), array = legacy
+  responsibilities: string[] | string;
+  benefits: string[] | string;
   salary?: {
     min: number;
     max: number;
@@ -22,6 +22,7 @@ export interface JobListing {
   education: string;
   skills: string[];
   isActive: boolean;
+  applicationStartAt?: string; // when applications open (ISO); if null, open immediately
   applicationDeadline?: string; // expiry date (ISO); visible on board and dashboard
   applicationCount: number;
   views: number;

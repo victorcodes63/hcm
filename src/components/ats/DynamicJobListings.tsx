@@ -77,8 +77,11 @@ function formatDate(dateString: string) {
   const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 7) return `${diffDays} days ago`; // 2-6 days
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+  }
   return date.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -534,7 +537,7 @@ export default function DynamicJobListings({
                       </span>
                       {job.applicationDeadline && (
                         <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
-                          Closes {new Date(job.applicationDeadline).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}
+                          Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
                         </span>
                       )}
                       <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" />

@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createInterviewToken } from '@/lib/interview-token';
+import { generatePayslipPdf } from '@/lib/payslip-pdf';
 
 const FROM_NAME = (process.env.SMTP_FROM_NAME && process.env.SMTP_FROM_NAME.trim()) || 'Eagle HR Recruitment';
 const FROM_EMAIL = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || '';
@@ -110,6 +111,33 @@ function getTransporter(): nodemailer.Transporter | null {
     secure,
     auth: { user, pass },
   });
+}
+
+/** Accounts mailbox transporter (accounts@eaglehr.co.ke) for payslips, invoices, etc. */
+function getAccountsTransporter(): nodemailer.Transporter | null {
+  const user = process.env.ACCOUNTS_SMTP_USER;
+  const pass = process.env.ACCOUNTS_SMTP_PASS;
+  if (!user?.trim() || !pass) return null;
+  const host = process.env.ACCOUNTS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.office365.com';
+  const port = parseInt(process.env.ACCOUNTS_SMTP_PORT || process.env.SMTP_PORT || '587', 10);
+  const secure = port === 465;
+  return nodemailer.createTransport({ host, port, secure, auth: { user: user.trim(), pass } });
+}
+
+/** Diagnostic config for accounts SMTP (safe to log – no passwords). */
+function getAccountsSmtpConfig() {
+  const user = process.env.ACCOUNTS_SMTP_USER?.trim();
+  const pass = process.env.ACCOUNTS_SMTP_PASS;
+  const host = process.env.ACCOUNTS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.office365.com';
+  const port = parseInt(process.env.ACCOUNTS_SMTP_PORT || process.env.SMTP_PORT || '587', 10);
+  return {
+    host,
+    port,
+    secure: port === 465,
+    user: user ?? '(not set)',
+    hasPass: Boolean(pass),
+    passLength: pass ? pass.length : 0,
+  };
 }
 
 function getSmtpDiagnostics() {
@@ -720,6 +748,194 @@ export async function sendContactFormEmail(params: {
       reason: 'smtp_error',
       error: errMsg,
       diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+}
+
+/** Payslip data for email content */
+export interface PayslipEmailData {
+  employeeName: string;
+  employeeNumber?: string | null;
+  clientName: string;
+  departmentName?: string | null;
+  basicPay: string;
+  allowances: { name: string; amount: number }[];
+  deductions: { name: string; amount: number }[];
+  grossPay: string;
+  paye: string;
+  nssf: string;
+  nhif: string;
+  netPay: string;
+}
+
+const ACCOUNTS_FROM_NAME = (process.env.ACCOUNTS_SMTP_FROM_NAME?.trim()) || 'Eagle HR Accounts';
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function formatPayslipAmount(val: string | number): string {
+  return Number(val).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+}
+
+function buildPayslipHtml(data: PayslipEmailData, month: number, year: number): string {
+  const monthName = MONTH_NAMES[month - 1] ?? String(month);
+  const allowancesRows = (data.allowances ?? []).map(
+    (a) => `<tr><td style="padding:6px 0;color:#374151;">${a.name}</td><td style="text-align:right;font-family:monospace;color:#374151;">KES ${formatPayslipAmount(a.amount)}</td></tr>`
+  ).join('');
+  const deductionsRows = (data.deductions ?? []).map(
+    (d) => `<tr><td style="padding:6px 0;color:#374151;">${d.name}</td><td style="text-align:right;font-family:monospace;color:#374151;">KES ${formatPayslipAmount(d.amount)}</td></tr>`
+  ).join('');
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#374151;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td style="padding:24px 0 20px;text-align:center;border-bottom:2px solid #0B1D39;">
+            <img src="${LOGO_URL}" alt="Eagle HR" width="160" style="display:inline-block;max-width:160px;height:auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 0 16px;">
+            <p style="margin:0 0 8px;font-size:16px;">Dear ${data.employeeName},</p>
+            <p style="margin:0 0 20px;font-size:14px;color:#6b7280;">Please find your payslip for <strong>${monthName} ${year}</strong>.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
+              <tr>
+                <td style="padding:0 0 8px;"><strong>Employee</strong></td>
+                <td style="text-align:right;padding:0 0 8px;">${data.employeeName}${data.employeeNumber ? ` (${data.employeeNumber})` : ''}</td>
+              </tr>
+              <tr>
+                <td style="padding:0 0 8px;"><strong>Client</strong></td>
+                <td style="text-align:right;padding:0 0 8px;">${data.clientName}</td>
+              </tr>
+              ${data.departmentName ? `<tr><td style="padding:0 0 8px;"><strong>Department</strong></td><td style="text-align:right;padding:0 0 8px;">${data.departmentName}</td></tr>` : ''}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 0 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse;">
+              <tr><td colspan="2" style="padding:8px 0;font-weight:600;color:#0B1D39;border-bottom:1px solid #e5e7eb;">Earnings</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;">Basic pay</td><td style="text-align:right;font-family:monospace;">KES ${formatPayslipAmount(data.basicPay)}</td></tr>
+              ${allowancesRows}
+              <tr><td style="padding:8px 0;font-weight:600;border-top:1px solid #e5e7eb;">Gross pay</td><td style="text-align:right;font-weight:600;border-top:1px solid #e5e7eb;">KES ${formatPayslipAmount(data.grossPay)}</td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse;">
+              <tr><td colspan="2" style="padding:8px 0;font-weight:600;color:#0B1D39;border-bottom:1px solid #e5e7eb;">Deductions</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;">PAYE</td><td style="text-align:right;font-family:monospace;">KES ${formatPayslipAmount(data.paye)}</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;">NSSF</td><td style="text-align:right;font-family:monospace;">KES ${formatPayslipAmount(data.nssf)}</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;">NHIF</td><td style="text-align:right;font-family:monospace;">KES ${formatPayslipAmount(data.nhif)}</td></tr>
+              ${deductionsRows}
+              <tr><td style="padding:8px 0;font-weight:600;color:#0B1D39;border-top:1px solid #e5e7eb;">Net pay</td><td style="text-align:right;font-weight:600;color:#0B1D39;border-top:1px solid #e5e7eb;">KES ${formatPayslipAmount(data.netPay)}</td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 0;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
+            Computer-generated payslip. For queries, contact Eagle HR Consultants.
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+/**
+ * Send payslip email from accounts@eaglehr.co.ke.
+ * Uses ACCOUNTS_SMTP_USER and ACCOUNTS_SMTP_PASS; falls back to SMTP_HOST/SMTP_PORT if ACCOUNTS_* not set.
+ * Attaches a PDF version of the payslip while keeping the HTML body.
+ */
+export async function sendPayslipEmail(params: {
+  to: string;
+  employeeName: string;
+  month: number;
+  year: number;
+  data: PayslipEmailData;
+}): Promise<EmailSendResult> {
+  const transporter = getAccountsTransporter();
+  if (!transporter) {
+    return {
+      sent: false,
+      reason: 'smtp_not_configured',
+      error: 'Accounts SMTP not configured. Set ACCOUNTS_SMTP_USER and ACCOUNTS_SMTP_PASS.',
+      diagnostics: {
+        provider: 'smtp',
+        host: process.env.ACCOUNTS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.office365.com',
+        port: parseInt(process.env.ACCOUNTS_SMTP_PORT || process.env.SMTP_PORT || '587', 10),
+        secure: false,
+        hasUser: Boolean(process.env.ACCOUNTS_SMTP_USER?.trim()),
+        hasPass: Boolean(process.env.ACCOUNTS_SMTP_PASS),
+        hasFromEmail: Boolean(process.env.ACCOUNTS_SMTP_USER?.trim()),
+      },
+    };
+  }
+  const from = process.env.ACCOUNTS_SMTP_USER?.trim();
+  if (!from) {
+    return {
+      sent: false,
+      reason: 'from_email_missing',
+      error: 'ACCOUNTS_SMTP_USER is required as the from address.',
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+
+  const config = getAccountsSmtpConfig();
+  console.log('[sendPayslipEmail] Accounts SMTP config:', JSON.stringify(config, null, 0));
+
+  const subject = `Payslip – ${MONTH_NAMES[(params.month || 1) - 1]} ${params.year} | Eagle HR`;
+  const html = buildPayslipHtml(params.data, params.month, params.year);
+  const monthName = MONTH_NAMES[(params.month || 1) - 1];
+  const pdfFilename = `Payslip_${params.data.employeeName.replace(/\s+/g, '_')}_${monthName}_${params.year}.pdf`;
+
+  let attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
+  try {
+    const pdfBuffer = await generatePayslipPdf(params.data, params.month, params.year);
+    attachments = [{ filename: pdfFilename, content: pdfBuffer, contentType: 'application/pdf' }];
+  } catch (pdfErr) {
+    console.warn('[sendPayslipEmail] PDF generation failed, sending without attachment:', pdfErr);
+  }
+
+  try {
+    console.log('[sendPayslipEmail] Verifying SMTP connection...');
+    await transporter.verify();
+    console.log('[sendPayslipEmail] SMTP verify OK, sending mail to', params.to, 'with PDF attachment');
+    const info = (await transporter.sendMail({
+      from: `"${ACCOUNTS_FROM_NAME}" <${from}>`,
+      to: params.to,
+      subject,
+      html,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    })) as { messageId?: string };
+    console.log('[sendPayslipEmail] Sent successfully, messageId:', info.messageId);
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const errObj = err as { response?: string; responseCode?: number; command?: string; code?: string };
+    console.error('[sendPayslipEmail] SMTP error:', {
+      message,
+      response: errObj.response,
+      responseCode: errObj.responseCode,
+      command: errObj.command,
+      code: errObj.code,
+      config: { host: config.host, port: config.port, user: config.user },
+    });
+    return {
+      sent: false,
+      reason: 'smtp_error',
+      error: message,
+      diagnostics: {
+        provider: 'smtp',
+        ...config,
+        smtpResponse: errObj.response,
+        smtpResponseCode: errObj.responseCode,
+      },
     };
   }
 }

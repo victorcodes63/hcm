@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { APP_TIMEZONE } from '@/lib/timezone';
+import { generateInterviewSchedulePdf } from '@/lib/interview-schedule-pdf';
 
 const LOGO_PATH = '/images/logo/logo_dark_ubxaCll.png';
 
 /**
  * GET /api/interviews/export-schedule?date=YYYY-MM-DD&jobId=xxx
  *   OR ?ids=id1,id2,id3 (export selected interviews only)
- * Returns HTML draft schedule for management approval. Company logo shown above the table.
- * User can print to PDF from the browser (Print → Save as PDF).
+ * ?format=pdf — returns PDF for direct download
+ * Default: returns HTML for viewing/printing
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const idsParam = searchParams.get('ids') || '';
   const dateStr = searchParams.get('date') || '';
   const jobId = searchParams.get('jobId') || undefined;
+  const formatPdf = searchParams.get('format') === 'pdf';
 
   try {
     if (!process.env.DATABASE_URL) {
@@ -65,34 +68,61 @@ export async function GET(request: NextRequest) {
 
     const positionTitle = interviews.length > 0 ? (interviews[0].application as { job: { title: string } }).job.title : '—';
     const scheduleDate = interviews.length > 0
-      ? new Date(interviews[0].scheduledAt).toLocaleDateString(undefined, { dateStyle: 'long' })
-      : (dateStr ? new Date(dateStr).toLocaleDateString(undefined, { dateStyle: 'long' }) : '—');
+      ? new Date(interviews[0].scheduledAt).toLocaleDateString('en-KE', { dateStyle: 'long', timeZone: APP_TIMEZONE })
+      : (dateStr ? new Date(dateStr).toLocaleDateString('en-KE', { dateStyle: 'long', timeZone: APP_TIMEZONE }) : '—');
     const venue = interviews.length > 0 && (interviews[0].locationOrLink?.trim())
       ? interviews[0].locationOrLink!.trim()
       : '—';
+
+    const isMeetingUrl = (s: string | null | undefined) => {
+      const t = s?.trim();
+      return !!t && (t.startsWith('http://') || t.startsWith('https://'));
+    };
+    const hasAnyVirtualMeeting = interviews.some(
+      (i) => i.type === 'video' && isMeetingUrl(i.locationOrLink)
+    );
 
     const rows = interviews.map((i, index) => {
       const start = i.scheduledAt;
       const durationMs = (i.durationMinutes ?? 45) * 60 * 1000;
       const end = new Date(start.getTime() + durationMs);
-      const timeRange = `${start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+      const timeRange = `${start.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIMEZONE })} – ${end.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIMEZONE })}`;
       const candidate = i.application as { candidate: { firstName: string; lastName: string; email: string; phone: string | null } };
       const fullName = `${candidate.candidate.firstName} ${candidate.candidate.lastName}`;
       const email = candidate.candidate.email ?? '—';
       const phone = candidate.candidate.phone?.trim() ?? '—';
-      const isVirtual = i.type === 'video';
-      const meetingLink = isVirtual && i.locationOrLink?.trim() ? i.locationOrLink.trim() : '—';
-      return [
-        `${index + 1}.`,
-        fullName,
-        email,
-        phone,
-        timeRange,
-        meetingLink,
-        '', // empty column for time in
-      ];
+      const meetingLink = hasAnyVirtualMeeting
+        ? (i.type === 'video' && isMeetingUrl(i.locationOrLink) ? i.locationOrLink!.trim() : '—')
+        : null; // omit column
+      const base: string[] = [`${index + 1}.`, fullName, email, phone, timeRange];
+      if (hasAnyVirtualMeeting) base.push(meetingLink!);
+      base.push(''); // Time in
+      return base;
     });
-    const headers = ['No.', 'Candidate', 'Email', 'Phone', 'Time', 'Meeting link', 'Time in'];
+
+    const headers = ['No.', 'Candidate', 'Email', 'Phone', 'Time', ...(hasAnyVirtualMeeting ? ['Meeting link'] : []), 'Time in'];
+
+    if (formatPdf) {
+      const pdfBuffer = await generateInterviewSchedulePdf({
+        positionTitle,
+        scheduleDate,
+        venue,
+        headers,
+        rows,
+      });
+      const pdfFilename = idsParam.trim()
+        ? `interview-schedule-selected-${interviews.length}.pdf`
+        : `interview-schedule-${dateStr}.pdf`;
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${pdfFilename}"`,
+          'Content-Length': String(pdfBuffer.byteLength),
+        },
+      });
+    }
+
     const pageTitle = `Interview Schedule – ${positionTitle} – Eagle HR`;
     const logoFullUrl = request.nextUrl.origin + LOGO_PATH;
     const html = `<!DOCTYPE html>
@@ -158,8 +188,10 @@ export async function GET(request: NextRequest) {
       vertical-align: top;
     }
     th {
-      background: #0B1D39;
-      color: #fff;
+      background: #0B1D39 !important;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       font-weight: 600;
       font-size: 12px;
       text-transform: uppercase;
@@ -173,6 +205,12 @@ export async function GET(request: NextRequest) {
       .schedule-wrap { overflow: visible; }
       table { page-break-inside: auto; }
       tr { page-break-inside: avoid; page-break-after: auto; }
+      th {
+        background: #0B1D39 !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>
@@ -192,12 +230,12 @@ export async function GET(request: NextRequest) {
         <col class="col-email" />
         <col class="col-phone" />
         <col class="col-time" />
-        <col class="col-meeting" />
+        ${hasAnyVirtualMeeting ? '<col class="col-meeting" />' : ''}
         <col class="col-timein" />
       </colgroup>
       <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
       <tbody>
-        ${rows.length ? rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="7">No interviews scheduled.</td></tr>'}
+        ${rows.length ? rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${hasAnyVirtualMeeting ? 7 : 6}">No interviews scheduled.</td></tr>`}
       </tbody>
     </table>
   </div>

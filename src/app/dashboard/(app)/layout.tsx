@@ -59,8 +59,8 @@ export default function DashboardAppLayout({
 
   return (
     <div className="h-screen overflow-hidden flex bg-neutral-50">
-      {/* Sidebar — fixed height so it never scrolls with content */}
-      <aside className="h-screen w-64 bg-white flex-shrink-0 flex flex-col border-r border-neutral-200 overflow-y-auto">
+      {/* Sidebar — fixed height so it never scrolls with content; hidden when printing */}
+      <aside className="print:hidden h-screen w-64 bg-white flex-shrink-0 flex flex-col border-r border-neutral-200 overflow-y-auto">
         <div className="p-5 flex justify-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
             <Image

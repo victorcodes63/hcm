@@ -8,9 +8,16 @@ import JobApplicationForm from '@/components/ats/JobApplicationForm';
 import { JobListing } from '@/types/ats';
 import { useATS } from '@/lib/ats-api';
 import {
-  ArrowLeft, MapPin, Clock, Building2, CheckCircle, Star,
+  ArrowLeft, MapPin, Clock, Building2, CheckCircle,
   Link2, Linkedin, Twitter, Check,
 } from 'lucide-react';
+import { prepareJobItemContent, sanitizeAndScopeJobSection } from '@/lib/sanitize-html';
+
+function hasSectionContent(raw: unknown): boolean {
+  if (typeof raw === 'string') return raw.replace(/<[^>]+>/g, '').trim().length > 0;
+  if (Array.isArray(raw)) return raw.some((x) => typeof x === 'string' && x.replace(/<[^>]+>/g, '').trim().length > 0);
+  return false;
+}
 import Link from 'next/link';
 
 export default function JobApplicationPage() {
@@ -172,52 +179,75 @@ export default function JobApplicationPage() {
                 </div>
               </div>
 
-              {/* Job Details - description, requirements, responsibilities, benefits */}
+              {/* Job Details - only show sections that have content */}
               <div className="mt-8 space-y-8">
-                <div>
-                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Job Description</h2>
-                  <p className="text-neutral-700 leading-relaxed whitespace-pre-line">
-                    {job.description}
-                  </p>
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Requirements</h2>
-                  <ul className="space-y-2">
-                    {job.requirements.map((req, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">{req}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-semibold text-primary-900 mb-3">Key Responsibilities</h2>
-                  <ul className="space-y-2">
-                    {job.responsibilities.map((resp, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <CheckCircle className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">{resp}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {job.benefits.length > 0 && (
+                {job.description?.trim() && (
                   <div>
-                    <h2 className="text-lg font-semibold text-primary-900 mb-3">Benefits</h2>
-                    <ul className="space-y-2">
-                      {job.benefits.map((benefit, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Star className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                          <span className="text-neutral-700">{benefit}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <h2 className="text-lg font-semibold text-primary-900 mb-3">Job Description</h2>
+                    <p className="text-neutral-700 leading-relaxed whitespace-pre-line">
+                      {job.description}
+                    </p>
                   </div>
                 )}
+
+                {hasSectionContent(job.requirements) && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-primary-900 mb-3">Requirements</h2>
+                    <div
+                      className="prose prose-sm max-w-none text-neutral-700 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_p]:my-1 [&_strong]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_em]:italic [&_ul_ul]:ml-6 [&_ol_ul]:ml-6"
+                      dangerouslySetInnerHTML={{
+                        __html: (() => {
+                          const raw = job.requirements;
+                          if (typeof raw === 'string' && raw.trim()) return sanitizeAndScopeJobSection(raw, 'requirements');
+                          const arr = Array.isArray(raw) ? raw.filter((r): r is string => typeof r === 'string') : [];
+                          return arr.length > 0
+                            ? sanitizeAndScopeJobSection(`<ul>${arr.map((r) => `<li>${prepareJobItemContent(r)}</li>`).join('')}</ul>`, 'requirements')
+                            : '';
+                        })(),
+                      }}
+                    />
+                  </div>
+                )}
+
+                {hasSectionContent(job.responsibilities) && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-primary-900 mb-3">Key Responsibilities</h2>
+                    <div
+                      className="prose prose-sm max-w-none text-neutral-700 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_p]:my-1 [&_strong]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_em]:italic [&_ul_ul]:ml-6 [&_ol_ul]:ml-6"
+                      dangerouslySetInnerHTML={{
+                        __html: (() => {
+                          const raw = job.responsibilities;
+                          if (typeof raw === 'string' && raw.trim()) return sanitizeAndScopeJobSection(raw, 'responsibilities');
+                          const arr = Array.isArray(raw) ? raw.filter((r): r is string => typeof r === 'string') : [];
+                          return arr.length > 0
+                            ? sanitizeAndScopeJobSection(`<ul>${arr.map((r) => `<li>${prepareJobItemContent(r)}</li>`).join('')}</ul>`, 'responsibilities')
+                            : '';
+                        })(),
+                      }}
+                    />
+                  </div>
+                )}
+
+                {hasSectionContent(job.benefits) && (() => {
+                  const raw = job.benefits;
+                  let html: string;
+                  if (typeof raw === 'string' && raw.trim()) {
+                    html = sanitizeAndScopeJobSection(raw, 'benefits');
+                  } else if (Array.isArray(raw) && raw.filter((b): b is string => typeof b === 'string').length > 0) {
+                    html = sanitizeAndScopeJobSection(`<ul>${(raw as string[]).map((b) => `<li>${prepareJobItemContent(b)}</li>`).join('')}</ul>`, 'benefits');
+                  } else {
+                    html = '';
+                  }
+                  return html ? (
+                    <div>
+                      <h2 className="text-lg font-semibold text-primary-900 mb-3">Benefits</h2>
+                      <div
+                        className="prose prose-sm max-w-none text-neutral-700 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_p]:my-1 [&_strong]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_em]:italic [&_ul_ul]:ml-6 [&_ol_ul]:ml-6"
+                        dangerouslySetInnerHTML={{ __html: html }}
+                      />
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
 
@@ -251,7 +281,7 @@ export default function JobApplicationPage() {
                     <>
                       {job.applicationDeadline && (
                         <p className="text-sm text-amber-700 font-medium mb-4">
-                          Closes {new Date(job.applicationDeadline).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                          Closes {new Date(job.applicationDeadline).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                         </p>
                       )}
                       {applicationSubmitted ? (

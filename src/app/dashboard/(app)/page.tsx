@@ -29,7 +29,8 @@ function formatDate(iso: string) {
 }
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString('en-KE', {
+    timeZone: 'Africa/Nairobi',
     dateStyle: 'short',
     timeStyle: 'short',
   });

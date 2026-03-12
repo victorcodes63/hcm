@@ -189,3 +189,24 @@ html {
     overflow-x: hidden;
   }
 }
+
+/* Print: hide chrome and optimise payslips (4 per A4) */
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+  body {
+    background: white;
+  }
+  /* Dashboard main content: full width, no padding */
+  main > div {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Remove shadows */
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+}

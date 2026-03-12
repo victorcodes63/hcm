@@ -88,6 +88,7 @@ model Employee {
   id                  String    @id @default(cuid())
   outsourcingClientId String
   departmentId        String?
+  employeeNumber      String?   // internal EMP No. e.g. 001, 002
   firstName           String
   lastName            String
   email               String
@@ -98,6 +99,10 @@ model Employee {
   nhifNumber          String?   // National Hospital Insurance Fund
   dateOfJoining       DateTime?
   jobTitle            String?
+  // Bank details for salary disbursement
+  bankName            String?
+  bankBranch          String?
+  bankAccountNumber   String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -245,6 +250,7 @@ model Job {
   isActive          Boolean  @default(true)
   applicationCount  Int      @default(0)
   views             Int      @default(0)
+  applicationStartAt DateTime?  // when null, job is open immediately; when set, only visible/apply after this time
   applicationDeadline DateTime?
   clientId          String?
   concealCompany    Boolean  @default(false) // when true, job board shows "Confidential" instead of company name

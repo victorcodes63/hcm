@@ -185,8 +185,11 @@ export const formatDate = (date: string | Date) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+  if (diffDays < 7) return `${diffDays} days ago`; // 2-6 days
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+  }
   return d.toLocaleDateString('en-KE', { 
     year: 'numeric', 
     month: 'long', 

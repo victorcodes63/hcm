@@ -10,6 +10,8 @@ import {
   Users,
   FolderOpen,
   ChevronLeft,
+  ChevronDown,
+  ChevronRight,
   Mail,
   Phone,
 } from 'lucide-react';
@@ -18,6 +20,18 @@ interface Department {
   id: string;
   name: string;
   employeeCount: number;
+}
+
+interface EmployeeSummary {
+  id: string;
+  employeeNumber: string | null;
+  firstName: string;
+  lastName: string;
+  jobTitle: string | null;
+  nhifNumber: string | null;
+  nssfNumber: string | null;
+  kraPin: string | null;
+  idNumber: string | null;
 }
 
 interface ClientDetail {
@@ -45,6 +59,9 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
   const [addingDept, setAddingDept] = useState(false);
   const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
   const [editDeptName, setEditDeptName] = useState('');
+  const [expandedDeptId, setExpandedDeptId] = useState<string | null>(null);
+  const [deptEmployees, setDeptEmployees] = useState<EmployeeSummary[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
 
   const fetchClient = async (id: string) => {
     setLoading(true);
@@ -70,6 +87,45 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
       setDepartments(Array.isArray(data) ? data : []);
     } catch {
       setDepartments([]);
+    }
+  };
+
+  const fetchDepartmentEmployees = async (deptId: string) => {
+    setLoadingEmployees(true);
+    try {
+      const res = await fetch(
+        `/api/outsourcing/employees?clientId=${encodeURIComponent(clientId)}&departmentId=${encodeURIComponent(deptId)}`
+      );
+      const data = await res.json();
+      if (res.ok && Array.isArray(data)) {
+        setDeptEmployees(data.map((e: EmployeeSummary & { email?: string }) => ({
+          id: e.id,
+          employeeNumber: e.employeeNumber ?? null,
+          firstName: e.firstName,
+          lastName: e.lastName,
+          jobTitle: e.jobTitle ?? null,
+          nhifNumber: e.nhifNumber ?? null,
+          nssfNumber: e.nssfNumber ?? null,
+          kraPin: e.kraPin ?? null,
+          idNumber: e.idNumber ?? null,
+        })));
+      } else {
+        setDeptEmployees([]);
+      }
+    } catch {
+      setDeptEmployees([]);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  const toggleDeptEmployees = (deptId: string) => {
+    if (expandedDeptId === deptId) {
+      setExpandedDeptId(null);
+      setDeptEmployees([]);
+    } else {
+      setExpandedDeptId(deptId);
+      fetchDepartmentEmployees(deptId);
     }
   };
 
@@ -306,8 +362,9 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
               {departments.map((dept) => (
                 <li
                   key={dept.id}
-                  className="flex items-center justify-between gap-4 py-3 px-4 rounded-lg bg-neutral-50 border border-neutral-100"
+                  className="rounded-lg bg-neutral-50 border border-neutral-100 overflow-hidden"
                 >
+                  <div className="flex items-center justify-between gap-4 py-3 px-4">
                   {editingDeptId === dept.id ? (
                     <div className="flex-1 flex gap-2">
                       <input
@@ -337,14 +394,29 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
                     </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <FolderOpen className="w-5 h-5 text-neutral-400 shrink-0" />
                         <div>
                           <p className="font-medium text-primary-900">{dept.name}</p>
-                          <p className="text-xs text-neutral-500 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => dept.employeeCount > 0 && toggleDeptEmployees(dept.id)}
+                            disabled={dept.employeeCount === 0}
+                            className={`text-xs flex items-center gap-1 transition-colors ${
+                              dept.employeeCount > 0
+                                ? 'text-primary-600 hover:text-primary-800 hover:underline'
+                                : 'text-neutral-400 cursor-default'
+                            }`}
+                            title={dept.employeeCount > 0 ? 'View employees' : 'No employees'}
+                          >
                             <Users className="w-3.5 h-3.5" />
                             {dept.employeeCount} employee{dept.employeeCount !== 1 ? 's' : ''}
-                          </p>
+                            {dept.employeeCount > 0 && (
+                              expandedDeptId === dept.id
+                                ? <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+                                : <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                            )}
+                          </button>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -370,6 +442,49 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
                         </button>
                       </div>
                     </>
+                  )}
+                  </div>
+                  {expandedDeptId === dept.id && (
+                    <div className="border-t border-neutral-100 bg-white px-4 py-3">
+                      {loadingEmployees ? (
+                        <div className="py-4 flex items-center justify-center text-neutral-500 text-sm">
+                          Loading…
+                        </div>
+                      ) : deptEmployees.length === 0 ? (
+                        <p className="text-sm text-neutral-500 py-2">No employees in this department.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[400px] text-sm">
+                            <thead>
+                              <tr className="border-b border-neutral-200">
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">Name</th>
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">EMP No.</th>
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">Job title</th>
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">National ID</th>
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">KRA PIN</th>
+                                <th className="text-left py-2 pr-4 font-medium text-neutral-600">NSSF</th>
+                                <th className="text-left py-2 font-medium text-neutral-600">NHIF</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {deptEmployees.map((emp) => (
+                                <tr key={emp.id} className="border-b border-neutral-50 last:border-0">
+                                  <td className="py-2.5 pr-4 font-medium text-primary-900">
+                                    {emp.firstName} {emp.lastName}
+                                  </td>
+                                  <td className="py-2.5 pr-4 text-neutral-600 tabular-nums">{emp.employeeNumber ?? '—'}</td>
+                                  <td className="py-2.5 pr-4 text-neutral-600">{emp.jobTitle ?? '—'}</td>
+                                  <td className="py-2.5 pr-4 text-neutral-600 font-mono text-xs">{emp.idNumber ?? '—'}</td>
+                                  <td className="py-2.5 pr-4 text-neutral-600 font-mono text-xs">{emp.kraPin ?? '—'}</td>
+                                  <td className="py-2.5 pr-4 text-neutral-600 font-mono text-xs">{emp.nssfNumber ?? '—'}</td>
+                                  <td className="py-2.5 text-neutral-600 font-mono text-xs">{emp.nhifNumber ?? '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </li>
               ))}

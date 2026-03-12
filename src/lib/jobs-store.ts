@@ -31,6 +31,7 @@ type StoredJob = {
   isActive: boolean;
   applicationCount: number;
   views: number;
+  applicationStartAt?: string | null;
   applicationDeadline?: string | null;
   clientId?: string;
   concealCompany?: boolean;
@@ -69,6 +70,7 @@ function toListing(j: StoredJob, maskAnonymous = false): JobListing {
     education: j.education,
     skills: j.skills,
     isActive: j.isActive,
+    applicationStartAt: j.applicationStartAt ?? undefined,
     applicationDeadline: j.applicationDeadline ?? undefined,
     applicationCount: j.applicationCount,
     views: j.views,
@@ -91,6 +93,7 @@ export function getInMemoryJobs(activeOnly?: boolean, maskAnonymous = false): Jo
     list = list.filter(
       (j) =>
         j.isActive &&
+        (j.applicationStartAt == null || j.applicationStartAt === '' || j.applicationStartAt <= now) &&
         (j.applicationDeadline == null || j.applicationDeadline === '' || j.applicationDeadline > now)
     );
   }
@@ -166,6 +169,7 @@ export function updateInMemoryJob(id: string, input: UpdateJobInput): JobListing
     ...(input.clientId !== undefined && { clientId: input.clientId }),
     ...(input.concealCompany !== undefined && { concealCompany: input.concealCompany }),
     ...(input.salaryPublic !== undefined && { salaryPublic: input.salaryPublic }),
+    ...(input.applicationStartAt !== undefined && { applicationStartAt: input.applicationStartAt }),
     ...(input.applicationDeadline !== undefined && { applicationDeadline: input.applicationDeadline }),
     ...(input.slug !== undefined && { slug: input.slug }),
     ...(input.isActive !== undefined && { isActive: input.isActive }),
@@ -195,6 +199,7 @@ export interface CreateJobInput {
   clientId?: string;
   concealCompany?: boolean;
   salaryPublic?: boolean;
+  applicationStartAt?: string | null;
   applicationDeadline?: string | null;
   slug?: string;
   isActive?: boolean;
@@ -234,6 +239,7 @@ export function createInMemoryJob(input: CreateJobInput): JobListing {
     isActive: true,
     applicationCount: 0,
     views: 0,
+    applicationStartAt: input.applicationStartAt ?? null,
     applicationDeadline: input.applicationDeadline ?? null,
     clientId: input.clientId,
     concealCompany: input.concealCompany ?? false,

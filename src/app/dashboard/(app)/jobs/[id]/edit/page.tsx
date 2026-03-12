@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { Briefcase, Handshake, EyeOff, Banknote } from 'lucide-react';
+import { Briefcase, Handshake, EyeOff, Banknote, FileText, Filter } from 'lucide-react';
+import { RichTextListEditor } from '@/components/jobs/RichTextListEditor';
+import { toHtmlString } from '@/lib/job-list-html';
 
 interface ClientOption {
   id: string;
@@ -19,11 +21,12 @@ interface JobForEdit {
   type: string;
   category: string;
   description: string;
-  requirements: string[];
-  responsibilities: string[];
-  benefits: string[];
+  requirements: string | string[];
+  responsibilities: string | string[];
+  benefits: string | string[];
   concealCompany?: boolean;
   clientId?: string | null;
+  applicationStartAt?: string | null;
   applicationDeadline?: string | null;
   salary?: { min: number; max: number; currency: string };
   salaryPublic?: boolean;
@@ -43,10 +46,6 @@ const CATEGORIES = [
   'Finance & Accounting',
 ];
 
-function parseLines(text: string): string[] {
-  return text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-}
-
 export default function EditJobPage() {
   const router = useRouter();
   const params = useParams();
@@ -65,11 +64,12 @@ export default function EditJobPage() {
   const [categoryCustom, setCategoryCustom] = useState<string>('');
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const [description, setDescription] = useState('');
-  const [requirementsText, setRequirementsText] = useState('');
-  const [responsibilitiesText, setResponsibilitiesText] = useState('');
-  const [benefitsText, setBenefitsText] = useState('');
+  const [requirements, setRequirements] = useState('');
+  const [responsibilities, setResponsibilities] = useState('');
+  const [benefits, setBenefits] = useState('');
   const [concealCompany, setConcealCompany] = useState(false);
-  const [applicationDeadline, setApplicationDeadline] = useState(''); // YYYY-MM-DD
+  const [applicationStartAt, setApplicationStartAt] = useState(''); // datetime-local
+  const [applicationDeadline, setApplicationDeadline] = useState(''); // datetime-local; when applications close
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('KES');
@@ -99,16 +99,29 @@ export default function EditJobPage() {
       setLocation(job.location ?? 'Nairobi');
       setType(job.type ?? 'Full Time');
       setDescription(job.description ?? '');
-      setRequirementsText(Array.isArray(job.requirements) ? job.requirements.join('\n') : '');
-      setResponsibilitiesText(Array.isArray(job.responsibilities) ? job.responsibilities.join('\n') : '');
-      setBenefitsText(Array.isArray(job.benefits) ? job.benefits.join('\n') : '');
+      setRequirements(toHtmlString(job.requirements));
+      setResponsibilities(toHtmlString(job.responsibilities));
+      setBenefits(toHtmlString(job.benefits));
       setConcealCompany(job.concealCompany ?? false);
       setClientId(job.clientId && job.clientId !== '' ? job.clientId : '');
-      setApplicationDeadline(
-        job.applicationDeadline
-          ? job.applicationDeadline.slice(0, 10)
-          : ''
-      );
+      if (job.applicationStartAt) {
+        const d = new Date(job.applicationStartAt);
+        if (!isNaN(d.getTime())) {
+          const pad = (n: number) => String(n).padStart(2, '0');
+          setApplicationStartAt(
+            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+          );
+        }
+      }
+      if (job.applicationDeadline) {
+        const d = new Date(job.applicationDeadline);
+        if (!isNaN(d.getTime())) {
+          const pad = (n: number) => String(n).padStart(2, '0');
+          setApplicationDeadline(
+            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+          );
+        }
+      }
       setSalaryMin(job.salary?.min != null ? String(job.salary.min) : '');
       setSalaryMax(job.salary?.max != null ? String(job.salary.max) : '');
       setSalaryCurrency(job.salary?.currency ?? 'KES');
@@ -164,16 +177,14 @@ export default function EditJobPage() {
       setSubmitting(false);
       return;
     }
-    const requirements = parseLines(requirementsText);
-    const responsibilities = parseLines(responsibilitiesText);
-    const benefits = parseLines(benefitsText);
-    if (requirements.length === 0) {
-      setError('Add at least one requirement (one per line).');
+    const hasContent = (s: string) => s.replace(/<[^>]+>/g, '').trim().length > 0;
+    if (!hasContent(requirements)) {
+      setError('Add at least one requirement.');
       setSubmitting(false);
       return;
     }
-    if (responsibilities.length === 0) {
-      setError('Add at least one key responsibility (one per line).');
+    if (!hasContent(responsibilities)) {
+      setError('Add at least one key responsibility.');
       setSubmitting(false);
       return;
     }
@@ -210,9 +221,9 @@ export default function EditJobPage() {
           type,
           category: effectiveCategory,
           description: description.trim(),
-          requirements,
-          responsibilities,
-          benefits: benefits.length > 0 ? benefits : undefined,
+          requirements: requirements.trim() || undefined,
+          responsibilities: responsibilities.trim() || undefined,
+          benefits: benefits.trim(),
           salary:
             salaryMin.trim() || salaryMax.trim()
               ? {
@@ -222,6 +233,7 @@ export default function EditJobPage() {
                 }
               : undefined,
           salaryPublic,
+          applicationStartAt: applicationStartAt.trim() || null,
           applicationDeadline: applicationDeadline.trim() || null,
           minYearsExperience: minYearsExperience.trim() ? parseInt(minYearsExperience, 10) : null,
           educationLevel: educationLevel.trim() || null,
@@ -476,42 +488,98 @@ export default function EditJobPage() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Section 2: Role content */}
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
+          <h2 className="text-base sm:text-lg font-semibold text-primary-900 flex items-center gap-2">
+            <FileText className="w-5 h-5 shrink-0" />
+            Role content
+          </h2>
 
           <div>
-            <label htmlFor="applicationDeadline" className="block text-sm font-medium text-primary-900 mb-2">
-              Application deadline (expiry date)
+            <label htmlFor="description" className="block text-sm font-medium text-primary-900 mb-2">
+              Job description <span className="text-red-600">*</span>
             </label>
-            <input
-              id="applicationDeadline"
-              type="date"
-              value={applicationDeadline}
-              onChange={(e) => setApplicationDeadline(e.target.value)}
-              min={new Date().toISOString().slice(0, 10)}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the role and what the organization is looking for."
+              required
+              rows={5}
+              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[120px] sm:min-h-[140px] text-base"
             />
-            <p className="mt-1 text-xs text-neutral-500">After this date the job will no longer appear on the public board. Leave empty for no expiry.</p>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-primary-900 flex items-center gap-1.5">
-              <Banknote className="w-4 h-4" />
-              Salary expectations (optional)
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-              <div className="min-w-0">
-                <label htmlFor="salaryMin" className="block text-sm font-medium text-neutral-700 mb-1.5">
-                  Min
-                </label>
-                <input
-                  id="salaryMin"
-                  type="number"
+          <div>
+            <label htmlFor="requirements" className="block text-sm font-medium text-primary-900 mb-2">
+              Requirements <span className="text-red-600">*</span>
+            </label>
+            <RichTextListEditor
+              key="requirements"
+              id="requirements"
+              value={requirements}
+              onChange={setRequirements}
+              placeholder="Add requirements… Use bullet list and bold in the toolbar."
+              aria-label="Requirements"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Type each item and press Enter for a new bullet. Use bold for emphasis.</p>
+          </div>
+
+          <div>
+            <label htmlFor="responsibilities" className="block text-sm font-medium text-primary-900 mb-2">
+              Key responsibilities <span className="text-red-600">*</span>
+            </label>
+            <RichTextListEditor
+              key="responsibilities"
+              id="responsibilities"
+              value={responsibilities}
+              onChange={setResponsibilities}
+              placeholder="Add key responsibilities… Use bullet list and bold in the toolbar."
+              aria-label="Key responsibilities"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Type each item and press Enter for a new bullet. Use bold for emphasis.</p>
+          </div>
+
+          <div>
+            <label htmlFor="benefits" className="block text-sm font-medium text-primary-900 mb-2">
+              Benefits (optional)
+            </label>
+            <RichTextListEditor
+              key="benefits"
+              id="benefits"
+              value={benefits}
+              onChange={setBenefits}
+              placeholder="Add benefits… Use bullet list and bold in the toolbar."
+              aria-label="Benefits"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Optional. Use bullet list and bold for emphasis.</p>
+          </div>
+        </div>
+
+        {/* Section 3: Compensation */}
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
+          <h2 className="text-base sm:text-lg font-semibold text-primary-900 flex items-center gap-2">
+            <Banknote className="w-5 h-5 shrink-0" />
+            Compensation
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <div className="min-w-0">
+              <label htmlFor="salaryMin" className="block text-sm font-medium text-neutral-700 mb-1.5">
+                Min
+              </label>
+              <input
+                id="salaryMin"
+                type="number"
                   min={0}
                   step={1}
                   value={salaryMin}
                   onChange={(e) => setSalaryMin(e.target.value)}
-                  placeholder="e.g. 80000"
-                  className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
-                />
+                placeholder="e.g. 80000"
+                className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+              />
               </div>
               <div className="min-w-0">
                 <label htmlFor="salaryMax" className="block text-sm font-medium text-neutral-700 mb-1.5">
@@ -543,51 +611,58 @@ export default function EditJobPage() {
                 </select>
               </div>
             </div>
-            <div className="flex items-start gap-3">
-              <input
-                id="salaryPublic"
-                type="checkbox"
-                checked={salaryPublic}
-                onChange={(e) => setSalaryPublic(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-              />
-              <label htmlFor="salaryPublic" className="text-sm text-neutral-700">
-                <span className="font-medium text-primary-900">Show salary on public job board</span>
-                <span className="block mt-0.5 text-neutral-600">
-                  When unchecked, salary is kept internal and only visible to staff in the dashboard.
-                </span>
-              </label>
-            </div>
+          <div className="flex items-start gap-3 mt-4">
+            <input
+              id="salaryPublic"
+              type="checkbox"
+              checked={salaryPublic}
+              onChange={(e) => setSalaryPublic(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+            />
+            <label htmlFor="salaryPublic" className="text-sm text-neutral-700">
+              <span className="font-medium text-primary-900">Show salary on public job board</span>
+              <span className="block mt-0.5 text-neutral-600">
+                When unchecked, salary is kept internal and only visible to staff in the dashboard.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Section 4: Candidate filters */}
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6">
+          <h2 className="text-base sm:text-lg font-semibold text-primary-900 flex items-center gap-2">
+            <Filter className="w-5 h-5 shrink-0" />
+            Candidate filters
+          </h2>
+
+          <div>
+            <label htmlFor="applicationStartAt" className="block text-sm font-medium text-primary-900 mb-2">
+              When to start accepting applications (optional)
+            </label>
+            <input
+              id="applicationStartAt"
+              type="datetime-local"
+              value={applicationStartAt}
+              onChange={(e) => setApplicationStartAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+            />
+            <p className="mt-1 text-xs text-neutral-500">The job will be hidden from the public board until this date/time. Leave empty to accept applications immediately.</p>
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-primary-900 mb-2">
-              Job description <span className="text-red-600">*</span>
+            <label htmlFor="applicationDeadline" className="block text-sm font-medium text-primary-900 mb-2">
+              Application deadline (date & time)
             </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the role and what the organization is looking for."
-              required
-              rows={5}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[120px] sm:min-h-[140px] text-base"
+            <input
+              id="applicationDeadline"
+              type="datetime-local"
+              value={applicationDeadline}
+              onChange={(e) => setApplicationDeadline(e.target.value)}
+              min={applicationStartAt ? applicationStartAt.slice(0, 16) : new Date().toISOString().slice(0, 16)}
+              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
-          </div>
-
-          <div>
-            <label htmlFor="requirements" className="block text-sm font-medium text-primary-900 mb-2">
-              Requirements <span className="text-red-600">*</span>
-            </label>
-            <textarea
-              id="requirements"
-              value={requirementsText}
-              onChange={(e) => setRequirementsText(e.target.value)}
-              placeholder="Enter one requirement per line"
-              rows={5}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[120px] sm:min-h-[140px] text-base"
-            />
-            <p className="mt-1 text-xs text-neutral-500">One item per line.</p>
+            <p className="mt-1 text-xs text-neutral-500">Applications close at this exact date and time. Leave empty for no expiry.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -653,36 +728,6 @@ export default function EditJobPage() {
               className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">Optional. Shown on application sidebar so reviewers can compare candidate to role.</p>
-          </div>
-
-          <div>
-            <label htmlFor="responsibilities" className="block text-sm font-medium text-primary-900 mb-2">
-              Key responsibilities <span className="text-red-600">*</span>
-            </label>
-            <textarea
-              id="responsibilities"
-              value={responsibilitiesText}
-              onChange={(e) => setResponsibilitiesText(e.target.value)}
-              placeholder="Enter one responsibility per line"
-              rows={5}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[120px] sm:min-h-[140px] text-base"
-            />
-            <p className="mt-1 text-xs text-neutral-500">One item per line.</p>
-          </div>
-
-          <div>
-            <label htmlFor="benefits" className="block text-sm font-medium text-primary-900 mb-2">
-              Benefits (optional)
-            </label>
-            <textarea
-              id="benefits"
-              value={benefitsText}
-              onChange={(e) => setBenefitsText(e.target.value)}
-              placeholder="Enter one benefit per line"
-              rows={4}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y min-h-[100px] sm:min-h-[120px] text-base"
-            />
-            <p className="mt-1 text-xs text-neutral-500">One item per line.</p>
           </div>
 
           <div className="pt-6 sm:pt-8 mt-6 sm:mt-8 border-t border-neutral-200 flex flex-col-reverse sm:flex-row sm:justify-end sm:items-center gap-3 sm:gap-4">
