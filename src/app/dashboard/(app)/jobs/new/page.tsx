@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Briefcase, Handshake, EyeOff, Banknote, FileText, Filter } from 'lucide-react';
 import { RichTextListEditor } from '@/components/jobs/RichTextListEditor';
+import { toDateTimeLocalNairobi } from '@/lib/timezone';
 
 interface ClientOption {
   id: string;
@@ -529,7 +530,7 @@ export default function PostJobPage() {
               type="datetime-local"
               value={applicationStartAt}
               onChange={(e) => setApplicationStartAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={toDateTimeLocalNairobi(new Date().toISOString())}
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">The job will be hidden from the public board until this date/time. Leave empty to accept applications immediately.</p>
@@ -544,7 +545,7 @@ export default function PostJobPage() {
               type="datetime-local"
               value={applicationDeadline}
               onChange={(e) => setApplicationDeadline(e.target.value)}
-              min={applicationStartAt ? applicationStartAt.slice(0, 16) : new Date().toISOString().slice(0, 16)}
+              min={applicationStartAt ? applicationStartAt.slice(0, 16) : toDateTimeLocalNairobi(new Date().toISOString())}
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">Applications close at this exact date and time. Leave empty for no expiry.</p>

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getInMemoryJobById, getInMemoryJobBySlugOrId, getInMemoryJobRaw, updateInMemoryJob, UpdateJobInput } from '@/lib/jobs-store';
 import { JobListing } from '@/types/ats';
 import { ensureUniqueSlug, jobSlugBase } from '@/lib/slug';
+import { parseDateTimeAsNairobi } from '@/lib/timezone';
 
 type PrismaJobForListing = {
   id: string;
@@ -204,7 +205,7 @@ export async function PATCH(
       ? b.applicationStartAt === null || b.applicationStartAt === ''
         ? null
         : typeof b.applicationStartAt === 'string'
-          ? new Date(b.applicationStartAt.trim())
+          ? parseDateTimeAsNairobi(b.applicationStartAt.trim())
           : undefined
       : undefined;
   if (
@@ -219,7 +220,7 @@ export async function PATCH(
       ? b.applicationDeadline === null || b.applicationDeadline === ''
         ? null
         : typeof b.applicationDeadline === 'string'
-          ? new Date(b.applicationDeadline.trim())
+          ? parseDateTimeAsNairobi(b.applicationDeadline.trim())
           : undefined
       : undefined;
   if (

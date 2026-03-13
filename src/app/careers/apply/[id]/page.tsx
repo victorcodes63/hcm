@@ -281,7 +281,7 @@ export default function JobApplicationPage() {
                     <>
                       {job.applicationDeadline && (
                         <p className="text-sm text-amber-700 font-medium mb-4">
-                          Closes {new Date(job.applicationDeadline).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Nairobi' })}
                         </p>
                       )}
                       {applicationSubmitted ? (

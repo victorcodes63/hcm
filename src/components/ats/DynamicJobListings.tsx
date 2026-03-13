@@ -537,7 +537,7 @@ export default function DynamicJobListings({
                       </span>
                       {job.applicationDeadline && (
                         <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
-                          Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                          Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Nairobi' })}
                         </span>
                       )}
                       <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" />

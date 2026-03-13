@@ -7,6 +7,7 @@ import {
 } from '@/lib/jobs-store';
 import { JobListing } from '@/types/ats';
 import { ensureUniqueSlug, jobSlugBase } from '@/lib/slug';
+import { parseDateTimeAsNairobi } from '@/lib/timezone';
 
 type PrismaJobForListing = {
   id: string;
@@ -278,14 +279,14 @@ export async function POST(request: NextRequest) {
   const salaryPublic = b.salaryPublic === true;
   const applicationStartAt =
     typeof b.applicationStartAt === 'string' && b.applicationStartAt.trim()
-      ? new Date(b.applicationStartAt.trim())
+      ? parseDateTimeAsNairobi(b.applicationStartAt.trim())
       : undefined;
   if (applicationStartAt !== undefined && Number.isNaN(applicationStartAt.getTime())) {
     return NextResponse.json({ error: 'Invalid application start date/time.' }, { status: 400 });
   }
   const applicationDeadline =
     typeof b.applicationDeadline === 'string' && b.applicationDeadline.trim()
-      ? new Date(b.applicationDeadline.trim())
+      ? parseDateTimeAsNairobi(b.applicationDeadline.trim())
       : undefined;
   if (applicationDeadline !== undefined && Number.isNaN(applicationDeadline.getTime())) {
     return NextResponse.json({ error: 'Invalid application deadline date.' }, { status: 400 });

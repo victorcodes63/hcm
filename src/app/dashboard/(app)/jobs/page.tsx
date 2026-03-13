@@ -44,7 +44,7 @@ export default function DashboardJobsPage() {
   };
   const formatDateTime = (dateString: string) => {
     const d = new Date(dateString);
-    return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Nairobi' });
   };
 
   const companies = useMemo(() => {

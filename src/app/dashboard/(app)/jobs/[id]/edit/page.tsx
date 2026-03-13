@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Briefcase, Handshake, EyeOff, Banknote, FileText, Filter } from 'lucide-react';
 import { RichTextListEditor } from '@/components/jobs/RichTextListEditor';
 import { toHtmlString } from '@/lib/job-list-html';
+import { toDateTimeLocalNairobi } from '@/lib/timezone';
 
 interface ClientOption {
   id: string;
@@ -105,22 +106,12 @@ export default function EditJobPage() {
       setConcealCompany(job.concealCompany ?? false);
       setClientId(job.clientId && job.clientId !== '' ? job.clientId : '');
       if (job.applicationStartAt) {
-        const d = new Date(job.applicationStartAt);
-        if (!isNaN(d.getTime())) {
-          const pad = (n: number) => String(n).padStart(2, '0');
-          setApplicationStartAt(
-            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-          );
-        }
+        const localVal = toDateTimeLocalNairobi(job.applicationStartAt);
+        if (localVal) setApplicationStartAt(localVal);
       }
       if (job.applicationDeadline) {
-        const d = new Date(job.applicationDeadline);
-        if (!isNaN(d.getTime())) {
-          const pad = (n: number) => String(n).padStart(2, '0');
-          setApplicationDeadline(
-            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-          );
-        }
+        const localVal = toDateTimeLocalNairobi(job.applicationDeadline);
+        if (localVal) setApplicationDeadline(localVal);
       }
       setSalaryMin(job.salary?.min != null ? String(job.salary.min) : '');
       setSalaryMax(job.salary?.max != null ? String(job.salary.max) : '');
@@ -644,7 +635,7 @@ export default function EditJobPage() {
               type="datetime-local"
               value={applicationStartAt}
               onChange={(e) => setApplicationStartAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={toDateTimeLocalNairobi(new Date().toISOString())}
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">The job will be hidden from the public board until this date/time. Leave empty to accept applications immediately.</p>
@@ -659,7 +650,7 @@ export default function EditJobPage() {
               type="datetime-local"
               value={applicationDeadline}
               onChange={(e) => setApplicationDeadline(e.target.value)}
-              min={applicationStartAt ? applicationStartAt.slice(0, 16) : new Date().toISOString().slice(0, 16)}
+              min={applicationStartAt ? applicationStartAt.slice(0, 16) : toDateTimeLocalNairobi(new Date().toISOString())}
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">Applications close at this exact date and time. Leave empty for no expiry.</p>
