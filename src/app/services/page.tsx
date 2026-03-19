@@ -6,20 +6,18 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ServiceCard from '@/components/ServiceCard';
 import { Service } from '@/types';
-import { 
-  Users,
-  GraduationCap,
-  FileText,
-  Calculator,
-  Shield,
-  BarChart3,
-  Building2,
-  ArrowRight,
-  CheckCircle,
-  Plus,
-  Star,
-  Brain
-} from 'lucide-react';
+import { ArrowRight, CheckCircle, Plus } from 'lucide-react';
+import {
+  IconUsersGroup,
+  IconSchool,
+  IconFileText,
+  IconCalculator,
+  IconShieldCheck,
+  IconChartHistogram,
+  IconBuildingSkyscraper,
+  IconStar,
+  IconBrain,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
@@ -398,16 +396,17 @@ export default function ServicesPage() {
                         <div className="w-8 h-8 bg-secondary-100 rounded-lg flex items-center justify-center">
                           {(() => {
                             const iconMap = {
-                              'users': Users,
-                              'building': Building2,
-                              'graduation': GraduationCap,
-                              'file-text': FileText,
-                              'calculator': Calculator,
-                              'shield': Shield,
-                              'bar-chart': BarChart3,
+                              'users': IconUsersGroup,
+                              'building': IconBuildingSkyscraper,
+                              'graduation': IconSchool,
+                              'file-text': IconFileText,
+                              'calculator': IconCalculator,
+                              'shield': IconShieldCheck,
+                              'bar-chart': IconChartHistogram,
                             };
-                            const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Users;
-                            return <IconComponent className="w-4 h-4 text-secondary-500" />;
+                            const IconComponent =
+                              iconMap[service.icon as keyof typeof iconMap] || IconUsersGroup;
+                            return <IconComponent className="w-4 h-4 text-secondary-500" stroke={1.7} />;
                           })()}
                         </div>
                         <div>
@@ -551,20 +550,20 @@ export default function ServicesPage() {
   );
 }
 
-// Enhanced Service Card — Lucide icons, consistent gold accent + light cream container
+// Enhanced Service Card — Tabler icons, consistent gold accent + light cream container
 const EnhancedServiceCard = ({ service, index }: { service: Service; index: number }) => {
   const iconMap = {
-    'users': Users,
-    'building': Building2,
-    'graduation': GraduationCap,
-    'file-text': FileText,
-    'calculator': Calculator,
-    'shield': Shield,
-    'bar-chart': BarChart3,
-    'brain': Brain,
+    'users': IconUsersGroup,
+    'building': IconBuildingSkyscraper,
+    'graduation': IconSchool,
+    'file-text': IconFileText,
+    'calculator': IconCalculator,
+    'shield': IconShieldCheck,
+    'bar-chart': IconChartHistogram,
+    'brain': IconBrain,
   };
 
-  const IconComponent = iconMap[service.icon as keyof typeof iconMap] || Users;
+  const IconComponent = iconMap[service.icon as keyof typeof iconMap] || IconUsersGroup;
 
   return (
     <motion.div
@@ -583,7 +582,7 @@ const EnhancedServiceCard = ({ service, index }: { service: Service; index: numb
 
       {/* Icon — same styling as header/service cards: cream bg + gold icon */}
       <div className="w-16 h-16 bg-secondary-50 rounded-xl flex items-center justify-center mb-6 border border-secondary-100 group-hover:shadow-md transition-transform duration-200 group-hover:scale-105">
-        <IconComponent className="w-8 h-8 text-secondary-500" />
+        <IconComponent className="w-8 h-8 text-secondary-500" stroke={1.7} />
       </div>
 
       {/* Content */}

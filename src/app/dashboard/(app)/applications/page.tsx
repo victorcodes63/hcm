@@ -33,7 +33,7 @@ import type {
   ApplicationStatus,
   ApplicationFormData,
 } from '@/types/dashboard';
-import { sortEmploymentByRecency } from '@/lib/employment-sort';
+import { sortEmploymentByRecency, yearsBetweenEmploymentDates } from '@/lib/employment-sort';
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const styles: Record<ApplicationStatus, string> = {
@@ -64,21 +64,6 @@ function formatDate(iso: string) {
   return d.toLocaleDateString();
 }
 
-/** Approximate years between start and end date (end empty/"Present" = now). */
-function yearsBetween(startDate: string, endDate: string): number {
-  if (!startDate?.trim()) return 0;
-  const start = new Date(startDate.trim());
-  if (isNaN(start.getTime())) return 0;
-  const endStr = (endDate || '').trim().toLowerCase();
-  const end =
-    !endStr || endStr === 'present' || endStr === 'current'
-      ? new Date()
-      : new Date(endDate.trim());
-  if (isNaN(end.getTime())) return 0;
-  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  return Math.max(0, Math.round((months / 12) * 10) / 10);
-}
-
 function formatDateRange(start: string, end: string) {
   if (!start?.trim()) return '—';
   const endStr = (end || '').trim().toLowerCase();
@@ -102,8 +87,8 @@ function WorkExperienceTab({ formData }: { formData: ApplicationFormData | null 
   const entries = sortEmploymentByRecency(raw);
   const totalYears = entries.reduce(
     (sum, e) => {
-      const end = e.isCurrentJob ? new Date().toISOString().slice(0, 7) : e.endDate;
-      return sum + yearsBetween(e.startDate, end);
+      const end = e.isCurrentJob ? 'Present' : (e.endDate ?? '');
+      return sum + yearsBetweenEmploymentDates(e.startDate ?? '', end);
     },
     0
   );
@@ -130,7 +115,7 @@ function WorkExperienceTab({ formData }: { formData: ApplicationFormData | null 
                 <span className="tabular-nums">
                   {formatDateRange(e.startDate, e.isCurrentJob ? 'Present' : (e.endDate || ''))}
                   {' · '}
-                  {yearsBetween(e.startDate, e.isCurrentJob ? 'Present' : (e.endDate || ''))} yrs
+                  {yearsBetweenEmploymentDates(e.startDate ?? '', e.isCurrentJob ? 'Present' : (e.endDate ?? ''))} yrs
                 </span>
                 {e.isCurrentJob && <span className="text-primary-600">Current job</span>}
               </div>

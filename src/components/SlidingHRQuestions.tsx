@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle, Target, BarChart3, Users, Shield } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import { IconTargetArrow, IconChartHistogram, IconUsersGroup, IconHeartHandshake } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import SectionTitle from '@/components/SectionTitle';
@@ -226,7 +227,7 @@ const SlidingHRQuestions = () => {
               transition={{ duration: 0.3 }}
               className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Target className="w-8 h-8 text-secondary-500" />
+              <IconTargetArrow className="w-8 h-8 text-secondary-500" stroke={1.7} />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -249,7 +250,7 @@ const SlidingHRQuestions = () => {
               transition={{ duration: 0.3 }}
               className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <BarChart3 className="w-8 h-8 text-secondary-500" />
+              <IconChartHistogram className="w-8 h-8 text-secondary-500" stroke={1.7} />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -272,7 +273,7 @@ const SlidingHRQuestions = () => {
               transition={{ duration: 0.3 }}
               className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Users className="w-8 h-8 text-secondary-500" />
+              <IconUsersGroup className="w-8 h-8 text-secondary-500" stroke={1.7} />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">
@@ -295,7 +296,7 @@ const SlidingHRQuestions = () => {
               transition={{ duration: 0.3 }}
               className="w-16 h-16 bg-secondary-50 border border-secondary-200 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:shadow-lg group-hover:border-secondary-300 transition-all duration-300"
             >
-              <Shield className="w-8 h-8 text-secondary-500" />
+              <IconHeartHandshake className="w-8 h-8 text-secondary-500" stroke={1.7} />
             </motion.div>
             
             <h3 className="text-xl font-heading font-bold text-primary-900 mb-3">

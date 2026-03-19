@@ -2,21 +2,7 @@
 
 import { FileText, ExternalLink } from 'lucide-react';
 import type { ApplicationFormData } from '@/types/dashboard';
-import { sortEmploymentByRecency } from '@/lib/employment-sort';
-
-function yearsBetween(startDate: string, endDate: string): number {
-  if (!startDate?.trim()) return 0;
-  const start = new Date(startDate.trim());
-  if (isNaN(start.getTime())) return 0;
-  const endStr = (endDate || '').trim().toLowerCase();
-  const end =
-    !endStr || endStr === 'present' || endStr === 'current'
-      ? new Date()
-      : new Date(endDate.trim());
-  if (isNaN(end.getTime())) return 0;
-  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  return Math.max(0, Math.round((months / 12) * 10) / 10);
-}
+import { sortEmploymentByRecency, yearsBetweenEmploymentDates } from '@/lib/employment-sort';
 
 function formatDateRange(start: string, end: string) {
   if (!start?.trim()) return '—';
@@ -32,8 +18,8 @@ export function WorkExperienceTab({ formData }: { formData: ApplicationFormData 
   const entries = sortEmploymentByRecency(raw);
   const totalYears = entries.reduce(
     (sum, e) => {
-      const end = e.isCurrentJob ? new Date().toISOString().slice(0, 7) : e.endDate;
-      return sum + yearsBetween(e.startDate, end);
+      const end = e.isCurrentJob ? 'Present' : (e.endDate ?? '');
+      return sum + yearsBetweenEmploymentDates(e.startDate ?? '', end);
     },
     0
   );
@@ -60,7 +46,7 @@ export function WorkExperienceTab({ formData }: { formData: ApplicationFormData 
                 <span className="tabular-nums">
                   {formatDateRange(e.startDate, e.isCurrentJob ? 'Present' : (e.endDate || ''))}
                   {' · '}
-                  {yearsBetween(e.startDate, e.isCurrentJob ? 'Present' : (e.endDate || ''))} yrs
+                  {yearsBetweenEmploymentDates(e.startDate ?? '', e.isCurrentJob ? 'Present' : (e.endDate ?? ''))} yrs
                 </span>
                 {e.isCurrentJob && <span className="text-primary-600">Current job</span>}
               </div>

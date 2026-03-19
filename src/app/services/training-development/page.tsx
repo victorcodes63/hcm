@@ -4,7 +4,17 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BookOpen, Users, Target, Award, CheckCircle, Download, ArrowRight, Phone, Mail, Clock, TrendingUp, Star, Building2, FileText } from 'lucide-react';
+import { Download, ArrowRight, Phone, Mail } from 'lucide-react';
+import {
+  IconUsersGroup,
+  IconBook,
+  IconTargetArrow,
+  IconAward,
+  IconCheck,
+  IconStar,
+  IconBuildingSkyscraper,
+  IconFileText,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import SectionTitle from '@/components/SectionTitle';
@@ -18,7 +28,7 @@ export default function TrainingDevelopmentPage() {
   }, []);
   const trainingServices = [
     {
-      icon: Users,
+      icon: IconUsersGroup,
       title: "Leadership Development",
       description: "Comprehensive leadership programs to develop and enhance management capabilities at all levels of your organization.",
       features: ["Executive coaching", "Management training", "Team leadership", "Strategic thinking"],
@@ -26,7 +36,7 @@ export default function TrainingDevelopmentPage() {
       bgColor: "from-blue-100 to-sky-200"
     },
     {
-      icon: BookOpen,
+      icon: IconBook,
       title: "Skills Training",
       description: "Targeted skills development programs tailored to your industry and organizational needs for maximum impact.",
       features: ["Technical skills", "Soft skills", "Industry-specific training", "Certification programs"],
@@ -34,7 +44,7 @@ export default function TrainingDevelopmentPage() {
       bgColor: "from-emerald-100 to-emerald-200"
     },
     {
-      icon: Target,
+      icon: IconTargetArrow,
       title: "Performance Management",
       description: "Training on effective performance management systems and employee evaluation processes for better outcomes.",
       features: ["Goal setting", "Performance reviews", "Feedback systems", "Development planning"],
@@ -42,7 +52,7 @@ export default function TrainingDevelopmentPage() {
       bgColor: "from-purple-100 to-purple-200"
     },
     {
-      icon: Award,
+      icon: IconAward,
       title: "Board Training Services",
       description: "Specialized training for board members including interview skills, vision and mission development, and governance best practices.",
       features: ["Interview skills training", "Vision & mission workshops", "Governance training", "Board effectiveness"],
@@ -52,12 +62,54 @@ export default function TrainingDevelopmentPage() {
   ];
 
   const boardTrainingServices = [
-    "Interview Skills Training",
-    "Vision & Mission Development", 
-    "Governance Best Practices",
-    "Board Effectiveness Training",
-    "Strategic Planning Workshops",
-    "Risk Management Training"
+    {
+      title: "Interview Skills Training",
+      summary: "Equip board members to run structured, fair, and insightful CEO and executive interviews.",
+      outcomes: [
+        "Better alignment between interview questions and role profile",
+        "Reduced bias and stronger, evidence-based hiring decisions",
+      ],
+    },
+    {
+      title: "Vision & Mission Development",
+      summary: "Facilitated sessions to clarify and refresh the organisation’s mandate, vision, and mission.",
+      outcomes: [
+        "A shared strategic narrative the whole organisation can rally behind",
+        "Clearer linkage between board strategy and management execution",
+      ],
+    },
+    {
+      title: "Governance Best Practices",
+      summary: "Training on modern governance standards, committee structures, and board protocols.",
+      outcomes: [
+        "Improved board packs and meeting discipline",
+        "Stronger oversight without micro‑managing management",
+      ],
+    },
+    {
+      title: "Board Effectiveness Training",
+      summary: "Develop the behaviours and rhythms of a high‑performing, value‑adding board.",
+      outcomes: [
+        "Sharper board agendas and more productive meetings",
+        "Improved collaboration between the board, chair, and CEO",
+      ],
+    },
+    {
+      title: "Strategic Planning Workshops",
+      summary: "Structured workshops to guide boards through robust strategic planning cycles.",
+      outcomes: [
+        "Prioritised strategic initiatives with clear owners and timelines",
+        "Greater alignment on risk appetite and investment decisions",
+      ],
+    },
+    {
+      title: "Risk Management Training",
+      summary: "Help boards identify, prioritise, and monitor strategic and operational risks.",
+      outcomes: [
+        "Clear risk registers and mitigation plans",
+        "More confident oversight of compliance and reputation risks",
+      ],
+    },
   ];
 
   const pacidaSpotlight = {
@@ -191,17 +243,26 @@ export default function TrainingDevelopmentPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {boardTrainingServices.map((service, index) => (
               <motion.div
-                key={index}
+                key={service.title}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 viewport={{ once: true }}
-                className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border border-primary-100 hover:shadow-lg transition-all duration-300"
+                className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border border-primary-100 hover:shadow-lg transition-all duration-300 flex flex-col"
               >
                 <div className="w-12 h-12 bg-secondary-50 rounded-lg flex items-center justify-center mb-4 border border-secondary-100">
-                  <Award className="w-6 h-6 text-secondary-500" />
+                  <IconAward className="w-6 h-6 text-secondary-500" stroke={1.7} />
                 </div>
-                <h3 className="text-lg font-semibold text-primary-900">{service}</h3>
+                <h3 className="text-lg font-semibold text-primary-900 mb-1">{service.title}</h3>
+                <p className="text-sm text-neutral-600 mb-3 leading-relaxed">{service.summary}</p>
+                <ul className="mt-auto space-y-1.5">
+                  {service.outcomes.map((item) => (
+                    <li key={item} className="flex items-start text-xs sm:text-sm text-neutral-700">
+                      <span className="mt-0.5 mr-2 h-1.5 w-1.5 rounded-full bg-secondary-500 shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             ))}
           </div>
@@ -262,7 +323,7 @@ export default function TrainingDevelopmentPage() {
                           }}
                         />
                         <div className="w-full h-full bg-primary-100 flex items-center justify-center hidden">
-                          <Award className="w-12 h-12 text-primary-900" />
+                          <IconAward className="w-12 h-12 text-primary-900" stroke={1.7} />
                         </div>
                       </div>
                       <h3 className="text-2xl font-bold text-primary-900 mb-2">
@@ -281,7 +342,7 @@ export default function TrainingDevelopmentPage() {
                       <ul className="space-y-2">
                         {pacidaSpotlight.services.map((service, index) => (
                           <li key={index} className="flex items-start text-neutral-600">
-                            <CheckCircle className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" />
+                            <IconCheck className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" stroke={1.7} />
                             <span className="text-sm">{service}</span>
                           </li>
                         ))}
@@ -293,7 +354,7 @@ export default function TrainingDevelopmentPage() {
                       <ul className="space-y-2">
                         {pacidaSpotlight.results.map((result, index) => (
                           <li key={index} className="flex items-start text-neutral-600">
-                            <Star className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" />
+                            <IconStar className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" stroke={1.7} />
                             <span className="text-sm">{result}</span>
                           </li>
                         ))}
@@ -399,13 +460,13 @@ export default function TrainingDevelopmentPage() {
           </motion.div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><IconFileText className="w-8 h-8 text-white" stroke={1.7} /></div>
               <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
               <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in training and development.</p>
               <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building2 className="w-8 h-8 text-white" /></div>
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><IconBuildingSkyscraper className="w-8 h-8 text-white" stroke={1.7} /></div>
               <h3 className="text-xl font-semibold mb-4">Client List</h3>
               <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
               <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>

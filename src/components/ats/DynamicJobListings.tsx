@@ -4,22 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  MapPin,
-  Clock,
-  Building2,
-  Search,
-  Filter,
-  ChevronRight,
-  LayoutList,
-  LayoutGrid,
-  SlidersHorizontal,
-  X,
-  AlertCircle,
-  RefreshCw,
-  CalendarDays,
-  Banknote,
-  Tag,
-} from 'lucide-react';
+  IconMapPin,
+  IconClock,
+  IconBuilding,
+  IconSearch,
+  IconFilter,
+  IconChevronRight,
+  IconLayoutList,
+  IconLayoutGrid,
+  IconAdjustmentsHorizontal,
+  IconX,
+  IconAlertCircle,
+  IconRefresh,
+  IconCalendar,
+  IconCash,
+  IconTag,
+} from '@tabler/icons-react';
 import { JobListing, JobSearchFilters } from '@/types/ats';
 import { useATS } from '@/lib/ats-api';
 import { getCategoryIcon } from '@/lib/job-category-icons';
@@ -148,6 +148,17 @@ export default function DynamicJobListings({
     fetchJobs();
   }, [fetchJobs]);
 
+  // Mobile UX: keep a single view (list) and hide the toggle.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)'); // below md
+    const sync = () => {
+      if (mq.matches) setView('list');
+    };
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
   useEffect(() => {
     setAppliedFilters(initialFilters);
     setSearchKeyword(initialFilters.keyword || '');
@@ -204,9 +215,9 @@ export default function DynamicJobListings({
       {showSearch && (
         <div className="mb-6">
           {/* Main search bar */}
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4.5 h-4.5 pointer-events-none" />
+              <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4.5 h-4.5 pointer-events-none" stroke={1.7} />
               <input
                 type="text"
                 placeholder="Job title, company, or keywords…"
@@ -216,30 +227,33 @@ export default function DynamicJobListings({
                 className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-primary-100 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base text-neutral-800 placeholder-neutral-400 transition"
               />
             </div>
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="px-6 py-3.5 bg-primary-900 text-white rounded-xl font-semibold text-base hover:bg-primary-800 active:scale-95 transition-all shadow-sm shrink-0"
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((v) => !v)}
-              className={`flex items-center gap-1.5 px-4 py-3.5 rounded-xl border text-base font-medium transition-all shadow-sm shrink-0 ${
-                filtersOpen || activeChips.length > 0
-                  ? 'bg-primary-100 border-primary-300 text-primary-700'
-                  : 'bg-white border-primary-100 text-neutral-600 hover:bg-primary-50'
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filters
-              {activeChips.length > 0 && (
-                <span className="w-5 h-5 rounded-full bg-primary-900 text-white text-xs flex items-center justify-center font-bold">
-                  {activeChips.length}
-                </span>
-              )}
-            </button>
+            <div className="flex gap-2 sm:gap-2">
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="flex-1 px-6 py-3.5 bg-primary-900 text-white rounded-xl font-semibold text-base hover:bg-primary-800 active:scale-95 transition-all shadow-sm"
+              >
+                Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className={`flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border text-base font-medium transition-all shadow-sm ${
+                  filtersOpen || activeChips.length > 0
+                    ? 'bg-primary-100 border-primary-300 text-primary-700'
+                    : 'bg-white border-primary-100 text-neutral-600 hover:bg-primary-50'
+                }`}
+              >
+                <IconAdjustmentsHorizontal className="w-4 h-4" stroke={1.7} />
+                <span className="hidden sm:inline">Filters</span>
+                <span className="sm:hidden">Filter</span>
+                {activeChips.length > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-primary-900 text-white text-xs flex items-center justify-center font-bold">
+                    {activeChips.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Expanded filters */}
@@ -253,7 +267,7 @@ export default function DynamicJobListings({
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-primary-100 mb-3"
               >
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <IconMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" stroke={1.7} />
                   <select
                     value={selectedLocation}
                     onChange={(e) => setSelectedLocation(e.target.value)}
@@ -268,7 +282,7 @@ export default function DynamicJobListings({
                   </select>
                 </div>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <IconTag className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" stroke={1.7} />
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -279,7 +293,7 @@ export default function DynamicJobListings({
                   </select>
                 </div>
                 <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <IconFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" stroke={1.7} />
                   <select
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value)}
@@ -290,7 +304,7 @@ export default function DynamicJobListings({
                   </select>
                 </div>
                 <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <IconCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" stroke={1.7} />
                   <select
                     value={selectedTime}
                     onChange={(e) => setSelectedTime(e.target.value)}
@@ -314,7 +328,7 @@ export default function DynamicJobListings({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-100 text-primary-800 text-sm font-medium hover:bg-primary-200 transition-colors"
                 >
                   {chip.label}
-                  <X className="w-3 h-3" />
+                  <IconX className="w-3 h-3" stroke={1.7} />
                 </button>
               ))}
               <button
@@ -332,7 +346,7 @@ export default function DynamicJobListings({
           )}
 
           {/* Results count + view toggle */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-base text-neutral-500">
               {loading ? 'Loading…' : (
                 <span>
@@ -340,14 +354,14 @@ export default function DynamicJobListings({
                 </span>
               )}
             </p>
-            <div className="flex items-center gap-1 p-1 bg-neutral-100 rounded-lg">
+            <div className="hidden md:flex items-center gap-1 p-1 bg-neutral-100 rounded-lg">
               <button
                 type="button"
                 onClick={() => setView('list')}
                 className={`p-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-white text-primary-900 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'}`}
                 aria-label="List view"
               >
-                <LayoutList className="w-4 h-4" />
+                <IconLayoutList className="w-4 h-4" stroke={1.7} />
               </button>
               <button
                 type="button"
@@ -355,7 +369,7 @@ export default function DynamicJobListings({
                 className={`p-1.5 rounded-md transition-colors ${view === 'grid' ? 'bg-white text-primary-900 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'}`}
                 aria-label="Grid view"
               >
-                <LayoutGrid className="w-4 h-4" />
+                <IconLayoutGrid className="w-4 h-4" stroke={1.7} />
               </button>
             </div>
           </div>
@@ -370,10 +384,10 @@ export default function DynamicJobListings({
       )}
 
       {/* Error state */}
-      {!loading && fetchError && (
+          {!loading && fetchError && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
-            <AlertCircle className="w-7 h-7 text-red-400" />
+            <IconAlertCircle className="w-7 h-7 text-red-400" stroke={1.7} />
           </div>
           <h3 className="text-base font-semibold text-neutral-800 mb-1">Couldn't load jobs</h3>
           <p className="text-sm text-neutral-500 mb-4">Please check your connection and try again.</p>
@@ -382,7 +396,7 @@ export default function DynamicJobListings({
             onClick={fetchJobs}
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-900 text-white text-sm font-medium rounded-lg hover:bg-primary-800 transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <IconRefresh className="w-4 h-4" stroke={1.7} />
             Try again
           </button>
         </div>
@@ -392,7 +406,7 @@ export default function DynamicJobListings({
       {!loading && !fetchError && jobs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-            <Search className="w-7 h-7 text-neutral-300" />
+            <IconSearch className="w-7 h-7 text-neutral-300" stroke={1.7} />
           </div>
           <h3 className="text-base font-semibold text-neutral-800 mb-1">No jobs found</h3>
           <p className="text-sm text-neutral-500">Try adjusting your search or filters, or check back soon.</p>
@@ -438,7 +452,7 @@ export default function DynamicJobListings({
                               New
                             </span>
                           )}
-                          <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" />
+                          <IconChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" stroke={1.7} />
                         </div>
                       </div>
 
@@ -446,7 +460,7 @@ export default function DynamicJobListings({
                         {job.title}
                       </h3>
                       <p className="text-sm text-neutral-500 mb-3 flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 shrink-0" />
+                        <IconBuilding className="w-4 h-4 shrink-0" stroke={1.7} />
                         {job.company}
                       </p>
 
@@ -461,11 +475,11 @@ export default function DynamicJobListings({
 
                       <div className="flex items-center justify-between text-sm text-neutral-400 border-t border-primary-50 pt-3">
                         <span className="flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4" />
+                          <IconMapPin className="w-4 h-4" stroke={1.7} />
                           {job.location}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <Clock className="w-4 h-4" />
+                          <IconClock className="w-4 h-4" stroke={1.7} />
                           {formatDate(job.postedDate)}
                         </span>
                       </div>
@@ -484,15 +498,15 @@ export default function DynamicJobListings({
                 >
                     <Link
                       href={`/careers/apply/${job.slug ?? job.id}`}
-                      className="group flex items-center gap-4 bg-white rounded-2xl border border-primary-100 hover:border-primary-300 hover:shadow-md transition-all duration-200 p-5 sm:p-6"
+                      className="group flex items-start gap-3 sm:gap-4 bg-white rounded-2xl border border-primary-100 hover:border-primary-300 hover:shadow-md transition-all duration-200 p-5 sm:p-6"
                     >
-                    {/* Icon */}
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 group-hover:bg-primary-100 transition-colors">
+                    {/* Icon (hide on mobile) */}
+                    <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary-50 items-center justify-center shrink-0 group-hover:bg-primary-100 transition-colors">
                       <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500 group-hover:text-primary-700 transition-colors" />
                     </div>
 
                     {/* Main content */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h3 className="text-base sm:text-lg font-bold text-primary-900 group-hover:text-primary-700 transition-colors leading-snug">
                           {job.title}
@@ -505,7 +519,7 @@ export default function DynamicJobListings({
                       </div>
 
                       <p className="text-sm text-neutral-500 mb-2.5 flex items-center gap-1.5 truncate">
-                        <Building2 className="w-4 h-4 shrink-0" />
+                        <IconBuilding className="w-4 h-4 shrink-0" stroke={1.7} />
                         {job.company}
                       </p>
 
@@ -517,30 +531,32 @@ export default function DynamicJobListings({
                           {job.type}
                         </span>
                         <span className="flex items-center gap-1 text-sm text-neutral-400">
-                          <MapPin className="w-3.5 h-3.5" />
+                          <IconMapPin className="w-3.5 h-3.5" stroke={1.7} />
                           {job.location}
                         </span>
                         {job.salary && (
                           <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
-                            <Banknote className="w-3.5 h-3.5" />
+                            <IconCash className="w-3.5 h-3.5" stroke={1.7} />
                             {job.salary.currency} {job.salary.min.toLocaleString()}–{job.salary.max.toLocaleString()}
                           </span>
                         )}
                       </div>
-                    </div>
 
-                    {/* Right side */}
-                    <div className="shrink-0 flex flex-col items-end gap-2 ml-2">
-                      <span className="text-sm text-neutral-400 whitespace-nowrap flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {formatDate(job.postedDate)}
-                      </span>
-                      {job.applicationDeadline && (
-                        <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
-                          Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Nairobi' })}
+                      {/* Mobile meta row */}
+                      <div className="mt-3 flex items-center justify-between text-sm text-neutral-400 border-t border-primary-50 pt-3">
+                        <span className="flex items-center gap-1.5 whitespace-nowrap">
+                          <IconClock className="w-3.5 h-3.5" stroke={1.7} />
+                          {formatDate(job.postedDate)}
                         </span>
-                      )}
-                      <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" />
+                        <div className="flex items-center gap-3">
+                          {job.applicationDeadline && (
+                            <span className="text-sm text-amber-600 font-medium whitespace-nowrap">
+                              Closes {new Date(job.applicationDeadline).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Nairobi' })}
+                            </span>
+                          )}
+                          <IconChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" stroke={1.7} />
+                        </div>
+                      </div>
                     </div>
                   </Link>
                 </motion.div>

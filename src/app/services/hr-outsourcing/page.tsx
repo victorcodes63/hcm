@@ -3,7 +3,16 @@
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Building2, Users, Calculator, ShieldCheck, FileText, Clock, CheckCircle, Download, ArrowRight, Phone, Mail } from 'lucide-react';
+import { Download, ArrowRight, Phone, Mail } from 'lucide-react';
+import {
+  IconBuildingSkyscraper,
+  IconUsersGroup,
+  IconCalculator,
+  IconShieldCheck,
+  IconFileText,
+  IconClock,
+  IconCheck,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import SectionTitle from '@/components/SectionTitle';
@@ -12,7 +21,7 @@ import ServicePageCard from '@/components/ServicePageCard';
 export default function HROutsourcingPage() {
   const outsourcingServices = [
     {
-      icon: Calculator,
+      icon: IconCalculator,
       title: "Payroll Management",
       description: "Complete payroll processing including salary calculations, deductions, and statutory compliance with accuracy and timeliness.",
       features: ["Salary processing", "Statutory deductions", "Tax calculations", "Payslip generation"],
@@ -20,7 +29,7 @@ export default function HROutsourcingPage() {
       bgColor: "from-blue-100 to-sky-200"
     },
     {
-      icon: Users,
+      icon: IconUsersGroup,
       title: "HR Administration",
       description: "Comprehensive HR administrative support including record keeping, employee data management, and HR documentation.",
       features: ["Employee records", "HR documentation", "Data management", "Administrative support"],
@@ -28,7 +37,7 @@ export default function HROutsourcingPage() {
       bgColor: "from-emerald-100 to-emerald-200"
     },
     {
-      icon: ShieldCheck,
+      icon: IconShieldCheck,
       title: "Compliance Management",
       description: "Ensure your organization meets all regulatory requirements and maintains compliance with Kenyan labor laws.",
       features: ["Labor law compliance", "Regulatory reporting", "Audit support", "Policy implementation"],
@@ -36,7 +45,7 @@ export default function HROutsourcingPage() {
       bgColor: "from-purple-100 to-purple-200"
     },
     {
-      icon: FileText,
+      icon: IconFileText,
       title: "Policy Development",
       description: "Development and implementation of HR policies that align with Kenyan labor laws and industry best practices.",
       features: ["Policy creation", "Legal compliance", "Implementation support", "Regular updates"],
@@ -48,6 +57,37 @@ export default function HROutsourcingPage() {
   const benefits = [
     "Cost Reduction", "Expert HR Knowledge", "Compliance Assurance", "Time Savings",
     "Scalable Solutions", "Risk Mitigation", "Technology Integration", "24/7 Support"
+  ];
+
+  const engagementSteps = [
+    {
+      icon: IconCalculator,
+      step: '01',
+      title: 'Discovery & scoping',
+      description:
+        'We review your current HR set-up, pain points, headcount, and statutory footprint to define the exact scope of outsourcing.',
+    },
+    {
+      icon: IconUsersGroup,
+      step: '02',
+      title: 'Onboarding & transition',
+      description:
+        'We migrate payroll, files, and processes into our operating model, with a clear RACI so your team knows who handles what.',
+    },
+    {
+      icon: IconShieldCheck,
+      step: '03',
+      title: 'Day-to-day operations',
+      description:
+        'Our team runs payroll, employee administration, and compliance workflows on a monthly calendar agreed with you.',
+    },
+    {
+      icon: IconFileText,
+      step: '04',
+      title: 'Reporting & optimisation',
+      description:
+        'You receive regular dashboards, compliance summaries, and recommendations to continuously improve HR efficiency.',
+    },
   ];
 
   const stats = [
@@ -176,23 +216,142 @@ export default function HROutsourcingPage() {
             />
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {benefits.map((benefit, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                viewport={{ once: true }}
-                className="text-center p-6 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="w-16 h-16 bg-secondary-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-secondary-100">
-                  <CheckCircle className="w-8 h-8 text-secondary-500" />
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.05 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
+              {benefits.map((benefit, index) => (
+                <div
+                  key={benefit}
+                  className="flex items-start gap-3 rounded-xl bg-neutral-50/70 border border-neutral-200/80 px-4 py-3"
+                >
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary-50 border border-secondary-100">
+                    <IconCheck className="h-4 w-4 text-secondary-500" stroke={1.7} />
+                  </div>
+                  <div>
+                    <p className="text-sm sm:text-base font-semibold text-primary-900">{benefit}</p>
+                    <p className="mt-0.5 text-xs sm:text-sm text-neutral-600">
+                      {index === 0 && 'Lower your fixed HR overheads by converting them into a predictable service fee.'}
+                      {index === 1 && 'Tap into seasoned HR professionals without having to build a large internal team.'}
+                      {index === 2 && 'Stay ahead of Kenyan labour and tax regulations with proactive compliance monitoring.'}
+                      {index === 3 && 'Free up leadership time to focus on growth, not monthly HR administration.'}
+                      {index === 4 && 'Scale HR support up or down as your headcount changes across projects or locations.'}
+                      {index === 5 && 'Reduce people‑related risks through documented processes and specialist advice.'}
+                      {index === 6 && 'Benefit from tools and systems we already use across multiple clients.'}
+                      {index === 7 && 'Access support when you need it most, including evenings and weekends for urgent issues.'}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-primary-900">{benefit}</h3>
-              </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How our outsourcing engagement works */}
+      <section className="py-16 bg-gradient-to-br from-primary-50 to-white border-t border-primary-100/60">
+        <div className="container mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mb-10 text-center max-w-3xl mx-auto"
+          >
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-primary-900 mb-3">
+              How HR outsourcing works with Eagle HR
+            </h2>
+            <p className="text-neutral-600 leading-relaxed">
+              A clear, structured engagement model means you always know what we handle, what stays in-house,
+              and when key HR activities will happen each month.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+          >
+            {engagementSteps.map((step) => (
+              <div
+                key={step.step}
+                className="relative h-full rounded-2xl bg-white shadow-sm border border-primary-100/80 px-5 py-6 flex flex-col"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-11 h-11 rounded-xl bg-secondary-50 border border-secondary-100 flex items-center justify-center">
+                    <step.icon className="w-6 h-6 text-secondary-500" />
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-900 text-primary-50 tracking-wide">
+                    Step {step.step}
+                  </span>
+                </div>
+                <h3 className="text-base font-semibold text-primary-900 mb-2">{step.title}</h3>
+                <p className="text-sm text-neutral-600 leading-relaxed flex-1">{step.description}</p>
+              </div>
             ))}
-          </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* What we handle vs what stays in‑house */}
+      <section className="py-16 bg-white border-t border-neutral-100">
+        <div className="container mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mb-10 text-center max-w-3xl mx-auto"
+          >
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-primary-900 mb-3">
+              Clear division of responsibilities
+            </h2>
+            <p className="text-neutral-600 leading-relaxed">
+              HR outsourcing only works when roles are crystal clear. We agree upfront what Eagle HR
+              takes over and what remains with your leadership team.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.05 }}
+            viewport={{ once: true }}
+            className="grid gap-6 lg:grid-cols-2 max-w-5xl mx-auto"
+          >
+            <div className="rounded-2xl border border-primary-100 bg-primary-50/60 p-6">
+              <h3 className="text-lg font-semibold text-primary-900 mb-3">
+                What Eagle HR typically handles
+              </h3>
+              <ul className="space-y-2 text-sm text-neutral-700">
+                <li>• Monthly payroll processing, statutory deductions, and payslips.</li>
+                <li>• Employment contracts, HR letters, and standard HR documentation.</li>
+                <li>• Leave tracking and staff movements for outsourced employees.</li>
+                <li>• Compliance monitoring for PAYE, NSSF, NHIF and other statutory bodies.</li>
+                <li>• HR files and records management for outsourced staff.</li>
+                <li>• Periodic HR and compliance reports to management.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
+              <h3 className="text-lg font-semibold text-primary-900 mb-3">
+                What usually stays with your organisation
+              </h3>
+              <ul className="space-y-2 text-sm text-neutral-700">
+                <li>• Business strategy and organisation structure decisions.</li>
+                <li>• Final approvals on hiring, terminations, and promotions.</li>
+                <li>• Day‑to‑day people leadership for line managers.</li>
+                <li>• Internal culture, values, and non‑HR communications.</li>
+                <li>• Budget approvals and overall headcount planning.</li>
+              </ul>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -293,8 +452,8 @@ export default function HROutsourcingPage() {
                             e.currentTarget.nextElementSibling.style.display = 'flex';
                           }}
                         />
-                        <div className="w-full h-full bg-primary-100 flex items-center justify-center hidden">
-                          <Building2 className="w-12 h-12 text-primary-900" />
+                            <div className="w-full h-full bg-primary-100 flex items-center justify-center hidden">
+                          <IconBuildingSkyscraper className="w-12 h-12 text-primary-900" stroke={1.7} />
                         </div>
                       </div>
                       <h3 className="text-2xl font-bold text-primary-900 mb-2">
@@ -302,11 +461,11 @@ export default function HROutsourcingPage() {
                       </h3>
                       <div className="flex flex-col sm:flex-row gap-4 text-sm text-neutral-600">
                         <span className="inline-flex items-center">
-                          <Clock className="w-4 h-4 mr-2" />
+                          <IconClock className="w-4 h-4 mr-2" stroke={1.7} />
                           {caseStudy.duration}
                         </span>
                         <span className="inline-flex items-center">
-                          <Users className="w-4 h-4 mr-2" />
+                          <IconUsersGroup className="w-4 h-4 mr-2" stroke={1.7} />
                           {caseStudy.staffSize}
                         </span>
                       </div>
@@ -330,7 +489,7 @@ export default function HROutsourcingPage() {
                       <ul className="space-y-2">
                         {caseStudy.results.map((result, index) => (
                           <li key={index} className="flex items-start text-neutral-600">
-                            <CheckCircle className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" />
+                            <IconCheck className="w-5 h-5 text-secondary-500 mr-3 flex-shrink-0 mt-0.5" stroke={1.7} />
                             <span className="text-sm">{result}</span>
                           </li>
                         ))}
@@ -375,6 +534,76 @@ export default function HROutsourcingPage() {
                 <div className="text-sm font-medium text-primary-900">{industry}</div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQs */}
+      <section className="py-16 bg-white border-t border-neutral-100">
+        <div className="container mx-auto px-4 sm:px-6 max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mb-8 text-center"
+          >
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-primary-900 mb-3">
+              Frequently asked questions
+            </h2>
+            <p className="text-neutral-600">
+              A few of the common questions organisations ask when considering HR outsourcing.
+            </p>
+          </motion.div>
+
+          <div className="space-y-4">
+            <details className="group rounded-xl border border-neutral-200 bg-neutral-50/60 px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-semibold text-primary-900">
+                  Do we have to outsource the entire HR function?
+                </span>
+                <span className="text-xs text-neutral-500 group-open:rotate-90 transition-transform">
+                  ▸
+                </span>
+              </summary>
+              <p className="mt-2 text-sm text-neutral-700">
+                No. Many clients start with payroll and statutory compliance, then add HR
+                administration or documentation later. We design a scope that fits your current size
+                and internal capability.
+              </p>
+            </details>
+
+            <details className="group rounded-xl border border-neutral-200 bg-neutral-50/60 px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-semibold text-primary-900">
+                  How do you ensure we stay compliant with Kenyan labour laws?
+                </span>
+                <span className="text-xs text-neutral-500 group-open:rotate-90 transition-transform">
+                  ▸
+                </span>
+              </summary>
+              <p className="mt-2 text-sm text-neutral-700">
+                Our team continuously tracks changes in Kenyan labour legislation and updates your
+                contracts, policies, and payroll processes accordingly. You also receive regular
+                compliance summaries so leadership has visibility.
+              </p>
+            </details>
+
+            <details className="group rounded-xl border border-neutral-200 bg-neutral-50/60 px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-semibold text-primary-900">
+                  What does a typical onboarding timeline look like?
+                </span>
+                <span className="text-xs text-neutral-500 group-open:rotate-90 transition-transform">
+                  ▸
+                </span>
+              </summary>
+              <p className="mt-2 text-sm text-neutral-700">
+                For most SMEs, we complete discovery, data collection, parallel payroll runs, and
+                go‑live within 4–8 weeks. Larger or multi‑entity organisations may need a slightly
+                longer transition period.
+              </p>
+            </details>
           </div>
         </div>
       </section>
@@ -426,13 +655,13 @@ export default function HROutsourcingPage() {
           </motion.div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><FileText className="w-8 h-8 text-white" /></div>
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><IconFileText className="w-8 h-8 text-white" stroke={1.7} /></div>
               <h3 className="text-xl font-semibold mb-4">Company Profile</h3>
               <p className="text-orange-100 mb-6 flex-grow">Comprehensive overview of Eagle HR&apos;s services, expertise, and track record in HR outsourcing.</p>
               <a href="/downloads/eagle-hr-company-profile.pdf" download="Eagle-HR-Company-Profile.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }} className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 flex flex-col h-full">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><Building2 className="w-8 h-8 text-white" /></div>
+              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-6"><IconBuildingSkyscraper className="w-8 h-8 text-white" stroke={1.7} /></div>
               <h3 className="text-xl font-semibold mb-4">Client List</h3>
               <p className="text-orange-100 mb-6 flex-grow">Organisations across Kenya and beyond who trust Eagle HR with their recruitment and HR needs.</p>
               <a href="/downloads/eagle-hr-client-list.pdf" download="Eagle-HR-Client-List.pdf" className="inline-flex items-center text-white hover:text-secondary-300 transition-colors duration-300 mt-auto"><Download className="w-4 h-4 mr-2" />Download PDF</a>

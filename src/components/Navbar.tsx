@@ -4,7 +4,18 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowRight, Phone, Mail, Users, Building, GraduationCap, Shield, ChevronDown, ChevronLeft, ChevronRight, BarChart3, FileText, Calculator, BookOpen, Brain } from 'lucide-react'
+import { Menu, X, ArrowRight, Phone, Mail, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  IconUsersGroup,
+  IconBuildingSkyscraper,
+  IconSchool,
+  IconShieldCheck,
+  IconChartHistogram,
+  IconFileText,
+  IconCalculator,
+  IconBook,
+  IconBrain
+} from '@tabler/icons-react'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 
 const fadeIn = {
@@ -43,49 +54,49 @@ const Navbar = () => {
       title: 'Recruitment & Executive Search',
       description: 'Find the right talent for your organization',
       href: '/services/recruitment',
-      icon: Users,
+      icon: IconUsersGroup,
       features: ['Executive Search', 'Technical Recruitment', 'Talent Assessment']
     },
     {
       title: 'HR Outsourcing',
       description: 'Streamline your HR operations',
       href: '/services/hr-outsourcing',
-      icon: Building,
+      icon: IconBuildingSkyscraper,
       features: ['Payroll Management', 'HR Administration', 'Policy Development']
     },
     {
       title: 'Training & Development',
       description: 'Enhance your team\'s capabilities',
       href: '/services/training-development',
-      icon: GraduationCap,
+      icon: IconSchool,
       features: ['Leadership Development', 'Skills Training', 'Team Building']
     },
     {
       title: 'HR Compliance & Legal',
       description: 'Ensure compliance with labor laws',
       href: '/services/hr-compliance',
-      icon: Shield,
+      icon: IconShieldCheck,
       features: ['Legal Compliance', 'Policy Review', 'Risk Assessment']
     },
     {
       title: 'Salary Surveys & Analytics',
       description: 'Data-driven compensation insights',
       href: '/services/salary-surveys',
-      icon: BarChart3,
+      icon: IconChartHistogram,
       features: ['Market Analysis', 'Compensation Benchmarking', 'Salary Reports']
     },
     {
       title: 'HR Documentation & Policies',
       description: 'Comprehensive HR documentation services',
       href: '/services/hr-documentation',
-      icon: FileText,
+      icon: IconFileText,
       features: ['Policy Development', 'Employee Handbooks', 'Legal Documentation']
     },
     {
       title: 'Psychometric Testing',
       description: 'Comprehensive psychological assessments for talent selection',
       href: '/services/psychometric-testing',
-      icon: Brain,
+      icon: IconBrain,
       features: ['Aptitude Testing', 'Personality Assessment', 'Cognitive Ability Tests']
     }
   ]
@@ -95,28 +106,28 @@ const Navbar = () => {
       title: 'Gross Salary Calculator',
       description: 'Gross pay → take-home (net)',
       href: '/resources/gross-calculator',
-      icon: BarChart3,
+      icon: IconChartHistogram,
       isNew: true
     },
     {
       title: 'Net Salary Calculator',
       description: 'Net pay → estimated gross',
       href: '/resources/net-calculator',
-      icon: Calculator,
+      icon: IconCalculator,
       isNew: false
     },
     {
       title: 'Interview Checklist - Employers',
       description: 'Guide for conducting effective interviews',
       href: '/resources/interview-checklist-employers',
-      icon: Users,
+      icon: IconUsersGroup,
       isNew: false
     },
     {
       title: 'Interview Checklist - Candidates',
       description: 'Prepare for job interviews successfully',
       href: '/resources/interview-checklist-candidates',
-      icon: BookOpen,
+      icon: IconBook,
       isNew: false
     }
   ]

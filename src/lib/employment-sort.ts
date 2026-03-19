@@ -60,6 +60,28 @@ export type EmploymentLike = {
 };
 
 /**
+ * Compute years between two employment date strings (supports DD/MM/YYYY, YYYY-MM, etc.).
+ * Use for per-entry duration and total relevant experience.
+ */
+export function yearsBetweenEmploymentDates(startDate: string, endDate: string): number {
+  if (!startDate?.trim()) return 0;
+  const startTs = parseEmploymentDateTs(startDate.trim());
+  if (startTs == null) return 0;
+  const endStr = (endDate ?? '').trim().toLowerCase();
+  const endTs =
+    !endStr || endStr === 'present' || endStr === 'current'
+      ? Date.now()
+      : (parseEmploymentDateTs(endDate.trim()) ?? 0);
+  if (endTs === 0) return 0;
+  const start = new Date(startTs);
+  const end = new Date(endTs);
+  const months =
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth());
+  return Math.max(0, Math.round((months / 12) * 10) / 10);
+}
+
+/**
  * Sort employment entries: most recent activity first.
  * - Current jobs use "now" as end → appear above older ended roles.
  * - Same end date → more recent start first.

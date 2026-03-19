@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { JobListing } from '@/types/ats';
 import { useATS } from '@/lib/ats-api';
+import { yearsBetweenEmploymentDates } from '@/lib/employment-sort';
 import type {
   ApplicationFormData,
   EducationEntry,
@@ -214,24 +215,9 @@ function totalWorkExperienceYears(
   entries: { startDate?: string; endDate?: string; isCurrentJob?: boolean }[]
 ): number {
   if (!entries?.length) return 0;
-  const yearsBetween = (startDate: string, endDate: string): number => {
-    if (!startDate?.trim()) return 0;
-    const start = new Date(startDate.trim());
-    if (isNaN(start.getTime())) return 0;
-    const endStr = (endDate ?? '').trim().toLowerCase();
-    const end =
-      !endStr || endStr === 'present' || endStr === 'current'
-        ? new Date()
-        : new Date(endDate.trim());
-    if (isNaN(end.getTime())) return 0;
-    const months =
-      (end.getFullYear() - start.getFullYear()) * 12 +
-      (end.getMonth() - start.getMonth());
-    return Math.max(0, Math.round((months / 12) * 10) / 10);
-  };
   return entries.reduce((sum, e) => {
-    const end = e.isCurrentJob ? 'present' : (e.endDate ?? '');
-    return sum + yearsBetween(e.startDate ?? '', end);
+    const end = e.isCurrentJob ? 'Present' : (e.endDate ?? '');
+    return sum + yearsBetweenEmploymentDates(e.startDate ?? '', end);
   }, 0);
 }
 

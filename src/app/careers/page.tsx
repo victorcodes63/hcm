@@ -12,33 +12,10 @@ import { getCategoryIcon } from '@/lib/job-category-icons';
 
 // Metadata moved to layout.tsx
 
-interface SiteStats {
-  activeJobs: number;
-  companies: number;
-  candidates: number;
-  applications: number;
-}
-
-function formatStat(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k+`;
-  if (n === 0) return '—';
-  return `${n}`;
-}
-
 export default function CareersPage() {
   const isDesktop = useIsDesktop();
   const [jobCategories, setJobCategories] = useState<{ name: string; count: number }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [stats, setStats] = useState<SiteStats | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/stats')
-      .then((r) => r.json())
-      .then((data) => { if (!cancelled) setStats(data as SiteStats); })
-      .catch(() => { /* keep null — stats section stays hidden */ });
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,13 +85,6 @@ export default function CareersPage() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <a
-                href="#job-openings"
-                className="inline-flex items-center px-8 py-4 bg-primary-900 text-white rounded-lg font-semibold text-lg hover:bg-primary-800 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Browse Jobs
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </a>
-              <a
                 href="/contact"
                 className="inline-flex items-center px-8 py-4 border-2 border-primary-900 text-primary-900 rounded-lg font-semibold text-lg hover:bg-primary-900 hover:text-white transition-all duration-300"
               >
@@ -124,34 +94,70 @@ export default function CareersPage() {
           </motion.div>
         </div>
 
-        {/* Stats bridge — sits at the very bottom of the hero, bleeds into primary-50 below */}
-        {stats && (
-          <div className="relative z-10 bg-white/80 backdrop-blur-sm border-t border-primary-100">
-            <div className="container mx-auto px-4 sm:px-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-primary-100">
-                {[
-                  { value: formatStat(stats.activeJobs), label: 'Active Jobs' },
-                  { value: formatStat(stats.companies), label: 'Hiring Companies' },
-                  { value: formatStat(stats.candidates), label: 'Registered Candidates' },
-                  { value: formatStat(stats.applications), label: 'Applications Submitted' },
-                ].map((stat, i) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 1 + i * 0.08 }}
-                    className="py-6 px-4 text-center"
-                  >
-                    <div className="text-2xl sm:text-3xl font-bold text-primary-900 tabular-nums leading-none mb-1">
-                      {stat.value}
+        {/* How to apply — replaces stats bridge */}
+        <div className="relative z-10 bg-white/80 backdrop-blur-sm border-t border-primary-100">
+          <div className="container mx-auto px-4 sm:px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.9 }}
+              className="py-8 sm:py-10"
+            >
+              <div className="max-w-5xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold tracking-[0.25em] text-secondary-700 uppercase mb-2">
+                      How to apply
+                    </p>
+                    <h2 className="text-xl sm:text-2xl font-heading font-bold text-primary-900 mb-2">
+                      A simple 3‑step process.
+                    </h2>
+                    <p className="text-sm sm:text-base text-neutral-600">
+                      Find a role, apply in minutes, and we’ll keep you updated.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {[
+                    {
+                      n: '01',
+                      title: 'Browse & filter',
+                      desc: 'Use search and filters to quickly narrow down roles by category, location, and type.',
+                    },
+                    {
+                      n: '02',
+                      title: 'Apply with confidence',
+                      desc: 'Open the listing, review requirements, and submit your application with accurate details.',
+                    },
+                    {
+                      n: '03',
+                      title: 'Watch for updates',
+                      desc: 'We’ll share updates via email and let you know the next steps.',
+                    },
+                  ].map((step) => (
+                    <div
+                      key={step.n}
+                      className="rounded-2xl border border-primary-100 bg-white px-5 py-5 shadow-sm text-center"
+                    >
+                      <div className="flex items-center justify-center mb-3">
+                        <span className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-secondary-50 border border-secondary-100 text-secondary-700 font-bold tabular-nums">
+                          {step.n}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-semibold text-primary-900 mb-1">
+                        {step.title}
+                      </h3>
+                      <p className="text-sm text-neutral-600 leading-relaxed">
+                        {step.desc}
+                      </p>
                     </div>
-                    <div className="text-xs sm:text-sm text-neutral-500">{stat.label}</div>
-                  </motion.div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        )}
+        </div>
       </section>
 
       {/* Dynamic Job Listings */}
@@ -162,7 +168,7 @@ export default function CareersPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="mb-8"
+            className="mb-8 text-center"
           >
             <SectionTitle
               label="Opportunities"
@@ -189,7 +195,7 @@ export default function CareersPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="mb-8"
+              className="mb-8 text-center"
             >
               <SectionTitle
                 label="Categories"

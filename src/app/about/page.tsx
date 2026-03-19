@@ -8,15 +8,15 @@ import TeamMember from '@/components/TeamMember';
 import FounderSection from '@/components/FounderSection';
 import InteractiveStatsMatrix from '@/components/InteractiveStatsMatrix';
 import { TeamMember as TeamMemberType } from '@/types';
-import { 
-  Target, 
-  Eye, 
-  Heart, 
-  Award, 
-  Users, 
-  Globe, 
-  ArrowRight 
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import {
+  IconTargetArrow,
+  IconEye,
+  IconShieldStar,
+  IconAward,
+  IconUsersGroup,
+  IconBulb
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import SectionTitle from '@/components/SectionTitle';
@@ -112,22 +112,22 @@ export default function AboutPage() {
 
   const values = [
     {
-      icon: Heart,
+      icon: IconShieldStar,
       title: 'Integrity',
       description: 'We maintain the highest ethical standards in all our interactions, building trust through transparency and honesty.'
     },
     {
-      icon: Award,
+      icon: IconAward,
       title: 'Excellence',
       description: 'We strive for excellence in everything we do, delivering exceptional results that exceed client expectations.'
     },
     {
-      icon: Users,
+      icon: IconUsersGroup,
       title: 'Client-Centricity',
       description: 'Our clients\' success is our success. We tailor solutions to meet specific organizational needs and goals.'
     },
     {
-      icon: Globe,
+      icon: IconBulb,
       title: 'Innovation',
       description: 'We embrace innovative approaches and cutting-edge practices to deliver forward-thinking HR solutions.'
     }
@@ -237,7 +237,7 @@ export default function AboutPage() {
               >
                 <div className="flex items-center mb-6">
                   <div className="w-12 h-12 bg-secondary-50 rounded-xl flex items-center justify-center mr-4 border border-secondary-100">
-                    <Target className="w-6 h-6 text-secondary-500" />
+                    <IconTargetArrow className="w-6 h-6 text-secondary-500" stroke={1.7} />
                   </div>
                   <h4 className="text-xl font-heading font-semibold text-primary-900">Our Mission</h4>
                 </div>
@@ -255,7 +255,7 @@ export default function AboutPage() {
               >
                 <div className="flex items-center mb-6">
                   <div className="w-12 h-12 bg-secondary-50 rounded-xl flex items-center justify-center mr-4 border border-secondary-100">
-                    <Eye className="w-6 h-6 text-secondary-500" />
+                    <IconEye className="w-6 h-6 text-secondary-500" stroke={1.7} />
                   </div>
                   <h4 className="text-xl font-heading font-semibold text-primary-900">Our Vision</h4>
                 </div>
@@ -351,42 +351,42 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                icon: Users,
+                icon: IconUsersGroup,
                 title: "Local Expertise, Global Standards",
                 reason: "Deep understanding of Kenyan business culture and labor laws",
                 justification: "Our team combines 7+ years of local market experience with international best practices, ensuring solutions that work in Kenya's unique business environment while meeting global standards.",
                 size: "rectangle"
               },
               {
-                icon: Target,
+                icon: IconTargetArrow,
                 title: "Proven Track Record",
                 reason: "Over 7 years of excellence with measurable results",
                 justification: "100+ companies served, 2000+ successful placements, and 98% client satisfaction rate. Our numbers speak for themselves - we deliver consistent, measurable outcomes.",
                 size: "square"
               },
               {
-                icon: Heart,
+                icon: IconShieldStar,
                 title: "Client-Centric Approach",
                 reason: "Every solution tailored to your specific needs",
                 justification: "We don't believe in one-size-fits-all solutions. Our team takes time to understand your unique challenges and crafts HR strategies that align with your business goals and culture.",
                 size: "square"
               },
               {
-                icon: Award,
+                icon: IconAward,
                 title: "Award-Winning Leadership",
                 reason: "Led by Dr. Ben Chumo, OGW recipient ",
                 justification: "Dr. Ben Chumo's Order of the Grand Warrior (OGW) recognition and his transformative leadership at Kenya Power (doubling customer base from 2.2M to 4.2M) brings unparalleled expertise to your organization.",
                 size: "rectangle"
               },
               {
-                icon: Globe,
+                icon: IconBulb,
                 title: "Comprehensive Solutions",
                 reason: "End-to-end HR services under one roof",
                 justification: "From recruitment and compliance to training and outsourcing - we provide complete HR solutions. No need to juggle multiple vendors when you can get everything from one trusted partner.",
                 size: "square"
               },
               {
-                icon: Award,
+                icon: IconAward,
                 title: "Measurable Results",
                 reason: "Focus on outcomes that improve your bottom line",
                 justification: "We don't just provide services - we deliver measurable ROI. Our clients see average 40% improvement in hiring success rates and 25% reduction in HR operational costs within the first year.",
