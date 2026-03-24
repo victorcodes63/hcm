@@ -22,6 +22,25 @@ export interface CandidateSummary {
   createdAt: string;
 }
 
+/** Minimal candidate for list view – fetch full details on demand */
+export interface CandidateListItem {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  location: string | null;
+  experience: number;
+  education: string | null;
+  resumePath: string | null;
+}
+
+export interface CandidatesListApiResponse {
+  candidates: CandidateListItem[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export interface JobSummary {
   id: string;
   title: string;
@@ -108,6 +127,27 @@ export interface ApplicationWithDetails {
   viewedByMe?: boolean;
   candidate: CandidateSummary;
   job: JobSummary;
+}
+
+/** Minimal application for list view – fetch full details on demand */
+export interface ApplicationListItem {
+  id: string;
+  jobId: string;
+  candidateId: string;
+  status: ApplicationStatus;
+  appliedDate: string;
+  resumePath: string | null;
+  viewedByMe?: boolean;
+  candidate: Pick<CandidateSummary, 'id' | 'firstName' | 'lastName' | 'email' | 'resumePath'>;
+  job: Pick<JobSummary, 'id' | 'title' | 'company' | 'location' | 'clientName'>;
+}
+
+export interface ApplicationsListApiResponse {
+  applications: ApplicationListItem[];
+  total: number;
+  pending: number;
+  shortlisted: number;
+  hired: number;
 }
 
 export interface ApplicationsListResponse {

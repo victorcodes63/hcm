@@ -8,7 +8,11 @@ import { getInMemoryJobSummary, getInMemoryJobRaw } from '@/lib/jobs-store';
 import { sendApplicationReceivedEmail } from '@/lib/email';
 import { reportApiError } from '@/lib/monitoring';
 import { parseStaffSession } from '@/lib/auth-session';
-import type { ApplicationWithDetails } from '@/types/dashboard';
+import type {
+  ApplicationWithDetails,
+  ApplicationListItem,
+  ApplicationsListApiResponse,
+} from '@/types/dashboard';
 import { yearsBetweenEmploymentDates } from '@/lib/employment-sort';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
@@ -109,6 +113,7 @@ export async function GET(request: NextRequest) {
   const minExperience = searchParams.get('minExperience');
   const maxExperience = searchParams.get('maxExperience');
   const employerCompany = searchParams.get('employerCompany') || undefined;
+  const search = searchParams.get('search') || undefined;
   const minExp =
     minExperience !== null && minExperience !== undefined && minExperience !== ''
       ? parseInt(minExperience, 10)
@@ -117,6 +122,9 @@ export async function GET(request: NextRequest) {
     maxExperience !== null && maxExperience !== undefined && maxExperience !== ''
       ? parseInt(maxExperience, 10)
       : undefined;
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '25', 10)));
+  const skip = (page - 1) * limit;
 
   try {
     if (process.env.DATABASE_URL) {
@@ -209,19 +217,28 @@ export async function GET(request: NextRequest) {
           );
         });
       }
-      const list: ApplicationWithDetails[] = filtered.map((a) => ({
+      if (search?.trim()) {
+        const q = search.trim().toLowerCase();
+        filtered = filtered.filter(
+          (a) =>
+            `${a.candidate.firstName} ${a.candidate.lastName}`.toLowerCase().includes(q) ||
+            a.candidate.email.toLowerCase().includes(q) ||
+            a.job.title.toLowerCase().includes(q)
+        );
+      }
+      const total = filtered.length;
+      const pending = filtered.filter((a) => a.status === 'pending').length;
+      const shortlisted = filtered.filter((a) => a.status === 'shortlisted').length;
+      const hired = filtered.filter((a) => a.status === 'hired').length;
+      const paginated = filtered.slice(skip, skip + limit);
+
+      const listItems: ApplicationListItem[] = paginated.map((a) => ({
         id: a.id,
         jobId: a.jobId,
         candidateId: a.candidateId,
         status: a.status,
         appliedDate: a.appliedDate.toISOString(),
-        coverLetter: a.coverLetter,
         resumePath: a.resumePath,
-        salaryExpectations: a.salaryExpectations ?? null,
-        notes: a.notes,
-        formData: a.formData as ApplicationWithDetails['formData'],
-        createdAt: a.createdAt.toISOString(),
-        updatedAt: a.updatedAt.toISOString(),
         viewedByMe: currentUserId
           ? ((a as typeof a & { views?: { userId: string }[] }).views?.length ?? 0) > 0
           : true,
@@ -230,39 +247,31 @@ export async function GET(request: NextRequest) {
           firstName: a.candidate.firstName,
           lastName: a.candidate.lastName,
           email: a.candidate.email,
-          phone: a.candidate.phone,
-          location: a.candidate.location,
-          nationality: a.candidate.nationality ?? null,
-          homeCounty: a.candidate.homeCounty ?? null,
-          experience: a.candidate.experience,
-          education: a.candidate.education,
           resumePath: a.candidate.resumePath,
-          createdAt: a.candidate.createdAt.toISOString(),
         },
-        job: jobToSummary({
+        job: {
           id: a.job.id,
           title: a.job.title,
           company: a.job.company,
           location: a.job.location,
-          type: a.job.type,
-          category: a.job.category,
-          postedDate: a.job.postedDate.toISOString(),
-          isActive: a.job.isActive,
-          clientId: a.job.clientId ?? null,
           clientName: a.job.client?.name ?? null,
-          minYearsExperience: a.job.minYearsExperience ?? null,
-          educationLevel: a.job.educationLevel ?? null,
-          educationQualification: a.job.educationQualification ?? null,
-          requiredCertifications: a.job.requiredCertifications ?? null,
-        }),
+        },
       }));
-      return NextResponse.json(list);
+
+      const response: ApplicationsListApiResponse = {
+        applications: listItems,
+        total,
+        pending,
+        shortlisted,
+        hired,
+      };
+      return NextResponse.json(response);
     }
   } catch (_e) {
     // fall through to in-memory
   }
 
-  const list = getInMemoryApplications({
+  let fullList = getInMemoryApplications({
     jobId,
     clientId: clientId || undefined,
     status: status as 'pending' | 'reviewed' | 'shortlisted' | 'rejected' | 'hired' | undefined,
@@ -277,7 +286,48 @@ export async function GET(request: NextRequest) {
     maxExperience: maxExp,
     employerCompany: employerCompany?.trim() || undefined,
   });
-  return NextResponse.json(list);
+  if (search?.trim()) {
+    const q = search.trim().toLowerCase();
+    fullList = fullList.filter(
+      (a) =>
+        `${a.candidate.firstName} ${a.candidate.lastName}`.toLowerCase().includes(q) ||
+        a.candidate.email.toLowerCase().includes(q) ||
+        a.job.title.toLowerCase().includes(q)
+    );
+  }
+  const total = fullList.length;
+  const paginated = fullList.slice(skip, skip + limit);
+  const applications: ApplicationListItem[] = paginated.map((a) => ({
+    id: a.id,
+    jobId: a.jobId,
+    candidateId: a.candidateId,
+    status: a.status,
+    appliedDate: a.appliedDate,
+    resumePath: a.resumePath,
+    viewedByMe: a.viewedByMe ?? true,
+    candidate: {
+      id: a.candidate.id,
+      firstName: a.candidate.firstName,
+      lastName: a.candidate.lastName,
+      email: a.candidate.email,
+      resumePath: a.candidate.resumePath,
+    },
+    job: {
+      id: a.job.id,
+      title: a.job.title,
+      company: a.job.company,
+      location: a.job.location,
+      clientName: a.job.clientName ?? null,
+    },
+  }));
+  const response: ApplicationsListApiResponse = {
+    applications,
+    total,
+    pending: fullList.filter((a) => a.status === 'pending').length,
+    shortlisted: fullList.filter((a) => a.status === 'shortlisted').length,
+    hired: fullList.filter((a) => a.status === 'hired').length,
+  };
+  return NextResponse.json(response);
 }
 
 export async function POST(request: NextRequest) {

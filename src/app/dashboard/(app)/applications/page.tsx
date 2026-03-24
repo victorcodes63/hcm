@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import type {
   ApplicationWithDetails,
+  ApplicationListItem,
   ApplicationStatus,
   ApplicationFormData,
 } from '@/types/dashboard';
@@ -320,16 +321,26 @@ export default function DashboardApplicationsPage() {
   const [maxExperienceFilter, setMaxExperienceFilter] = useState('');
   const [employerCompanyFilter, setEmployerCompanyFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedApp, setSelectedApp] = useState<ApplicationWithDetails | null>(
     null
   );
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(
     null
   );
   const [applicantDetailTab, setApplicantDetailTab] = useState<ApplicantDetailTab>('general');
   const [notesDraft, setNotesDraft] = useState('');
   const [pdfZoom, setPdfZoom] = useState(100);
-  const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [applications, setApplications] = useState<ApplicationListItem[]>([]);
+  const [listStats, setListStats] = useState({
+    total: 0,
+    pending: 0,
+    shortlisted: 0,
+    hired: 0,
+  });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -371,6 +382,11 @@ export default function DashboardApplicationsPage() {
   }, []);
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams();
     if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
@@ -386,10 +402,26 @@ export default function DashboardApplicationsPage() {
     if (minExperienceFilter.trim()) params.set('minExperience', minExperienceFilter.trim());
     if (maxExperienceFilter.trim()) params.set('maxExperience', maxExperienceFilter.trim());
     if (employerCompanyFilter.trim()) params.set('employerCompany', employerCompanyFilter.trim());
+    if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+    params.set('page', String(page));
+    params.set('limit', '25');
     fetch(`/api/applications?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setApplications(Array.isArray(data) ? data : []);
+        if (cancelled) return;
+        if (data?.applications && Array.isArray(data.applications)) {
+          setApplications(data.applications);
+          setListStats({
+            total: data.total ?? 0,
+            pending: data.pending ?? 0,
+            shortlisted: data.shortlisted ?? 0,
+            hired: data.hired ?? 0,
+          });
+          const limit = 25;
+          setTotalPages(Math.max(1, Math.ceil((data.total ?? 0) / limit)));
+        } else {
+          setApplications([]);
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load applications.');
@@ -412,6 +444,8 @@ export default function DashboardApplicationsPage() {
     minExperienceFilter,
     maxExperienceFilter,
     employerCompanyFilter,
+    debouncedSearch,
+    page,
     refreshNonce,
   ]);
 
@@ -483,6 +517,26 @@ export default function DashboardApplicationsPage() {
   };
 
   const allApplications = applications;
+  const filteredApplications = applications;
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    statusFilter,
+    jobFilter,
+    clientFilter,
+    nationalityFilter,
+    homeCountyFilter,
+    educationLevelFilter,
+    disciplineFilter,
+    certificateFilter,
+    membershipFilter,
+    employmentTypeFilter,
+    minExperienceFilter,
+    maxExperienceFilter,
+    employerCompanyFilter,
+    debouncedSearch,
+  ]);
 
   const extraQualificationFiltersActive =
     !!membershipFilter.trim() ||
@@ -558,27 +612,7 @@ export default function DashboardApplicationsPage() {
     ]
   );
 
-  const filteredApplications = useMemo(() => {
-    if (!searchQuery.trim()) return allApplications;
-    const q = searchQuery.toLowerCase();
-    return allApplications.filter(
-      (a) =>
-        `${a.candidate.firstName} ${a.candidate.lastName}`.toLowerCase().includes(q) ||
-        a.candidate.email.toLowerCase().includes(q) ||
-        a.job.title.toLowerCase().includes(q)
-    );
-  }, [allApplications, searchQuery]);
-
-  const stats = useMemo(
-    () => ({
-      total: allApplications.length,
-      pending: allApplications.filter((a) => a.status === 'pending').length,
-      shortlisted: allApplications.filter((a) => a.status === 'shortlisted')
-        .length,
-      hired: allApplications.filter((a) => a.status === 'hired').length,
-    }),
-    [allApplications]
-  );
+  const stats = listStats;
 
   const selectedApplications = useMemo(
     () => filteredApplications.filter((a) => selectedIds.has(a.id)),
@@ -1184,9 +1218,18 @@ export default function DashboardApplicationsPage() {
                   <td className="px-5 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedApp(app);
+                      onClick={async () => {
                         if (isUnread) markAsViewed(app.id);
+                        setLoadingDetails(true);
+                        try {
+                          const res = await fetch(`/api/applications/${app.id}`);
+                          if (res.ok) {
+                            const full = await res.json();
+                            setSelectedApp(full);
+                          }
+                        } finally {
+                          setLoadingDetails(false);
+                        }
                       }}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                     >
@@ -1199,6 +1242,33 @@ export default function DashboardApplicationsPage() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-neutral-200 bg-neutral-50/50">
+            <p className="text-sm text-neutral-600">
+              Page {page} of {totalPages} · {stats.total} total
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         </div>
       )}
 
@@ -1229,7 +1299,15 @@ export default function DashboardApplicationsPage() {
                     type="button"
                     onClick={async () => {
                       await saveNotesIfDirty();
-                      if (prevApp) setSelectedApp(prevApp);
+                      if (prevApp) {
+                        setLoadingDetails(true);
+                        try {
+                          const res = await fetch(`/api/applications/${prevApp.id}`);
+                          if (res.ok) setSelectedApp(await res.json());
+                        } finally {
+                          setLoadingDetails(false);
+                        }
+                      }
                     }}
                     disabled={!hasPrev}
                     className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
@@ -1244,7 +1322,15 @@ export default function DashboardApplicationsPage() {
                     type="button"
                     onClick={async () => {
                       await saveNotesIfDirty();
-                      if (nextApp) setSelectedApp(nextApp);
+                      if (nextApp) {
+                        setLoadingDetails(true);
+                        try {
+                          const res = await fetch(`/api/applications/${nextApp.id}`);
+                          if (res.ok) setSelectedApp(await res.json());
+                        } finally {
+                          setLoadingDetails(false);
+                        }
+                      }
                     }}
                     disabled={!hasNext}
                     className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
@@ -1287,6 +1373,12 @@ export default function DashboardApplicationsPage() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
+              {loadingDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                </div>
+              ) : (
+                <>
               {applicantDetailTab === 'general' && (
                 <div className="space-y-5">
                   <div>
@@ -1522,6 +1614,8 @@ export default function DashboardApplicationsPage() {
 
               {applicantDetailTab === 'certifications' && (
                 <CertificationsTab formData={selectedApp.formData} />
+              )}
+                </>
               )}
             </div>
           </div>

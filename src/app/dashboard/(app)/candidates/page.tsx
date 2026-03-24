@@ -24,7 +24,7 @@ import {
   Download,
   Calendar,
 } from 'lucide-react';
-import type { CandidateSummary } from '@/types/dashboard';
+import type { CandidateListItem } from '@/types/dashboard';
 import type { CandidateWithDetails } from '@/app/api/candidates/[id]/route';
 import { WorkExperienceTab, EducationTab, CertificationsTab } from '@/components/dashboard/CandidateDetailTabs';
 
@@ -52,20 +52,24 @@ function formatDate(iso: string) {
 
 export default function DashboardCandidatesPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [jobFilter, setJobFilter] = useState('');
   const [minExperience, setMinExperience] = useState('');
   const [maxExperience, setMaxExperience] = useState('');
   const [educationFilter, setEducationFilter] = useState('');
   const [employerCompanyFilter, setEmployerCompanyFilter] = useState('');
-  const [candidates, setCandidates] = useState<CandidateSummary[]>([]);
+  const [candidates, setCandidates] = useState<CandidateListItem[]>([]);
   const [jobOptions, setJobOptions] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidateSummary | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateListItem | null>(null);
   const [candidateDetails, setCandidateDetails] = useState<CandidateWithDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailTab, setDetailTab] = useState<CandidateDetailTab>('general');
   const [pdfZoom, setPdfZoom] = useState(100);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCandidates, setTotalCandidates] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [downloadingResumes, setDownloadingResumes] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
@@ -89,6 +93,11 @@ export default function DashboardCandidatesPage() {
   }, []);
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
     let cancelled = false;
     const params = new URLSearchParams();
     if (jobFilter) params.set('jobId', jobFilter);
@@ -96,15 +105,20 @@ export default function DashboardCandidatesPage() {
     if (maxExperience.trim()) params.set('maxExperience', maxExperience.trim());
     if (educationFilter.trim()) params.set('education', educationFilter.trim());
     if (employerCompanyFilter.trim()) params.set('employerCompany', employerCompanyFilter.trim());
-    if (searchQuery.trim()) params.set('search', searchQuery.trim());
+    if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+    params.set('page', String(page));
+    params.set('limit', '25');
     Promise.all([
       fetch(`/api/candidates?${params}`).then((r) => r.json()),
       fetch('/api/jobs').then((r) => r.json()),
     ])
-      .then(([cands, jobs]: [CandidateSummary[], { id: string; title: string }[]]) => {
+      .then(([data, jobs]) => {
         if (!cancelled) {
+          const cands = data?.candidates ?? (Array.isArray(data) ? data : []);
           setCandidates(Array.isArray(cands) ? cands : []);
-          setJobOptions(Array.isArray(jobs) ? jobs.map((j) => ({ id: j.id, title: j.title })) : []);
+          setTotalCandidates(data?.total ?? cands.length);
+          setTotalPages(data?.totalPages ?? 1);
+          setJobOptions(Array.isArray(jobs) ? jobs.map((j: { id: string; title: string }) => ({ id: j.id, title: j.title })) : []);
         }
       })
       .catch(() => {
@@ -114,7 +128,11 @@ export default function DashboardCandidatesPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [jobFilter, minExperience, maxExperience, educationFilter, employerCompanyFilter, searchQuery]);
+  }, [jobFilter, minExperience, maxExperience, educationFilter, employerCompanyFilter, debouncedSearch, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [jobFilter, minExperience, maxExperience, educationFilter, employerCompanyFilter, debouncedSearch]);
 
   useEffect(() => {
     if (!selectedCandidate) {
@@ -544,11 +562,32 @@ export default function DashboardCandidatesPage() {
             </tbody>
           </table>
         </div>
-          <div className="px-4 sm:px-5 py-3 border-t border-neutral-100 bg-neutral-50/50 text-xs text-neutral-500">
-            <span>
-              Showing <strong className="text-neutral-700">{filtered.length}</strong> candidate
-              {filtered.length !== 1 ? 's' : ''}
-            </span>
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-neutral-100 bg-neutral-50/50">
+            <p className="text-xs text-neutral-500">
+              Page {page} of {totalPages} · {totalCandidates} total
+            </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -100,7 +100,14 @@ export default function DashboardOverviewPage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [candidates, setCandidates] = useState<CandidateItem[]>([]);
+  const [candidatesTotal, setCandidatesTotal] = useState(0);
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [appStats, setAppStats] = useState({
+    total: 0,
+    pending: 0,
+    shortlisted: 0,
+    hired: 0,
+  });
   const [interviews, setInterviews] = useState<InterviewWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,8 +125,19 @@ export default function DashboardOverviewPage() {
         if (cancelled) return;
         setJobs(Array.isArray(jobsRes) ? jobsRes : []);
         setClients(Array.isArray(clientsRes) ? clientsRes : []);
-        setCandidates(Array.isArray(candidatesRes) ? candidatesRes : []);
-        setApplications(Array.isArray(appsRes) ? appsRes : []);
+        const cands = candidatesRes?.candidates ?? (Array.isArray(candidatesRes) ? candidatesRes : []);
+        setCandidates(Array.isArray(cands) ? cands : []);
+        setCandidatesTotal(candidatesRes?.total ?? cands.length);
+        const apps = appsRes?.applications ?? (Array.isArray(appsRes) ? appsRes : []);
+        setApplications(Array.isArray(apps) ? apps : []);
+        if (appsRes?.total != null) {
+          setAppStats({
+            total: appsRes.total ?? 0,
+            pending: appsRes.pending ?? 0,
+            shortlisted: appsRes.shortlisted ?? 0,
+            hired: appsRes.hired ?? 0,
+          });
+        }
         setInterviews(Array.isArray(interviewsRes) ? interviewsRes : []);
       })
       .catch(() => {
@@ -133,10 +151,10 @@ export default function DashboardOverviewPage() {
 
   const stats = useMemo(() => {
     const activeJobs = jobs.filter((j) => j.isActive).length;
-    const appTotal = applications.length;
-    const pending = applications.filter((a) => a.status === 'pending').length;
-    const shortlisted = applications.filter((a) => a.status === 'shortlisted').length;
-    const hired = applications.filter((a) => a.status === 'hired').length;
+    const appTotal = appStats.total || applications.length;
+    const pending = appStats.pending ?? applications.filter((a) => a.status === 'pending').length;
+    const shortlisted = appStats.shortlisted ?? applications.filter((a) => a.status === 'shortlisted').length;
+    const hired = appStats.hired ?? applications.filter((a) => a.status === 'hired').length;
     const scheduledInterviews = interviews.filter((i) => i.status === 'scheduled').length;
     const now = new Date();
     const upcomingInterviews = interviews.filter(
@@ -146,7 +164,7 @@ export default function DashboardOverviewPage() {
       jobs: activeJobs,
       jobsTotal: jobs.length,
       clients: clients.length,
-      candidates: candidates.length,
+      candidates: candidatesTotal || candidates.length,
       applications: appTotal,
       pending,
       shortlisted,
@@ -154,7 +172,7 @@ export default function DashboardOverviewPage() {
       interviewsScheduled: scheduledInterviews,
       upcomingInterviews,
     };
-  }, [jobs, clients, candidates, applications, interviews]);
+  }, [jobs, clients, candidates, candidatesTotal, applications, interviews, appStats]);
 
   const recentApplications = useMemo(() => applications.slice(0, 5), [applications]);
 

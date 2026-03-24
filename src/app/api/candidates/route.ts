@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getInMemoryCandidates } from '@/lib/applications-store';
-import type { CandidateSummary } from '@/types/dashboard';
+import type { CandidateListItem, CandidatesListApiResponse } from '@/types/dashboard';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
   const education = searchParams.get('education') || undefined;
   const search = searchParams.get('search') || undefined;
   const employerCompany = searchParams.get('employerCompany') || undefined;
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+  const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '25', 10)));
+  const skip = (page - 1) * limit;
 
   const minExp = minExperience !== null && minExperience !== undefined && minExperience !== ''
     ? parseInt(minExperience, 10)
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
         });
         candidateIdsSet = new Set(apps.map((a) => a.candidateId));
         if (candidateIdsSet.size === 0) {
-          return NextResponse.json([]);
+          return NextResponse.json({ candidates: [], total: 0, page: 1, totalPages: 1 });
         }
       }
       if (employerCompany?.trim()) {
@@ -57,7 +60,9 @@ export async function GET(request: NextRequest) {
             Array.from(candidateIdsSet).filter((id) => employerMatchedIds.has(id))
           );
         }
-        if (candidateIdsSet.size === 0) return NextResponse.json([]);
+        if (candidateIdsSet.size === 0) {
+          return NextResponse.json({ candidates: [], total: 0, page: 1, totalPages: 1 });
+        }
       }
 
       const where: Record<string, unknown> = {};
@@ -83,33 +88,51 @@ export async function GET(request: NextRequest) {
         ];
       }
 
-      const candidates = await prisma.candidate.findMany({
-        where: Object.keys(where).length ? where : undefined,
-        orderBy: { createdAt: 'desc' },
-      });
+      const [candidates, total] = await Promise.all([
+        prisma.candidate.findMany({
+          where: Object.keys(where).length ? where : undefined,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            location: true,
+            experience: true,
+            education: true,
+            resumePath: true,
+          },
+        }),
+        prisma.candidate.count({
+          where: Object.keys(where).length ? where : undefined,
+        }),
+      ]);
 
-      const list: CandidateSummary[] = candidates.map((c) => ({
+      const list: CandidateListItem[] = candidates.map((c) => ({
         id: c.id,
         firstName: c.firstName,
         lastName: c.lastName,
         email: c.email,
-        phone: c.phone,
-        location: c.location,
-        nationality: c.nationality ?? null,
-        homeCounty: c.homeCounty ?? null,
+        location: c.location ?? null,
         experience: c.experience,
-        education: c.education,
-        resumePath: c.resumePath,
-        createdAt: c.createdAt.toISOString(),
+        education: c.education ?? null,
+        resumePath: c.resumePath ?? null,
       }));
 
-      return NextResponse.json(list);
+      return NextResponse.json({
+        candidates: list,
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      });
     }
   } catch (_e) {
     // fall through to in-memory
   }
 
-  const list = getInMemoryCandidates({
+  const fullList = getInMemoryCandidates({
     jobId,
     minExperience: minExp,
     maxExperience: maxExp,
@@ -117,5 +140,22 @@ export async function GET(request: NextRequest) {
     search,
     employerCompany,
   });
-  return NextResponse.json(list);
+  const total = fullList.length;
+  const paginated = fullList.slice(skip, skip + limit);
+  const list: CandidateListItem[] = paginated.map((c) => ({
+    id: c.id,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    email: c.email,
+    location: c.location ?? null,
+    experience: c.experience,
+    education: c.education ?? null,
+    resumePath: c.resumePath ?? null,
+  }));
+  return NextResponse.json({
+    candidates: list,
+    total,
+    page,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
 }
