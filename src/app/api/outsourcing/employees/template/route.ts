@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       employeeNumber: string | null;
       firstName: string;
       lastName: string;
-      email: string;
+      email: string | null;
       phone: string | null;
       jobTitle: string | null;
       idNumber: string | null;
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
           : ' Select a client when importing. Department Name must match the client\'s departments exactly or leave blank.';
       const clientInfo = client ? `Import employees for: ${client.name}. ` : 'Import employees. Fill rows below, then select a client and use Import. ';
       sheet.addRow([
-        `${clientInfo}Required: First Name, Last Name, Email. Department Name must match exactly or leave blank.${deptList}`,
+        `${clientInfo}Required: First Name, Last Name. Email optional (add later in Edit for e-payslips). National ID must be unique in the system when provided (no duplicate IDs). Department Name must match exactly or leave blank.${deptList}`,
       ]);
       sheet.mergeCells('A1:P1');
     }
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
           e.employeeNumber ?? '',
           e.firstName,
           e.lastName,
-          e.email,
+          e.email ?? '',
           e.phone ?? '',
           e.jobTitle ?? '',
           e.idNumber ?? '',

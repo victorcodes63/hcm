@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { parsePayrollImportWorkbook } from '@/lib/payroll-import-template';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 import { calculateStatutoryForPayroll } from '@/lib/payroll-calc';
 import { mapOutsourcingClientsToAccountsClients } from '@/lib/payroll-accounts-link';
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const duplicateGroups = new Map<string, { nationalId: string; rowNumbers: number[] }>();
     for (const row of rows) {
-      const key = row.nationalId.trim().toLowerCase();
+      const key = normalizeEmployeeNationalId(row.nationalId) ?? '';
       const existing = duplicateGroups.get(key);
       if (existing) {
         existing.rowNumbers.push(row.excelRow);
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       try {
         const parsed = JSON.parse(duplicateResolutionRaw) as Record<string, unknown>;
         duplicateResolution = Object.fromEntries(
-          Object.entries(parsed).map(([k, v]) => [k.trim().toLowerCase(), Number(v)]),
+          Object.entries(parsed).map(([k, v]) => [normalizeEmployeeNationalId(k) ?? '', Number(v)]),
         );
       } catch {
         return NextResponse.json({
@@ -96,25 +97,31 @@ export async function POST(request: NextRequest) {
       }
 
       rowsToCommit = rows.filter((row) => {
-        const key = row.nationalId.trim().toLowerCase();
+        const key = normalizeEmployeeNationalId(row.nationalId) ?? '';
         const group = duplicateGroups.get(key);
         if (!group || group.rowNumbers.length <= 1) return true;
         return row.excelRow === duplicateResolution[key];
       });
     }
 
-    const idValues = [...new Set(rowsToCommit.map((r) => r.nationalId.trim().toLowerCase()))];
+    const idValues = [
+      ...new Set(
+        rowsToCommit
+          .map((r) => normalizeEmployeeNationalId(r.nationalId))
+          .filter((x): x is string => Boolean(x)),
+      ),
+    ];
     const employees = await prisma.employee.findMany({
       where: { outsourcingClientId: clientId, idNumber: { in: idValues } },
       select: { id: true, idNumber: true, baseSalary: true, outsourcingClientId: true },
     });
     const employeeByIdNumber = new Map(
-      employees.map((e) => [(e.idNumber ?? '').trim().toLowerCase(), e]),
+      employees.map((e) => [normalizeEmployeeNationalId(e.idNumber) ?? '', e]),
     );
     const accountsByOutsourcing = await mapOutsourcingClientsToAccountsClients([clientId]);
 
     const unmatchedRows = rowsToCommit
-      .filter((r) => !employeeByIdNumber.has(r.nationalId.trim().toLowerCase()))
+      .filter((r) => !employeeByIdNumber.has(normalizeEmployeeNationalId(r.nationalId) ?? ''))
       .map((r) => ({ row: r.excelRow, nationalId: r.nationalId }));
     if (unmatchedRows.length > 0) {
       return NextResponse.json({
@@ -125,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     const grossBelowBaseRows = rowsToCommit
       .map((row) => {
-        const employee = employeeByIdNumber.get(row.nationalId.trim().toLowerCase());
+        const employee = employeeByIdNumber.get(normalizeEmployeeNationalId(row.nationalId) ?? '');
         const baseSalary = employee?.baseSalary != null ? Number(employee.baseSalary) : null;
         return { row: row.excelRow, nationalId: row.nationalId, grossPay: row.grossPay, baseSalary };
       })
@@ -145,7 +152,7 @@ export async function POST(request: NextRequest) {
       // User explicitly opted to accept sheet values as updates:
       // align employee base salary down to the uploaded gross pay for these rows.
       for (const row of rowsToCommit) {
-        const employee = employeeByIdNumber.get(row.nationalId.trim().toLowerCase());
+        const employee = employeeByIdNumber.get(normalizeEmployeeNationalId(row.nationalId) ?? '');
         if (!employee || employee.baseSalary == null) continue;
         const currentBase = Number(employee.baseSalary);
         if (row.grossPay < currentBase) {
@@ -172,7 +179,7 @@ export async function POST(request: NextRequest) {
     const skipped: Array<{ row: number; nationalId: string; reason: string }> = [];
 
     for (const row of rowsToCommit) {
-      const employee = employeeByIdNumber.get(row.nationalId.trim().toLowerCase());
+      const employee = employeeByIdNumber.get(normalizeEmployeeNationalId(row.nationalId) ?? '');
       if (!employee) continue;
       const leavePayMode = client.leavePayMode ?? 'none';
       const leavePay = Math.max(0, row.leavePay);

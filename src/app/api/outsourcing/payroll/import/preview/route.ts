@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parsePayrollImportWorkbook } from '@/lib/payroll-import-template';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,13 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const { rows, invalidRows } = await parsePayrollImportWorkbook(buffer);
-    const idValues = [...new Set(rows.map((r) => r.nationalId.trim().toLowerCase()))];
+    const idValues = [
+      ...new Set(
+        rows
+          .map((r) => normalizeEmployeeNationalId(r.nationalId))
+          .filter((x): x is string => Boolean(x)),
+      ),
+    ];
 
     const employees = await prisma.employee.findMany({
       where: {
@@ -38,13 +45,14 @@ export async function POST(request: NextRequest) {
       },
     });
     const employeeByIdNumber = new Map(
-      employees.map((e) => [(e.idNumber ?? '').trim().toLowerCase(), e]),
+      employees.map((e) => [normalizeEmployeeNationalId(e.idNumber) ?? '', e]),
     );
 
     const duplicateNationalIds: string[] = [];
     const seen = new Set<string>();
     for (const r of rows) {
-      const key = r.nationalId.trim().toLowerCase();
+      const key = normalizeEmployeeNationalId(r.nationalId) ?? '';
+      if (!key) continue;
       if (seen.has(key) && !duplicateNationalIds.includes(r.nationalId)) duplicateNationalIds.push(r.nationalId);
       seen.add(key);
     }
@@ -52,7 +60,11 @@ export async function POST(request: NextRequest) {
     const matchedRows = [];
     const unmatchedRows = [];
     const duplicateRows = rows
-      .filter((row) => duplicateNationalIds.some((id) => id.trim().toLowerCase() === row.nationalId.trim().toLowerCase()))
+      .filter((row) =>
+        duplicateNationalIds.some(
+          (id) => normalizeEmployeeNationalId(id) === normalizeEmployeeNationalId(row.nationalId),
+        ),
+      )
       .map((row) => ({
         row: row.excelRow,
         nationalId: row.nationalId,
@@ -63,8 +75,8 @@ export async function POST(request: NextRequest) {
         },
       }));
     for (const row of rows) {
-      const key = row.nationalId.trim().toLowerCase();
-      const employee = employeeByIdNumber.get(key);
+      const key = normalizeEmployeeNationalId(row.nationalId) ?? '';
+      const employee = key ? employeeByIdNumber.get(key) : undefined;
       if (!employee) {
         unmatchedRows.push({
           row: row.excelRow,

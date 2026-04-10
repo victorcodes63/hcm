@@ -6,6 +6,7 @@ import {
   allocateNextEmployeeNumber,
   deriveEmployeePrefixFromName,
 } from '@/lib/outsourcing-employee-number';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 
 const HEADER_MAP: Record<string, string> = {
   'EMP No.': 'employeeNumber',
@@ -131,8 +132,7 @@ export async function POST(request: NextRequest) {
       const cellStrings = row.map((c) => String(c ?? '').trim().replace(/\s+/g, ' '));
       const hasFirst = cellStrings.some((c) => c.toLowerCase() === 'first name');
       const hasLast = cellStrings.some((c) => c.toLowerCase() === 'last name');
-      const hasEmail = cellStrings.some((c) => c.toLowerCase() === 'email');
-      if (hasFirst && hasLast && hasEmail) {
+      if (hasFirst && hasLast) {
         headerRowIndex = r;
         break;
       }
@@ -150,11 +150,11 @@ export async function POST(request: NextRequest) {
     }
     const firstNameIdx = colIndex.firstName ?? headerCells.findIndex((c) => /first\s*name/i.test(String(c ?? '')));
     const lastNameIdx = colIndex.lastName ?? headerCells.findIndex((c) => /last\s*name/i.test(String(c ?? '')));
-    const emailIdx = colIndex.email ?? headerCells.findIndex((c) => /email/i.test(String(c ?? '')));
+    const emailIdx = colIndex.email ?? headerCells.findIndex((c) => /^email$/i.test(String(c ?? '').trim()));
 
-    if (firstNameIdx < 0 || lastNameIdx < 0 || emailIdx < 0) {
+    if (firstNameIdx < 0 || lastNameIdx < 0) {
       return NextResponse.json({
-        error: 'Could not find required columns: First Name, Last Name, Email. Use the download template.',
+        error: 'Could not find required columns: First Name, Last Name. Use the download template.',
       }, { status: 400 });
     }
 
@@ -203,27 +203,33 @@ export async function POST(request: NextRequest) {
     const created: string[] = [];
     const skipped: { row: number; reason: string }[] = [];
     const errors: { row: number; reason: string }[] = [];
+    const nationalIdsSeenThisFile = new Set<string>();
 
     for (let r = dataStartRow; r < allRows.length; r++) {
       const row = allRows[r] ?? [];
       const rowNum = r + 1; // Excel row number (1-indexed)
       const firstName = parseString(getVal(row, 'firstName') ?? row[firstNameIdx]);
       const lastName = parseString(getVal(row, 'lastName') ?? row[lastNameIdx]);
-      const email = parseString(getVal(row, 'email') ?? row[emailIdx]);
+      const emailRaw = parseString(
+        emailIdx >= 0 ? getVal(row, 'email') ?? row[emailIdx] : getVal(row, 'email')
+      );
 
-      if (!firstName || !lastName || !email) {
-        if (!firstName && !lastName && !email) {
+      if (!firstName || !lastName) {
+        if (!firstName && !lastName && !emailRaw) {
           skipped.push({ row: rowNum, reason: 'Empty row' });
         } else {
-          errors.push({ row: rowNum, reason: 'Missing required field: First Name, Last Name, or Email' });
+          errors.push({ row: rowNum, reason: 'Missing required field: First Name or Last Name' });
         }
         continue;
       }
 
-      const emailNorm = email.toLowerCase().trim();
-      if (!/\S+@\S+\.\S+/.test(emailNorm)) {
-        errors.push({ row: rowNum, reason: 'Invalid email' });
-        continue;
+      let emailNorm: string | null = null;
+      if (emailRaw) {
+        emailNorm = emailRaw.toLowerCase().trim();
+        if (!/\S+@\S+\.\S+/.test(emailNorm)) {
+          errors.push({ row: rowNum, reason: 'Invalid email' });
+          continue;
+        }
       }
 
       const departmentName = parseString(getVal(row, 'departmentName'));
@@ -236,15 +242,36 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const existing = await prisma.employee.findFirst({
-        where: {
-          outsourcingClientId: clientId.trim(),
-          email: emailNorm,
-        },
-      });
-      if (existing) {
-        skipped.push({ row: rowNum, reason: `Employee with email ${emailNorm} already exists` });
-        continue;
+      const idNumberForRow = normalizeEmployeeNationalId(parseString(getVal(row, 'idNumber')));
+
+      if (idNumberForRow) {
+        if (nationalIdsSeenThisFile.has(idNumberForRow)) {
+          errors.push({ row: rowNum, reason: `Duplicate National ID in this file (${idNumberForRow})` });
+          continue;
+        }
+        const existingByNationalId = await prisma.employee.findFirst({
+          where: { idNumber: idNumberForRow },
+        });
+        if (existingByNationalId) {
+          skipped.push({
+            row: rowNum,
+            reason: `National ID ${idNumberForRow} already exists for another employee`,
+          });
+          continue;
+        }
+      }
+
+      if (emailNorm) {
+        const existing = await prisma.employee.findFirst({
+          where: {
+            outsourcingClientId: clientId.trim(),
+            email: emailNorm,
+          },
+        });
+        if (existing) {
+          skipped.push({ row: rowNum, reason: `Employee with email ${emailNorm} already exists` });
+          continue;
+        }
       }
 
       const dateOfJoining = parseDate(getVal(row, 'dateOfJoining'));
@@ -263,6 +290,8 @@ export async function POST(request: NextRequest) {
         if (!Number.isNaN(n) && n >= 0) baseSalary = new Decimal(n);
       }
 
+      if (idNumberForRow) nationalIdsSeenThisFile.add(idNumberForRow);
+
       await prisma.employee.create({
         data: {
           outsourcingClientId: clientId.trim(),
@@ -274,7 +303,7 @@ export async function POST(request: NextRequest) {
           phone: parseString(getVal(row, 'phone')),
           jobTitle: parseString(getVal(row, 'jobTitle')),
           ...(baseSalary ? { baseSalary } : {}),
-          idNumber: parseString(getVal(row, 'idNumber')),
+          idNumber: idNumberForRow ?? undefined,
           kraPin: parseString(getVal(row, 'kraPin')),
           nssfNumber: parseString(getVal(row, 'nssfNumber')),
           nhifNumber: parseString(getVal(row, 'nhifNumber')),

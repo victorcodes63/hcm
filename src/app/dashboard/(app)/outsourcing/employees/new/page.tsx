@@ -101,8 +101,13 @@ function NewEmployeeForm() {
       setError('Select a client.');
       return;
     }
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      setError('First name, last name, and email are required.');
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError('First name and last name are required.');
+      return;
+    }
+    const emailTrim = form.email.trim();
+    if (emailTrim && !/\S+@\S+\.\S+/.test(emailTrim)) {
+      setError('Please enter a valid email address, or leave email blank.');
       return;
     }
     setSubmitting(true);
@@ -114,7 +119,7 @@ function NewEmployeeForm() {
           clientId: clientId.trim(),
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
-          email: form.email.trim(),
+          email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           ...(form.employeeNumber.trim()
             ? { employeeNumber: form.employeeNumber.trim() }
@@ -305,7 +310,7 @@ function NewEmployeeForm() {
                   Import multiple (Excel)
                 </h2>
                 <p className="text-sm text-neutral-600 mt-1 max-w-2xl">
-                  Download the template, fill rows (First Name, Last Name, Email required). Department names must match
+                  Download the template, fill rows (First Name and Last Name required; Email optional—add later in Edit if needed). Department names must match
                   this client’s departments or leave blank. EMP No. optional — auto-numbered like single add.
                 </p>
               </div>
@@ -484,9 +489,16 @@ function NewEmployeeForm() {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-neutral-800 mb-1.5">
-                  Email <span className="text-red-600">*</span>
+                  Email <span className="text-neutral-400 font-normal">(optional)</span>
                 </label>
-                <input id="email" type="email" value={form.email} onChange={update('email')} className={inputClass} required />
+                <input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={update('email')}
+                  className={inputClass}
+                  placeholder="Leave blank for hard-copy / casual only"
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

@@ -109,13 +109,8 @@ export default function EditEmployeePage() {
       setSubmitting(false);
       return;
     }
-    if (!em) {
-      setError('Email is required.');
-      setSubmitting(false);
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(em)) {
-      setError('Please enter a valid email address.');
+    if (em && !/\S+@\S+\.\S+/.test(em)) {
+      setError('Please enter a valid email address, or clear the field.');
       setSubmitting(false);
       return;
     }
@@ -123,7 +118,7 @@ export default function EditEmployeePage() {
       employeeNumber: form.employeeNumber.trim() || null,
       firstName: fn,
       lastName: ln,
-      email: em,
+      email: em || null,
       phone: form.phone.trim() || null,
       jobTitle: form.jobTitle.trim() || null,
       idNumber: form.idNumber.trim() || null,
@@ -216,8 +211,17 @@ export default function EditEmployeePage() {
               <input id="lastName" type="text" value={form.lastName} onChange={update('lastName')} required className={inputClass} />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-primary-900 mb-2">Email <span className="text-red-600">*</span></label>
-              <input id="email" type="email" value={form.email} onChange={update('email')} required className={inputClass} />
+              <label htmlFor="email" className="block text-sm font-medium text-primary-900 mb-2">
+                Email <span className="text-neutral-500 font-normal">(optional)</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={update('email')}
+                className={inputClass}
+                placeholder="Add when payslips should be emailed"
+              />
             </div>
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-primary-900 mb-2">Phone</label>

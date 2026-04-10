@@ -750,14 +750,18 @@ function OutsourcingEmployeesPageInner() {
                         </td>
                         <td className="px-4 sm:px-5 py-3 text-neutral-600 text-sm">
                           <div className="space-y-0.5">
-                            <a
-                              href={`mailto:${e.email}`}
-                              className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-800 truncate max-w-[140px]"
-                              title={e.email}
-                            >
-                              <Mail className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{e.email}</span>
-                            </a>
+                            {e.email ? (
+                              <a
+                                href={`mailto:${e.email}`}
+                                className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-800 truncate max-w-[140px]"
+                                title={e.email}
+                              >
+                                <Mail className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{e.email}</span>
+                              </a>
+                            ) : (
+                              <span className="text-neutral-400 text-xs">No email</span>
+                            )}
                             {e.phone && (
                               <a
                                 href={`tel:${e.phone}`}

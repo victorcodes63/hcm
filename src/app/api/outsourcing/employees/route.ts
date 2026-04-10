@@ -5,6 +5,7 @@ import {
   allocateNextEmployeeNumber,
   deriveEmployeePrefixFromName,
 } from '@/lib/outsourcing-employee-number';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,7 +74,7 @@ function strField(b: Record<string, unknown>, key: string): string | null {
   return typeof v === 'string' ? v.trim() || null : null;
 }
 
-/** Create a single employee (form or API). Requires clientId, firstName, lastName, email. */
+/** Create a single employee (form or API). Requires clientId, firstName, lastName; email optional. */
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.DATABASE_URL) {
@@ -88,15 +89,27 @@ export async function POST(request: NextRequest) {
     const clientId = strField(body, 'clientId');
     const firstName = strField(body, 'firstName') ?? '';
     const lastName = strField(body, 'lastName') ?? '';
-    const email = strField(body, 'email') ?? '';
+    const emailRaw = strField(body, 'email');
     if (!clientId) {
       return NextResponse.json({ error: 'clientId is required.' }, { status: 400 });
     }
-    if (!firstName || !lastName || !email) {
-      return NextResponse.json(
-        { error: 'firstName, lastName, and email are required.' },
-        { status: 400 }
-      );
+    if (!firstName || !lastName) {
+      return NextResponse.json({ error: 'firstName and lastName are required.' }, { status: 400 });
+    }
+    if (emailRaw && !/\S+@\S+\.\S+/.test(emailRaw)) {
+      return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
+    }
+    const emailLower = emailRaw ? emailRaw.toLowerCase() : null;
+    if (emailLower) {
+      const dup = await prisma.employee.findFirst({
+        where: { outsourcingClientId: clientId, email: emailLower },
+      });
+      if (dup) {
+        return NextResponse.json(
+          { error: 'An employee with this email already exists for this client.' },
+          { status: 409 }
+        );
+      }
     }
     const client = await prisma.outsourcingClient.findUnique({
       where: { id: clientId },
@@ -126,6 +139,16 @@ export async function POST(request: NextRequest) {
       const d = new Date(dateOfJoiningRaw);
       if (!Number.isNaN(d.getTime())) dateOfJoining = d;
     }
+    const idNumberNorm = normalizeEmployeeNationalId(strField(body, 'idNumber'));
+    if (idNumberNorm) {
+      const idDup = await prisma.employee.findFirst({ where: { idNumber: idNumberNorm } });
+      if (idDup) {
+        return NextResponse.json(
+          { error: 'An employee with this National ID already exists.' },
+          { status: 409 }
+        );
+      }
+    }
     const employee = await prisma.employee.create({
       data: {
         outsourcingClientId: clientId,
@@ -133,9 +156,9 @@ export async function POST(request: NextRequest) {
         employeeNumber,
         firstName,
         lastName,
-        email: email.toLowerCase(),
+        email: emailLower,
         phone: strField(body, 'phone') ?? undefined,
-        idNumber: strField(body, 'idNumber') ?? undefined,
+        idNumber: idNumberNorm ?? undefined,
         kraPin: strField(body, 'kraPin') ?? undefined,
         nssfNumber: strField(body, 'nssfNumber') ?? undefined,
         nhifNumber: strField(body, 'nhifNumber') ?? undefined,
@@ -167,6 +190,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const err = e as { code?: string; meta?: { target?: string[] } };
+    if (err.code === 'P2002' && err.meta?.target?.includes('idNumber')) {
+      return NextResponse.json(
+        { error: 'An employee with this National ID already exists.' },
+        { status: 409 }
+      );
+    }
     if (msg.includes('Unique constraint') && msg.includes('email')) {
       return NextResponse.json(
         { error: 'An employee with this email already exists.' },

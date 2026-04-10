@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { allocateNextEmployeeNumber, deriveEmployeePrefixFromName } from '@/lib/outsourcing-employee-number';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 
 type MissingSeed = {
   nationalId: string;
@@ -42,24 +43,40 @@ export async function POST(request: NextRequest) {
     });
     if (!client) return NextResponse.json({ error: 'Client not found.' }, { status: 404 });
 
-    const existingById = await prisma.employee.findMany({
-      where: {
-        outsourcingClientId: clientId,
-        idNumber: { in: missingRows.map((r) => String(r.nationalId || '').trim()).filter(Boolean) },
-      },
-      select: { idNumber: true },
-    });
-    const existingIds = new Set(existingById.map((e) => (e.idNumber ?? '').trim().toLowerCase()));
+    const normalizedBatchIds = [
+      ...new Set(
+        missingRows
+          .map((r) => normalizeEmployeeNationalId(r.nationalId))
+          .filter((x): x is string => Boolean(x))
+      ),
+    ];
+    const existingById =
+      normalizedBatchIds.length > 0
+        ? await prisma.employee.findMany({
+            where: { idNumber: { in: normalizedBatchIds } },
+            select: { idNumber: true },
+          })
+        : [];
+    const existingIds = new Set(
+      existingById.map((e) => e.idNumber).filter((x): x is string => Boolean(x))
+    );
 
     const prefix = client.employeeNumberPrefix?.trim() || deriveEmployeePrefixFromName(client.name);
     const created: Array<{ id: string; nationalId: string; name: string }> = [];
     const skipped: Array<{ nationalId: string; reason: string }> = [];
+    const seenInRequest = new Set<string>();
     for (const seed of missingRows) {
-      const nationalId = String(seed.nationalId || '').trim();
-      if (!nationalId) continue;
-      const key = nationalId.toLowerCase();
-      if (existingIds.has(key)) {
-        skipped.push({ nationalId, reason: 'Already exists.' });
+      const nationalIdNorm = normalizeEmployeeNationalId(seed.nationalId);
+      if (!nationalIdNorm) continue;
+      if (seenInRequest.has(nationalIdNorm)) {
+        skipped.push({
+          nationalId: nationalIdNorm,
+          reason: 'Duplicate National ID in this request.',
+        });
+        continue;
+      }
+      if (existingIds.has(nationalIdNorm)) {
+        skipped.push({ nationalId: nationalIdNorm, reason: 'Already exists.' });
         continue;
       }
       const fallbackSplit = splitName(seed.employeeName);
@@ -67,14 +84,15 @@ export async function POST(request: NextRequest) {
       const lastName = (seed.lastName ?? '').trim() || fallbackSplit.lastName;
       if (!firstName || !lastName) {
         skipped.push({
-          nationalId,
+          nationalId: nationalIdNorm,
           reason: 'Skipped: missing employee first/last name in upload row.',
         });
         continue;
       }
-      const fallbackEmail = `${firstName}.${lastName}.${nationalId}`.toLowerCase().replace(/[^a-z0-9.]/g, '') + '@placeholder.local';
-      const providedEmail = typeof seed.email === 'string' && seed.email.includes('@') ? seed.email.trim().toLowerCase() : null;
-      const email = providedEmail || fallbackEmail;
+      const providedEmail =
+        typeof seed.email === 'string' && /\S+@\S+\.\S+/.test(seed.email.trim())
+          ? seed.email.trim().toLowerCase()
+          : null;
       const employeeNumber = await allocateNextEmployeeNumber(prisma, clientId, prefix);
       const createdEmployee = await prisma.employee.create({
         data: {
@@ -82,21 +100,29 @@ export async function POST(request: NextRequest) {
           employeeNumber,
           firstName,
           lastName,
-          email,
-          idNumber: nationalId,
+          email: providedEmail,
+          idNumber: nationalIdNorm,
         },
         select: { id: true, firstName: true, lastName: true, idNumber: true },
       });
-      existingIds.add(key);
+      seenInRequest.add(nationalIdNorm);
+      existingIds.add(nationalIdNorm);
       created.push({
         id: createdEmployee.id,
-        nationalId,
+        nationalId: nationalIdNorm,
         name: `${createdEmployee.firstName} ${createdEmployee.lastName}`,
       });
     }
 
     return NextResponse.json({ createdCount: created.length, skippedCount: skipped.length, created, skipped });
   } catch (e) {
+    const err = e as { code?: string; meta?: { target?: string[] } };
+    if (err.code === 'P2002' && err.meta?.target?.includes('idNumber')) {
+      return NextResponse.json(
+        { error: 'A National ID in this batch already exists for another employee.' },
+        { status: 409 }
+      );
+    }
     console.error('[outsourcing/payroll/import/create-missing-employees]', e);
     return NextResponse.json({ error: 'Failed to create missing employees.' }, { status: 500 });
   }

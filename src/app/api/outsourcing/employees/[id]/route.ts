@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
+import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 
 function str(b: Record<string, unknown>, key: string): string | null {
   const v = b[key];
@@ -18,7 +19,7 @@ function mapEmployeeToJson(e: {
   employeeNumber: string | null;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   jobTitle: string | null;
   kraPin: string | null;
@@ -128,10 +129,7 @@ export async function PATCH(
   if (lastName !== undefined && !lastName) {
     return NextResponse.json({ error: 'Last name is required.' }, { status: 400 });
   }
-  if (email !== undefined && !email) {
-    return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
-  }
-  if (email !== undefined && !/\S+@\S+\.\S+/.test(email)) {
+  if (email !== undefined && email && !/\S+@\S+\.\S+/.test(email)) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
@@ -139,13 +137,15 @@ export async function PATCH(
   if (employeeNumber !== undefined) data.employeeNumber = employeeNumber;
   if (firstName !== undefined) data.firstName = firstName;
   if (lastName !== undefined) data.lastName = lastName;
-  if (email !== undefined) data.email = email;
+  if (email !== undefined) data.email = email ? email.toLowerCase() : null;
   if (phone !== undefined) data.phone = phone;
   if (jobTitle !== undefined) data.jobTitle = jobTitle;
   if (kraPin !== undefined) data.kraPin = kraPin;
   if (nssfNumber !== undefined) data.nssfNumber = nssfNumber;
   if (nhifNumber !== undefined) data.nhifNumber = nhifNumber;
-  if (idNumber !== undefined) data.idNumber = idNumber;
+  if (idNumber !== undefined) {
+    data.idNumber = idNumber ? normalizeEmployeeNationalId(idNumber) : null;
+  }
   if (dateOfJoining !== undefined) data.dateOfJoining = dateOfJoining;
   if (bankName !== undefined) data.bankName = bankName;
   if (bankBranch !== undefined) data.bankBranch = bankBranch;
@@ -172,7 +172,7 @@ export async function PATCH(
     const existing = await prisma.employee.findUnique({ where: { id }, select: { outsourcingClientId: true } });
     if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
-    if (email !== undefined) {
+    if (email !== undefined && email) {
       const duplicate = await prisma.employee.findFirst({
         where: {
           outsourcingClientId: existing.outsourcingClientId,
@@ -183,7 +183,20 @@ export async function PATCH(
       if (duplicate) {
         return NextResponse.json({ error: 'Another employee in this client already has this email.' }, { status: 409 });
       }
-      data.email = (data.email as string).toLowerCase();
+    }
+
+    const nextNationalId =
+      idNumber !== undefined ? (idNumber ? normalizeEmployeeNationalId(idNumber) : null) : undefined;
+    if (nextNationalId) {
+      const idDup = await prisma.employee.findFirst({
+        where: { idNumber: nextNationalId, id: { not: id } },
+      });
+      if (idDup) {
+        return NextResponse.json(
+          { error: 'Another employee already has this National ID.' },
+          { status: 409 }
+        );
+      }
     }
 
     const employee = await prisma.employee.update({
@@ -196,8 +209,14 @@ export async function PATCH(
     });
     return NextResponse.json(mapEmployeeToJson(employee));
   } catch (e) {
-    const err = e as { code?: string };
+    const err = e as { code?: string; meta?: { target?: string[] } };
     if (err.code === 'P2025') return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    if (err.code === 'P2002' && err.meta?.target?.includes('idNumber')) {
+      return NextResponse.json(
+        { error: 'Another employee already has this National ID.' },
+        { status: 409 }
+      );
+    }
     console.error('[outsourcing/employees PATCH]', e);
     return NextResponse.json({ error: 'Failed to update employee' }, { status: 500 });
   }
