@@ -996,7 +996,10 @@ function ScheduleInterviewsPageContent() {
                   </p>
                 </div>
               ) : (
-                <ul className="border border-neutral-200 rounded-lg divide-y divide-neutral-100 max-h-[min(85vh,28rem)] overflow-y-auto bg-white">
+                <ul
+                  className="border border-neutral-200 rounded-lg divide-y divide-neutral-100 max-h-[min(85vh,28rem)] overflow-y-auto overflow-x-hidden bg-white pr-1"
+                  style={{ scrollbarGutter: 'stable' }}
+                >
                   {bulkCandidateSlots.sortedSelected.length > 0 && (
                     <li className="px-2 py-1.5 bg-primary-900/5 text-[10px] font-semibold uppercase tracking-wider text-primary-800 sticky top-0 z-[1] border-b border-primary-900/10">
                       Scheduled (by time)
