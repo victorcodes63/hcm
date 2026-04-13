@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createInterviewToken } from '@/lib/interview-token';
 import { generatePayslipPdf } from '@/lib/payslip-pdf';
+import { APP_TIMEZONE } from '@/lib/timezone';
 
 const FROM_NAME = (process.env.SMTP_FROM_NAME && process.env.SMTP_FROM_NAME.trim()) || 'Eagle HR Recruitment';
 const FROM_EMAIL = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || '';
@@ -507,10 +508,15 @@ export async function sendInterviewInviteEmail(params: {
   const date = new Date(scheduledAt);
   const dateStr = Number.isNaN(date.getTime())
     ? scheduledAt
-    : date.toLocaleDateString(undefined, { dateStyle: 'long' });
+    : date.toLocaleDateString('en-KE', { dateStyle: 'long', timeZone: APP_TIMEZONE });
   const timeStr = Number.isNaN(date.getTime())
     ? ''
-    : date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    : `${date.toLocaleTimeString('en-KE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: APP_TIMEZONE,
+      })} (EAT)`;
   const durationStr = `${durationMinutes} minutes`;
   const locationLine = locationOrLink?.trim()
     ? `Location / Link: ${locationOrLink.trim()}`
