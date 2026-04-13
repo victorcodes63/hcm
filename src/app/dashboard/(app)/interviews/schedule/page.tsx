@@ -1001,7 +1001,7 @@ function ScheduleInterviewsPageContent() {
                   style={{ scrollbarGutter: 'stable' }}
                 >
                   {bulkCandidateSlots.sortedSelected.length > 0 && (
-                    <li className="px-2 py-1.5 bg-primary-900/5 text-[10px] font-semibold uppercase tracking-wider text-primary-800 sticky top-0 z-[1] border-b border-primary-900/10">
+                    <li className="px-2 py-1.5 bg-primary-900/10 text-[10px] font-semibold uppercase tracking-wider text-primary-800 border-b border-primary-900/10">
                       Scheduled (by time)
                     </li>
                   )}
@@ -1058,7 +1058,7 @@ function ScheduleInterviewsPageContent() {
                     );
                   })}
                   {bulkCandidateSlots.unselected.length > 0 && (
-                    <li className="px-2 py-1.5 bg-neutral-100 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 sticky top-0 z-[1] border-y border-neutral-200">
+                    <li className="px-2 py-1.5 bg-neutral-100 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 border-y border-neutral-200">
                       Not selected — tick to add (slots after current day chain)
                     </li>
                   )}
