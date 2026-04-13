@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** Create invoice; uses client.nextInvoiceNumber, then increments it. Requires canManageInvoices. */
+/** Create invoice; uses global sequential invoiceNumber across all clients. */
 export async function POST(request: NextRequest) {
   const user = await requireStaffUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -265,7 +265,6 @@ export async function POST(request: NextRequest) {
         select: {
           id: true,
           currency: true,
-          nextInvoiceNumber: true,
         },
       });
       if (!client) {
@@ -283,7 +282,13 @@ export async function POST(request: NextRequest) {
       }
 
       const currency = (currencyOverride ?? client.currency ?? 'KES').trim() || 'KES';
-      const invoiceNumber = client.nextInvoiceNumber;
+      // Global monotonic numbering (all clients share one sequence).
+      // Advisory lock avoids race on aggregate(max)+1 under concurrent creates.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(424242);`;
+      const maxInvoiceNumber = await tx.accountsInvoice.aggregate({
+        _max: { invoiceNumber: true },
+      });
+      const invoiceNumber = (maxInvoiceNumber._max.invoiceNumber ?? 0) + 1;
 
       // Do not pass paymentBank on create: rely on DB default (consultancy_fees). Some dev setups had a stale
       // bundled Prisma client that rejected paymentBank on create; follow-up update sets payroll_only when needed.
@@ -313,11 +318,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      await tx.accountsClient.update({
-        where: { id: clientId },
-        data: { nextInvoiceNumber: invoiceNumber + 1 },
-      });
-
       return inv;
     });
 
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Invoice number conflict for this client. Another request may have issued an invoice—refresh the form and try again.',
+            'Invoice number conflict. Another request may have issued an invoice—refresh and try again.',
         },
         { status: 409 },
       );

@@ -567,7 +567,7 @@ model AccountsClient {
   contactPhone        String?
   /// Internal context: engagement description, billable setup, etc. Not shown on invoice PDF.
   billingNotes        String?            @db.Text
-  /// Per-client sequential invoice number (manual invoices)
+  /// Legacy field from per-client invoice numbering (global invoice sequence now used).
   nextInvoiceNumber    Int @default(1)
   /// Per-client sequential credit note number
   nextCreditNoteNumber Int @default(1)
@@ -701,6 +701,7 @@ model AccountsInvoice {
   creditNotes    AccountsCreditNote[]
 
   @@unique([clientId, invoiceNumber])
+  @@unique([invoiceNumber])
   @@index([clientId])
   @@index([issueDate])
   @@index([status])

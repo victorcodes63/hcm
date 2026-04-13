@@ -220,8 +220,8 @@ function NewInvoiceForm() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-primary-900 tracking-tight">New invoice</h1>
           <p className="text-sm text-neutral-600 mt-1">
-            Pick any billing client (including custom / off-system profiles). Uses the client&apos;s next invoice
-            number, then advances the sequence.
+            Pick any billing client (including custom / off-system profiles). Invoice numbers are global and
+            sequential across all clients.
           </p>
         </div>
       </div>
@@ -271,7 +271,7 @@ function NewInvoiceForm() {
                     <optgroup key={t} label={label}>
                       {group.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} · {c.currency} · next #{c.nextInvoiceNumber}
+                          {c.name} · {c.currency}
                         </option>
                       ))}
                     </optgroup>
