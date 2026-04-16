@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         taxDate: true,
         currency: true,
         vatRateBps: true,
+        totalOverrideIncVat: true,
         status: true,
         notes: true,
         accountsClient: { select: { id: true, name: true } },
@@ -102,7 +103,11 @@ export async function GET(request: NextRequest) {
 
     const list = invoices.map((inv) => {
       const subtotalExVat = subtotalByInvoice.get(inv.id) ?? 0;
-      const { vatAmount, totalIncVat } = computeInvoiceVatFromSubtotal(subtotalExVat, inv.vatRateBps);
+      const { vatAmount, totalIncVat: computedTotalIncVat } = computeInvoiceVatFromSubtotal(
+        subtotalExVat,
+        inv.vatRateBps,
+      );
+      const totalIncVat = inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : computedTotalIncVat;
       const allocatedTotal = withBalance ? allocatedByInvoice.get(inv.id) ?? 0 : undefined;
       const creditTotal = withBalance ? creditByInvoice.get(inv.id) ?? 0 : undefined;
       const balanceDue =
@@ -123,6 +128,7 @@ export async function GET(request: NextRequest) {
         subtotalExVat,
         vatAmount,
         totalIncVat,
+        totalOverrideIncVat: inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : null,
         lineCount: inv._count.lines,
         notes: inv.notes,
         ...(withBalance
@@ -208,6 +214,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'vatRateBps must be between 0 and 50000.' }, { status: 400 });
     }
     vatRateBps = Math.round(n);
+  }
+
+  let totalOverrideIncVat: Prisma.Decimal | null | undefined = undefined;
+  if ('totalOverrideIncVat' in b) {
+    const raw = b.totalOverrideIncVat;
+    if (raw === null || raw === undefined || raw === '') {
+      totalOverrideIncVat = null;
+    } else {
+      const n = typeof raw === 'number' ? raw : parseFloat(String(raw));
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json(
+          { error: 'totalOverrideIncVat must be a positive amount or null.' },
+          { status: 400 },
+        );
+      }
+      totalOverrideIncVat = new Prisma.Decimal(Math.round(n * 100) / 100);
+    }
   }
 
   const paymentBank =
@@ -302,6 +325,7 @@ export async function POST(request: NextRequest) {
           taxDate,
           currency,
           vatRateBps,
+          ...(totalOverrideIncVat !== undefined ? { totalOverrideIncVat } : {}),
           status: 'unpaid',
           notes,
           lines: {

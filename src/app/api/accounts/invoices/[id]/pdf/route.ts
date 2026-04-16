@@ -34,10 +34,12 @@ export async function GET(
 
     if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
-    const { subtotalExVat, vatAmount, totalIncVat } = computeInvoiceVatFromLines(
+    const { subtotalExVat, vatAmount, totalIncVat: computedTotalIncVat } = computeInvoiceVatFromLines(
       inv.lines,
       inv.vatRateBps,
     );
+    const totalIncVat =
+      inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : computedTotalIncVat;
 
     const lines = inv.lines.map((l, i) => ({
       lineNo: i + 1,

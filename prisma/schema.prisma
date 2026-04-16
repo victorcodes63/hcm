@@ -687,6 +687,8 @@ model AccountsInvoice {
   currency      String                @default("KES")
   /// Basis points: 1600 = 16.00%
   vatRateBps    Int                   @default(1600)
+  /// Optional manual final total override (incl. VAT) for ETIMS alignment.
+  totalOverrideIncVat Decimal?        @db.Decimal(14, 2)
   status        AccountsInvoiceStatus @default(unpaid)
   /// Bank details block on invoice: payroll remittance vs consultancy & other fees.
   paymentBank   AccountsInvoicePaymentBank @default(consultancy_fees)

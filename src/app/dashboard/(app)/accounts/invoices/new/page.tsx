@@ -87,6 +87,7 @@ function NewInvoiceForm() {
   const [paymentBank, setPaymentBank] = useState<InvoicePaymentBankKind>('consultancy_fees');
   const [notes, setNotes] = useState('');
   const [roundTotalToWholeKes, setRoundTotalToWholeKes] = useState(false);
+  const [manualTotalIncVat, setManualTotalIncVat] = useState('');
 
   const [lines, setLines] = useState<LineDraft[]>([
     { item: '', amountExVat: '', description: '' },
@@ -161,6 +162,12 @@ function NewInvoiceForm() {
     return { targetTotal, ...rounding };
   }, [totalsPreview, vatRateBps]);
 
+  const manualTotalOverride = useMemo(() => {
+    const n = parseFloat(manualTotalIncVat);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.round(n * 100) / 100;
+  }, [manualTotalIncVat]);
+
   const addLine = () => {
     setLines((prev) => [...prev, { item: '', amountExVat: '', description: '' }]);
   };
@@ -222,6 +229,9 @@ function NewInvoiceForm() {
           amountExVat: roundingPreview.adjExVat,
           description: 'Auto-added to round invoice total (incl. VAT) to whole KES for ETIMS alignment.',
         });
+      }
+      if (manualTotalOverride != null) {
+        body.totalOverrideIncVat = manualTotalOverride;
       }
       const r = await fetch('/api/accounts/invoices', {
         method: 'POST',
@@ -545,6 +555,32 @@ function NewInvoiceForm() {
                     No rounding option available for the current lines/VAT combination.
                   </p>
                 )}
+              </div>
+              <div className="mt-2 pt-2 border-t border-primary-100 space-y-1">
+                <label className="block text-xs text-neutral-700">
+                  Final total override (incl. VAT)
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={manualTotalIncVat}
+                    onChange={(e) => setManualTotalIncVat(e.target.value)}
+                    placeholder="e.g. 450000.00"
+                    className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <p className="text-xs text-neutral-600">
+                  Optional. Sets the invoice final total exactly as entered for display/PDF/export.
+                </p>
+                {manualTotalOverride != null ? (
+                  <p className="text-xs font-semibold text-primary-900 tabular-nums">
+                    Override total: {manualTotalOverride.toLocaleString('en-KE', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    {selectedClient.currency}
+                  </p>
+                ) : null}
               </div>
             </div>
           )}

@@ -54,10 +54,12 @@ export async function GET(
 
     if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
-    const { subtotalExVat, vatAmount, totalIncVat } = computeInvoiceVatFromLines(
+    const { subtotalExVat, vatAmount, totalIncVat: computedTotalIncVat } = computeInvoiceVatFromLines(
       inv.lines,
       inv.vatRateBps,
     );
+    const totalIncVat =
+      inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : computedTotalIncVat;
 
     const creditNoteRows = await prisma.accountsCreditNote.findMany({
       where: { originalInvoiceId: id },
@@ -98,6 +100,7 @@ export async function GET(
       taxDate: inv.taxDate ? inv.taxDate.toISOString().slice(0, 10) : null,
       currency: inv.currency,
       vatRateBps: inv.vatRateBps,
+      totalOverrideIncVat: inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : null,
       status: inv.status,
       paymentBank: inv.paymentBank,
       notes: inv.notes,
@@ -178,16 +181,23 @@ export async function PATCH(
   const hasDueDate = 'dueDate' in payload;
   const hasTaxDate = 'taxDate' in payload;
   const hasVatRateBps = 'vatRateBps' in payload;
+  const hasTotalOverrideIncVat = 'totalOverrideIncVat' in payload;
   const hasNotes = 'notes' in payload;
   const hasLines = 'lines' in payload;
   const hasEditFields =
-    hasIssueDate || hasDueDate || hasTaxDate || hasVatRateBps || hasNotes || hasLines;
+    hasIssueDate ||
+    hasDueDate ||
+    hasTaxDate ||
+    hasVatRateBps ||
+    hasTotalOverrideIncVat ||
+    hasNotes ||
+    hasLines;
 
   if (!hasPaymentBank && !hasStatus && !hasEditFields) {
     return NextResponse.json(
       {
         error:
-          'Send paymentBank, status, and/or editable invoice fields (issueDate, dueDate, taxDate, vatRateBps, notes, lines).',
+          'Send paymentBank, status, and/or editable invoice fields (issueDate, dueDate, taxDate, vatRateBps, totalOverrideIncVat, notes, lines).',
       },
       { status: 400 },
     );
@@ -213,6 +223,7 @@ export async function PATCH(
     dueDate?: Date | null;
     taxDate?: Date | null;
     vatRateBps?: number;
+    totalOverrideIncVat?: number | null;
     notes?: string | null;
   } = {};
   if (hasPaymentBank) {
@@ -256,6 +267,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'vatRateBps must be between 0 and 50000.' }, { status: 400 });
     }
     data.vatRateBps = Math.round(n);
+  }
+  if (hasTotalOverrideIncVat) {
+    const raw = payload.totalOverrideIncVat;
+    if (raw === null || raw === undefined || raw === '') {
+      data.totalOverrideIncVat = null;
+    } else {
+      const n = typeof raw === 'number' ? raw : parseFloat(String(raw));
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json(
+          { error: 'totalOverrideIncVat must be a positive amount or null.' },
+          { status: 400 },
+        );
+      }
+      data.totalOverrideIncVat = Math.round(n * 100) / 100;
+    }
   }
   if (hasNotes) {
     data.notes =

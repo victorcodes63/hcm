@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         taxDate: true,
         currency: true,
         vatRateBps: true,
+        totalOverrideIncVat: true,
         status: true,
         notes: true,
         accountsClient: { select: { name: true } },
@@ -94,7 +95,11 @@ export async function GET(request: NextRequest) {
 
     for (const inv of invoices) {
       const subtotalExVat = subtotalByInvoice.get(inv.id) ?? 0;
-      const { vatAmount, totalIncVat } = computeInvoiceVatFromSubtotal(subtotalExVat, inv.vatRateBps);
+      const { vatAmount, totalIncVat: computedTotalIncVat } = computeInvoiceVatFromSubtotal(
+        subtotalExVat,
+        inv.vatRateBps,
+      );
+      const totalIncVat = inv.totalOverrideIncVat != null ? Number(inv.totalOverrideIncVat) : computedTotalIncVat;
       sheet.addRow([
         inv.invoiceNumber,
         inv.accountsClient.name,

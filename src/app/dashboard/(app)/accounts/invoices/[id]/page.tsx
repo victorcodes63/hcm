@@ -54,6 +54,7 @@ type InvoiceDetail = {
   creditNotes?: CreditNoteSummary[];
   paymentBank: InvoicePaymentBankKind;
   notes: string | null;
+  totalOverrideIncVat?: number | null;
   subtotalExVat: number;
   vatAmount: number;
   totalIncVat: number;
@@ -114,6 +115,7 @@ export default function AccountsInvoiceDetailPage() {
     taxDate: string;
     vatRateBps: number;
     notes: string;
+    totalOverrideIncVat: string;
     lines: Array<{ item: string; description: string; amountExVat: string }>;
   } | null>(null);
 
@@ -159,6 +161,8 @@ export default function AccountsInvoiceDetailPage() {
       taxDate: data.taxDate ?? '',
       vatRateBps: data.vatRateBps,
       notes: data.notes ?? '',
+      totalOverrideIncVat:
+        data.totalOverrideIncVat != null ? String(Number(data.totalOverrideIncVat)) : '',
       lines: data.lines.map((l) => ({
         item: l.item,
         description: l.description ?? '',
@@ -185,6 +189,13 @@ export default function AccountsInvoiceDetailPage() {
     );
     if (!rounding) return null;
     return { subtotal, total, targetTotal, ...rounding };
+  }, [editForm]);
+
+  const editManualTotalOverride = useMemo(() => {
+    if (!editForm) return null;
+    const n = parseFloat(editForm.totalOverrideIncVat);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.round(n * 100) / 100;
   }, [editForm]);
 
   const setInvoiceStatus = async (status: string) => {
@@ -236,6 +247,7 @@ export default function AccountsInvoiceDetailPage() {
         taxDate: editForm.taxDate || null,
         vatRateBps: editForm.vatRateBps,
         notes: editForm.notes,
+        totalOverrideIncVat: editManualTotalOverride,
         lines: editForm.lines.map((l) => ({
           item: l.item,
           description: l.description || null,
@@ -483,6 +495,20 @@ export default function AccountsInvoiceDetailPage() {
                       onChange={(e) => setEditForm((f) => (f ? { ...f, notes: e.target.value } : f))}
                     />
                   </label>
+                  <label className="text-xs text-neutral-600">
+                    Final total override (incl. VAT)
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5"
+                      value={editForm.totalOverrideIncVat}
+                      onChange={(e) =>
+                        setEditForm((f) => (f ? { ...f, totalOverrideIncVat: e.target.value } : f))
+                      }
+                      placeholder="Optional (e.g. 450000.00)"
+                    />
+                  </label>
                 </div>
                 <div className="space-y-2">
                   {editForm.lines.map((line, idx) => (
@@ -613,6 +639,19 @@ export default function AccountsInvoiceDetailPage() {
                         No rounding option available for the current lines/VAT combination.
                       </p>
                     )}
+                    {editManualTotalOverride != null ? (
+                      <p className="text-xs font-semibold text-primary-900 tabular-nums">
+                        Override total: {editManualTotalOverride.toLocaleString('en-KE', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        {data.currency}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-neutral-600">
+                        Optional final total override can be entered above when exact rounding is required.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -634,6 +673,8 @@ export default function AccountsInvoiceDetailPage() {
                         taxDate: data.taxDate ?? '',
                         vatRateBps: data.vatRateBps,
                         notes: data.notes ?? '',
+                        totalOverrideIncVat:
+                          data.totalOverrideIncVat != null ? String(Number(data.totalOverrideIncVat)) : '',
                         lines: data.lines.map((l) => ({
                           item: l.item,
                           description: l.description ?? '',
