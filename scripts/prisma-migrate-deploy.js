@@ -46,13 +46,21 @@ function run() {
   // Support both DIRECT_DATABASE_URL (project legacy) and DIRECT_URL (Prisma convention).
   const migrateEnv = { ...process.env };
   const direct = (process.env.DIRECT_DATABASE_URL || process.env.DIRECT_URL || '').trim();
+  const dbUrl = (process.env.DATABASE_URL || '').trim();
   if (direct) {
     migrateEnv.DATABASE_URL = direct;
     console.log('[prisma-migrate-deploy] Using direct DB URL for migrate (non-pooler).');
-  } else if ((process.env.DATABASE_URL || '').includes('pooler')) {
+  } else if (dbUrl.includes('-pooler.')) {
+    const inferredDirect = dbUrl.replace('-pooler.', '.');
+    migrateEnv.DATABASE_URL = inferredDirect;
     console.warn(
-      '[prisma-migrate-deploy] DATABASE_URL looks pooled but DIRECT_DATABASE_URL is unset. ' +
-        'If migrate fails with P1002 advisory lock timeout, add DIRECT_DATABASE_URL or DIRECT_URL in Vercel (Neon → Connection details → direct / non-pooling).'
+      '[prisma-migrate-deploy] DIRECT_DATABASE_URL / DIRECT_URL is unset. ' +
+        'Inferred a direct URL by removing "-pooler." from DATABASE_URL for migrate.'
+    );
+  } else if (dbUrl.includes('pooler')) {
+    console.warn(
+      '[prisma-migrate-deploy] DATABASE_URL looks pooled but no direct URL could be inferred. ' +
+        'Set DIRECT_DATABASE_URL or DIRECT_URL in Vercel (Neon → Connection details → direct / non-pooling).'
     );
   }
 
