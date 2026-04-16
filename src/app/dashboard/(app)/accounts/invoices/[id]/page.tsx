@@ -558,17 +558,18 @@ export default function AccountsInvoiceDetailPage() {
                   >
                     + Add line
                   </button>
-                  {editRoundingPreview ? (
-                    <div className="mt-2 rounded-lg border border-primary-100 bg-primary-50/50 px-3 py-2 space-y-1">
-                      <label className="inline-flex items-center gap-2 text-xs text-neutral-700">
-                        <input
-                          type="checkbox"
-                          checked={editRoundToWholeKes}
-                          onChange={(e) => setEditRoundToWholeKes(e.target.checked)}
-                        />
-                        Round total up to whole KES (ETIMS-friendly)
-                      </label>
-                      {editRoundToWholeKes ? (
+                  <div className="mt-2 rounded-lg border border-primary-100 bg-primary-50/50 px-3 py-2 space-y-1">
+                    <label className="inline-flex items-center gap-2 text-xs text-neutral-700">
+                      <input
+                        type="checkbox"
+                        checked={editRoundToWholeKes}
+                        disabled={!editRoundingPreview}
+                        onChange={(e) => setEditRoundToWholeKes(e.target.checked)}
+                      />
+                      Round total up to whole KES (ETIMS-friendly)
+                    </label>
+                    {editRoundingPreview ? (
+                      editRoundToWholeKes ? (
                         <>
                           <p className="text-xs text-neutral-700 tabular-nums">
                             Rounding adjustment (ex-VAT):{' '}
@@ -586,9 +587,13 @@ export default function AccountsInvoiceDetailPage() {
                             {data.currency}
                           </p>
                         </>
-                      ) : null}
-                    </div>
-                  ) : null}
+                      ) : (
+                        <p className="text-xs text-neutral-600">Enable to auto-add rounding adjustment line.</p>
+                      )
+                    ) : (
+                      <p className="text-xs text-neutral-500">No rounding needed (total is already whole KES).</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button

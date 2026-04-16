@@ -490,17 +490,18 @@ function NewInvoiceForm() {
                 })}{' '}
                 {selectedClient.currency}
               </p>
-              {roundingPreview ? (
-                <div className="mt-2 pt-2 border-t border-primary-100 space-y-1">
-                  <label className="inline-flex items-center gap-2 text-xs text-neutral-700">
-                    <input
-                      type="checkbox"
-                      checked={roundTotalToWholeKes}
-                      onChange={(e) => setRoundTotalToWholeKes(e.target.checked)}
-                    />
-                    Round total up to whole KES (ETIMS-friendly)
-                  </label>
-                  {roundTotalToWholeKes ? (
+              <div className="mt-2 pt-2 border-t border-primary-100 space-y-1">
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-700">
+                  <input
+                    type="checkbox"
+                    checked={roundTotalToWholeKes}
+                    disabled={!roundingPreview}
+                    onChange={(e) => setRoundTotalToWholeKes(e.target.checked)}
+                  />
+                  Round total up to whole KES (ETIMS-friendly)
+                </label>
+                {roundingPreview ? (
+                  roundTotalToWholeKes ? (
                     <>
                       <p className="text-xs text-neutral-700 tabular-nums">
                         Rounding adjustment (ex-VAT):{' '}
@@ -518,9 +519,13 @@ function NewInvoiceForm() {
                         {selectedClient.currency}
                       </p>
                     </>
-                  ) : null}
-                </div>
-              ) : null}
+                  ) : (
+                    <p className="text-xs text-neutral-600">Enable to auto-add rounding adjustment line.</p>
+                  )
+                ) : (
+                  <p className="text-xs text-neutral-500">No rounding needed (total is already whole KES).</p>
+                )}
+              </div>
             </div>
           )}
         </div>
