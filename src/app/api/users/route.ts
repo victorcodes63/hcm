@@ -7,9 +7,19 @@ import { setUserGlobalAccountsAccess } from '@/lib/set-global-accounts-access';
 import { isStaffUserType } from '@/lib/staff-permissions';
 import type { StaffUserType, UserRole } from '@/types/dashboard';
 import { userRowToSummary } from '@/lib/user-summary-api';
+import { logAuditEvent } from '@/lib/audit-events';
 
 const ROUNDS = 10;
 const ROLES: UserRole[] = ['admin', 'staff', 'viewer'];
+
+function actorFromRequest(request: NextRequest) {
+  const parsed = parseStaffSession(request.cookies.get('staff_session')?.value ?? '');
+  return {
+    userId: parsed.userId ?? null,
+    email: parsed.email ?? null,
+    name: null,
+  };
+}
 
 async function requireAdmin(request: NextRequest): Promise<NextResponse | null> {
   const rawSession = request.cookies.get('staff_session')?.value;
@@ -64,6 +74,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const adminError = await requireAdmin(request);
   if (adminError) return adminError;
+  const actor = actorFromRequest(request);
 
   let body: unknown;
   try {
@@ -122,6 +133,14 @@ export async function POST(request: NextRequest) {
     if (role !== 'admin' && accountsPatch) {
       await setUserGlobalAccountsAccess(user.id, accountsPatch);
     }
+    await logAuditEvent({
+      actor,
+      action: 'user.created',
+      entityType: 'User',
+      entityId: user.id,
+      route: 'POST /api/users',
+      metadata: { role: user.role, staffUserType: user.staffUserType },
+    });
     return NextResponse.json(await userRowToSummary(user));
   } catch (e) {
     console.error('POST /api/users error:', e);

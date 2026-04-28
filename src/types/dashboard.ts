@@ -96,10 +96,6 @@ export interface ApplicationFormData {
   gender?: string;
   education: EducationEntry[];
   employmentHistory: EmploymentEntry[];
-  /** @deprecated Use professionalCertificationsList */
-  professionalCertifications?: string;
-  /** @deprecated Use professionalCertificationsList[].certificatePath */
-  professionalCertificationsPath?: string;
   professionalCertificationsList?: ProfessionalCertificationEntry[];
   professionalMemberships?: ProfessionalMembershipEntry[];
   declarations: {
@@ -295,15 +291,51 @@ export interface UpdateUserBody {
   accountsPermissions?: AccountsPermissionsSummary;
 }
 
-/** Recruitment employer portal account (not internal staff). */
-export type RecruitmentClientPortalUserSummary = {
+export type EssPortalRole = 'employee' | 'manager' | 'hr';
+
+export interface EssPortalUserSummary {
   id: string;
+  employeeId: string | null;
+  employeeName: string | null;
   email: string;
   name: string;
-  clientId: string;
-  clientName: string;
+  role: EssPortalRole;
   isActive: boolean;
+  lastLoginAt: string | null;
+  mustResetPassword: boolean;
   notes: string | null;
+  createdByName: string | null;
   createdAt: string;
   updatedAt: string;
-};
+}
+
+export interface PermissionMatrixRow {
+  permissionKey: string;
+  label: string;
+  module: string;
+  description: string | null;
+  adminAllowed: boolean;
+  staffAllowed: boolean;
+  viewerAllowed: boolean;
+}
+
+export interface AuditEventSummary {
+  id: string;
+  actorUserId?: string | null;
+  actorNameOrEmail: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  route: string | null;
+  metadata: unknown;
+  createdAt: string;
+}
+
+export interface SystemSettingsPayload {
+  companyName: string;
+  companyEmail: string;
+  defaultCurrency: string;
+  payrollCutoffDay: number;
+  leaveApprovalMode: 'single' | 'multi';
+  requireMfaForAdmins: boolean;
+}

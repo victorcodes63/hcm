@@ -5,6 +5,8 @@ import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canViewSalaryFields, unauthorizedResponse } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
+import { ensureEssUserForEmployee } from '@/lib/ess-provision';
+import { diffSensitiveFields } from '@/lib/audit-helpers';
 
 function str(b: Record<string, unknown>, key: string): string | null {
   const v = b[key];
@@ -214,7 +216,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     }
 
-    const existing = await prisma.employee.findUnique({ where: { id }, select: { outsourcingClientId: true } });
+    const existing = await prisma.employee.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        outsourcingClientId: true,
+        baseSalary: true,
+        bankAccountNumber: true,
+        idNumber: true,
+      },
+    });
     if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
     if (email !== undefined && email) {
@@ -271,6 +284,36 @@ export async function PATCH(
         },
       }).catch(() => null);
     }
+    await ensureEssUserForEmployee({
+      employeeId: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+    }).catch(() => null);
+    const sensitiveChanges = diffSensitiveFields(
+      {
+        baseSalary: existing.baseSalary?.toString() ?? null,
+        bankAccountNumber: existing.bankAccountNumber,
+        idNumber: existing.idNumber,
+      },
+      {
+        baseSalary: employee.baseSalary?.toString() ?? null,
+        bankAccountNumber: employee.bankAccountNumber,
+        idNumber: employee.idNumber,
+      },
+      ['baseSalary', 'bankAccountNumber', 'idNumber']
+    );
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'employee.updated',
+      entityType: 'Employee',
+      entityId: employee.id,
+      route: 'PATCH /api/outsourcing/employees/[id]',
+      metadata: {
+        changedFields: Object.keys(data),
+        sensitiveChanges,
+      },
+    });
     return NextResponse.json(mapEmployeeToJson(employee, canViewSalaryFields(user)));
   } catch (e) {
     const err = e as { code?: string; meta?: { target?: string[] } };
@@ -299,7 +342,19 @@ export async function DELETE(
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     }
+    const existing = await prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, firstName: true, lastName: true },
+    });
     await prisma.employee.delete({ where: { id } });
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'employee.deleted',
+      entityType: 'Employee',
+      entityId: id,
+      route: 'DELETE /api/outsourcing/employees/[id]',
+      metadata: { employeeName: existing ? `${existing.firstName} ${existing.lastName}` : null },
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     const err = e as { code?: string };

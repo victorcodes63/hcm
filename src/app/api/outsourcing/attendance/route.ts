@@ -4,6 +4,7 @@ import { isFeatureEnabled } from '@/lib/feature-flags';
 import { reconcileAttendanceDay, resolveReconcileWorkDatesForObservedAt } from '@/lib/attendance-reconciliation';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { unauthorizedResponse } from '@/lib/demo-route-access';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,16 +31,73 @@ export async function GET(request: NextRequest) {
         : {}),
     };
 
-    const [summaries, exceptions] = await Promise.all([
-      prisma.attendanceDaySummary.findMany({
+    const prismaAny = prisma as unknown as {
+      attendanceDaySummary?: {
+        findMany: (args: unknown) => Promise<unknown[]>;
+      };
+      attendanceException?: {
+        findMany: (args: unknown) => Promise<unknown[]>;
+      };
+    };
+    const hasSummaryModel = typeof prismaAny.attendanceDaySummary?.findMany === 'function';
+    const hasExceptionModel = typeof prismaAny.attendanceException?.findMany === 'function';
+
+    let summaries: unknown[] = [];
+    if (hasSummaryModel) {
+      summaries = await prismaAny.attendanceDaySummary!.findMany({
         where,
         include: {
           employee: { select: { firstName: true, lastName: true, employeeNumber: true } },
         },
         orderBy: [{ workDate: 'desc' }, { employee: { lastName: 'asc' } }],
         take: 400,
-      }),
-      prisma.attendanceException.findMany({
+      });
+    } else {
+      // Compatibility fallback: derive summary-like rows from legacy Attendance.
+      const attendanceRows = await prisma.attendance.findMany({
+        where: {
+          ...(employeeId ? { employeeId } : {}),
+          ...(from || to
+            ? {
+                date: {
+                  ...(from ? { gte: new Date(`${from}T00:00:00.000Z`) } : {}),
+                  ...(to ? { lte: new Date(`${to}T00:00:00.000Z`) } : {}),
+                },
+              }
+            : {}),
+          employee: {
+            ...(clientId ? { outsourcingClientId: clientId } : {}),
+          },
+        },
+        include: {
+          employee: { select: { firstName: true, lastName: true, employeeNumber: true } },
+        },
+        orderBy: [{ date: 'desc' }, { employee: { lastName: 'asc' } }],
+        take: 400,
+      });
+      summaries = attendanceRows.map((row) => {
+        const workedMinutes =
+          row.checkIn && row.checkOut
+            ? Math.max(0, Math.round((row.checkOut.getTime() - row.checkIn.getTime()) / 60000))
+            : 0;
+        return {
+          id: row.id,
+          employeeId: row.employeeId,
+          workDate: row.date,
+          firstInAt: row.checkIn,
+          lastOutAt: row.checkOut,
+          minutesWorked: workedMinutes,
+          lateMinutes: 0,
+          overtimeMinutes: 0,
+          status: row.checkOut ? 'reconciled' : 'draft',
+          employee: row.employee,
+        };
+      });
+    }
+
+    let exceptions: unknown[] = [];
+    if (hasExceptionModel) {
+      exceptions = await prismaAny.attendanceException!.findMany({
         where: {
           ...(employeeId ? { employeeId } : {}),
           ...(from || to
@@ -56,8 +114,8 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [{ status: 'asc' }, { workDate: 'desc' }],
         take: 300,
-      }),
-    ]);
+      });
+    }
 
     return NextResponse.json({ summaries, exceptions, attendanceV2: isFeatureEnabled('attendanceV2') });
   } catch (error) {
@@ -106,6 +164,14 @@ export async function POST(request: NextRequest) {
     const summaries = await Promise.all(
       workDates.map((dateKey) => reconcileAttendanceDay(prisma, { employeeId, workDate: dateKey }))
     );
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'attendance.manual_correction',
+      entityType: 'AttendanceEvent',
+      entityId: employeeId,
+      route: 'POST /api/outsourcing/attendance',
+      metadata: { employeeId, workDate, kind: kindRaw === 'check_out' ? 'check_out' : 'check_in' },
+    });
     return NextResponse.json({ ok: true, summary: summaries[0] ?? null, reconciledDates: workDates });
   } catch (error) {
     console.error('[outsourcing/attendance POST]', error);

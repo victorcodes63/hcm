@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser, isAdmin, canApproveStaffLeaveRequests } from '@/lib/staff-api-auth';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function PATCH(
 
   const app = await prisma.staffLeaveApplication.findUnique({
     where: { id },
-    include: { leaveType: true },
+    include: { leaveType: true, approvalSteps: { orderBy: { stepOrder: 'asc' } } },
   });
   if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -32,7 +33,23 @@ export async function PATCH(
     }
     const updated = await prisma.staffLeaveApplication.update({
       where: { id },
-      data: { status: 'cancelled', reviewNote: body.reviewNote || null },
+      data: { status: 'cancelled', approvalState: 'cancelled', reviewNote: body.reviewNote || null },
+    });
+    await prisma.leaveApprovalAction.create({
+      data: {
+        staffLeaveApplicationId: id,
+        actorUserId: user.id,
+        action: 'cancelled',
+        note: body.reviewNote?.trim() || null,
+      },
+    });
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'leave.cancelled',
+      entityType: 'StaffLeaveApplication',
+      entityId: id,
+      route: 'PATCH /api/staff/leave/applications/[id]',
+      metadata: { action: 'cancel', reviewNote: body.reviewNote?.trim() || null },
     });
     return NextResponse.json(updated);
   }
@@ -49,10 +66,31 @@ export async function PATCH(
         where: { id },
         data: {
           status: 'rejected',
+          approvalState: 'rejected',
           reviewedById: user.id,
           reviewedAt: new Date(),
           reviewNote: body.reviewNote?.trim() || null,
         },
+      });
+      await prisma.leaveApprovalStep.updateMany({
+        where: { staffLeaveApplicationId: id, status: 'pending' },
+        data: { status: 'rejected', actedAt: new Date(), notes: body.reviewNote?.trim() || null },
+      });
+      await prisma.leaveApprovalAction.create({
+        data: {
+          staffLeaveApplicationId: id,
+          actorUserId: user.id,
+          action: 'rejected',
+          note: body.reviewNote?.trim() || null,
+        },
+      });
+      await logAuditEvent({
+        actor: { userId: user.id, email: user.email, name: user.name },
+        action: 'leave.rejected',
+        entityType: 'StaffLeaveApplication',
+        entityId: id,
+        route: 'PATCH /api/staff/leave/applications/[id]',
+        metadata: { action: 'reject', reviewNote: body.reviewNote?.trim() || null },
       });
       return NextResponse.json(updated);
     }
@@ -86,6 +124,7 @@ export async function PATCH(
         where: { id },
         data: {
           status: 'approved',
+          approvalState: 'approved',
           reviewedById: user.id,
           reviewedAt: new Date(),
           reviewNote: body.reviewNote?.trim() || null,
@@ -98,7 +137,27 @@ export async function PATCH(
           data: { usedDays: { increment: app.totalDays } },
         });
       }
+      await tx.leaveApprovalStep.updateMany({
+        where: { staffLeaveApplicationId: id, status: 'pending' },
+        data: { status: 'approved', actedAt: new Date(), notes: body.reviewNote?.trim() || null },
+      });
+      await tx.leaveApprovalAction.create({
+        data: {
+          staffLeaveApplicationId: id,
+          actorUserId: user.id,
+          action: 'approved',
+          note: body.reviewNote?.trim() || null,
+        },
+      });
       return u;
+    });
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'leave.approved',
+      entityType: 'StaffLeaveApplication',
+      entityId: id,
+      route: 'PATCH /api/staff/leave/applications/[id]',
+      metadata: { action: 'approve', reviewNote: body.reviewNote?.trim() || null },
     });
     return NextResponse.json(updated);
   }

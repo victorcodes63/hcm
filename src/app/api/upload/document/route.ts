@@ -1,53 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { put } from '@vercel/blob';
-
-// PDF only for certificates/documents (education, professional certs, memberships)
-const ALLOWED_TYPES = ['application/pdf'];
-// Vercel serverless body limit is 4.5MB; keep under for server uploads to Blob
-const MAX_SIZE = 4.5 * 1024 * 1024;
+import { DocumentUploadError, uploadEmployeeDocument } from '@/lib/document-upload';
+import { logAuditEvent } from '@/lib/audit-events';
+import { requireStaffUser } from '@/lib/staff-api-auth';
+import { requireEssUser } from '@/lib/ess-api-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const staffUser = await requireStaffUser(request);
+    const essUser = staffUser ? null : await requireEssUser(request);
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     if (!file || typeof file === 'string') {
       return NextResponse.json({ error: 'Missing file (field: file)' }, { status: 400 });
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Only PDF files are accepted for certificates and documents.' },
-        { status: 400 }
-      );
-    }
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: `File too large (max ${Math.round(MAX_SIZE / 1024 / 1024)}MB).` },
-        { status: 400 }
-      );
-    }
-
-    const ext = '.pdf';
-    const safeName = `documents/${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    // Use Vercel Blob when token is set (e.g. on Vercel); otherwise local disk (dev)
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(safeName, buffer, {
-        access: 'public',
-        contentType: file.type,
-      });
-      return NextResponse.json({ url: blob.url, path: blob.url });
-    }
-
-    const dir = path.join(process.cwd(), 'public', 'uploads', 'documents');
-    await mkdir(dir, { recursive: true });
-    const filePath = path.join(dir, path.basename(safeName));
-    await writeFile(filePath, buffer);
-    const url = `/uploads/documents/${path.basename(safeName)}`;
-    return NextResponse.json({ url, path: url });
+    const uploaded = await uploadEmployeeDocument(file);
+    await logAuditEvent({
+      actor: {
+        userId: staffUser?.id ?? essUser?.id ?? null,
+        email: staffUser?.email ?? essUser?.email ?? null,
+        name: staffUser?.name ?? essUser?.name ?? null,
+      },
+      action: 'document.uploaded',
+      entityType: 'Document',
+      entityId: uploaded.path,
+      route: 'POST /api/upload/document',
+      metadata: { mimeType: file.type, size: file.size },
+    });
+    return NextResponse.json({ url: uploaded.url, path: uploaded.path });
   } catch (err) {
+    if (err instanceof DocumentUploadError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('Document upload error:', err);
     return NextResponse.json({ error: 'Upload failed.' }, { status: 500 });
   }

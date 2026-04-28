@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessCredentials, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
+import { logAuditEvent } from '@/lib/audit-events';
 
 type CredentialCategoryValue =
   | 'medical_license'
@@ -153,6 +154,13 @@ export async function GET(request: NextRequest) {
         item.effectiveStatus === 'expiring_soon' || item.effectiveStatus === 'expired'
       )
     : mapped;
+  await logAuditEvent({
+    actor: { userId: user.id, email: user.email, name: user.name },
+    action: 'credential.records.view',
+    entityType: 'EmployeeCredential',
+    route: 'GET /api/credentials',
+    metadata: { employeeId: employeeId ?? null, category: category ?? null, status: status ?? null, count: filtered.length },
+  });
 
   return NextResponse.json(filtered);
 }
@@ -223,6 +231,14 @@ export async function POST(request: NextRequest) {
         },
       },
     },
+  });
+  await logAuditEvent({
+    actor: { userId: user.id, email: user.email, name: user.name },
+    action: 'credential.created',
+    entityType: 'EmployeeCredential',
+    entityId: created.id,
+    route: 'POST /api/credentials',
+    metadata: { employeeId: created.employeeId, category: created.category, status: created.status },
   });
 
   return NextResponse.json(toResponse(created), { status: 201 });

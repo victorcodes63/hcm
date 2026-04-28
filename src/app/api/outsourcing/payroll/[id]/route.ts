@@ -12,6 +12,7 @@ import { mapOutsourcingClientsToAccountsClients } from '@/lib/payroll-accounts-l
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { ATTENDANCE_SUMMARY_STATUSES_FOR_PAYROLL } from '@/lib/attendance-reconciliation';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function GET(
   _request: NextRequest,
@@ -331,6 +332,22 @@ export async function PATCH(
         ahl,
         nita,
         netPay,
+      },
+    });
+    const statusChanged = body.status !== undefined && body.status !== existing.status;
+    const auditAction = statusChanged ? `payroll.${String(body.status)}` : 'payroll.updated';
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: auditAction,
+      entityType: 'Payroll',
+      entityId: updated.id,
+      route: 'PATCH /api/outsourcing/payroll/[id]',
+      metadata: {
+        month: updated.month,
+        year: updated.year,
+        statusBefore: existing.status,
+        statusAfter: body.status ?? existing.status,
+        recalculateStatutory,
       },
     });
 

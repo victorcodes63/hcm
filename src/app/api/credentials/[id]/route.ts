@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessCredentials, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
+import { logAuditEvent } from '@/lib/audit-events';
 
 type CredentialCategoryValue =
   | 'medical_license'
@@ -127,6 +128,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     },
   });
   if (!record) return NextResponse.json({ error: 'Credential not found' }, { status: 404 });
+  await logAuditEvent({
+    actor: { userId: user.id, email: user.email, name: user.name },
+    action: user.role === 'admin' ? 'credential.viewed' : 'credential.viewed_non_admin',
+    entityType: 'EmployeeCredential',
+    entityId: record.id,
+    route: 'GET /api/credentials/[id]',
+    metadata: { employeeId: record.employeeId, category: record.category, status: record.status },
+  });
   return NextResponse.json(toResponse(record));
 }
 
@@ -209,6 +218,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         },
       },
     });
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'credential.updated',
+      entityType: 'EmployeeCredential',
+      entityId: updated.id,
+      route: 'PATCH /api/credentials/[id]',
+      metadata: { changedFields: Object.keys(data), employeeId: updated.employeeId },
+    });
     return NextResponse.json(toResponse(updated));
   } catch (error) {
     const err = error as { code?: string };
@@ -226,7 +243,22 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if (!process.env.DATABASE_URL) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const { id } = await params;
   try {
+    const existing = await prisma.employeeCredential.findUnique({
+      where: { id },
+      select: { id: true, employeeId: true, category: true },
+    });
     await prisma.employeeCredential.delete({ where: { id } });
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'credential.deleted',
+      entityType: 'EmployeeCredential',
+      entityId: id,
+      route: 'DELETE /api/credentials/[id]',
+      metadata: {
+        employeeId: existing?.employeeId ?? null,
+        category: existing?.category ?? null,
+      },
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     const err = error as { code?: string };

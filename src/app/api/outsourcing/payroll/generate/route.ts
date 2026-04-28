@@ -8,6 +8,7 @@ import { resolveHospitalClientId } from '@/lib/hospital-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { ATTENDANCE_SUMMARY_STATUSES_FOR_PAYROLL } from '@/lib/attendance-reconciliation';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function POST(request: NextRequest) {
   try {
@@ -170,6 +171,21 @@ export async function POST(request: NextRequest) {
         });
       })
     );
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'payroll.generated',
+      entityType: 'PayrollBatch',
+      entityId: `${year}-${month}-${clientId}`,
+      route: 'POST /api/outsourcing/payroll/generate',
+      metadata: {
+        month,
+        year,
+        clientId,
+        departmentId,
+        created: toCreate.length,
+        skipped: employees.length - toCreate.length,
+      },
+    });
 
     return NextResponse.json({
       created: toCreate.length,

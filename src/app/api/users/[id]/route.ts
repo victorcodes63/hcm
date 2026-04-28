@@ -10,9 +10,19 @@ import {
 import { isStaffUserType } from '@/lib/staff-permissions';
 import type { StaffUserType, UserRole } from '@/types/dashboard';
 import { userRowToSummary } from '@/lib/user-summary-api';
+import { logAuditEvent } from '@/lib/audit-events';
 
 const ROUNDS = 10;
 const ROLES: UserRole[] = ['admin', 'staff', 'viewer'];
+
+function actorFromRequest(request: NextRequest) {
+  const parsed = parseStaffSession(request.cookies.get('staff_session')?.value ?? '');
+  return {
+    userId: parsed.userId ?? null,
+    email: parsed.email ?? null,
+    name: null,
+  };
+}
 
 async function requireAdmin(request: NextRequest): Promise<NextResponse | null> {
   const rawSession = request.cookies.get('staff_session')?.value;
@@ -75,6 +85,7 @@ export async function PATCH(
 ) {
   const adminError = await requireAdmin(request);
   if (adminError) return adminError;
+  const actor = actorFromRequest(request);
 
   const { id } = await params;
   if (!id) return NextResponse.json({ error: 'User id required' }, { status: 400 });
@@ -139,6 +150,11 @@ export async function PATCH(
     if (password !== undefined) data.passwordHash = await bcrypt.hash(password, ROUNDS);
     if (staffUserType !== undefined) data.staffUserType = staffUserType;
 
+    const before = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true, isActive: true, staffUserType: true },
+    });
+    if (!before) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     const user = await prisma.user.update({
       where: { id },
       data,
@@ -149,6 +165,22 @@ export async function PATCH(
     } else if (accountsPatch !== undefined) {
       await setUserGlobalAccountsAccess(user.id, accountsPatch);
     }
+    await logAuditEvent({
+      actor,
+      action: 'user.updated',
+      entityType: 'User',
+      entityId: user.id,
+      route: 'PATCH /api/users/[id]',
+      metadata: {
+        changedFields: Object.keys(data),
+        roleBefore: before.role,
+        roleAfter: user.role,
+        isActiveBefore: before.isActive,
+        isActiveAfter: user.isActive,
+        staffUserTypeBefore: before.staffUserType,
+        staffUserTypeAfter: user.staffUserType,
+      },
+    });
 
     return NextResponse.json(await userRowToSummary(user));
   } catch (e) {
@@ -165,6 +197,7 @@ export async function DELETE(
 ) {
   const adminError = await requireAdmin(request);
   if (adminError) return adminError;
+  const actor = actorFromRequest(request);
 
   const { id } = await params;
   if (!id) return NextResponse.json({ error: 'User id required' }, { status: 400 });
@@ -173,7 +206,19 @@ export async function DELETE(
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
     }
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, role: true },
+    });
     await prisma.user.delete({ where: { id } });
+    await logAuditEvent({
+      actor,
+      action: 'user.deleted',
+      entityType: 'User',
+      entityId: id,
+      route: 'DELETE /api/users/[id]',
+      metadata: { email: existing?.email ?? null, role: existing?.role ?? null },
+    });
     return NextResponse.json({ success: true });
   } catch (e) {
     const err = e as { code?: string };

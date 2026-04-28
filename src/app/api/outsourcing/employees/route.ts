@@ -9,6 +9,8 @@ import {
 import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canViewSalaryFields, unauthorizedResponse } from '@/lib/demo-route-access';
+import { ensureEssUserForEmployee } from '@/lib/ess-provision';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function GET(request: NextRequest) {
   try {
@@ -221,6 +223,20 @@ export async function POST(request: NextRequest) {
         },
       }).catch(() => null);
     }
+    await ensureEssUserForEmployee({
+      employeeId: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+    }).catch(() => null);
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'employee.created',
+      entityType: 'Employee',
+      entityId: employee.id,
+      route: 'POST /api/outsourcing/employees',
+      metadata: { clientId: employee.outsourcingClientId, departmentId: employee.departmentId },
+    });
     return NextResponse.json({
       id: employee.id,
       employeeNumber: employee.employeeNumber,

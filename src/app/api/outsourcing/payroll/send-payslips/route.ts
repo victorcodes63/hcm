@@ -6,6 +6,7 @@ import { isBiweeklyClient } from '@/lib/biweekly-payroll';
 import { resolveHospitalClientId } from '@/lib/hospital-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
+import { logAuditEvent } from '@/lib/audit-events';
 
 export async function POST(request: NextRequest) {
   try {
@@ -129,6 +130,23 @@ export async function POST(request: NextRequest) {
     };
     if (errors.length > 0) payload.errors = errors;
     if (diagnostics) payload.diagnostics = diagnostics;
+    await logAuditEvent({
+      actor: { userId: user.id, email: user.email, name: user.name },
+      action: 'payslip.sent',
+      entityType: 'PayrollBatch',
+      entityId: `${year}-${month}-${clientId}`,
+      route: 'POST /api/outsourcing/payroll/send-payslips',
+      metadata: {
+        month,
+        year,
+        clientId,
+        departmentId: departmentId ?? null,
+        sent: sent.length,
+        skipped: skipped.length,
+        errors: errors.length,
+        testMode: Boolean(testTo),
+      },
+    });
     return NextResponse.json(payload);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
