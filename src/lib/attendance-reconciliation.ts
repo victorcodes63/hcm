@@ -4,6 +4,11 @@ import {
   type EnginePunch,
   type EngineShiftAssignment,
 } from '@/lib/shift-engine/computeAttendance';
+import {
+  getEssPortalUserIdForEmployee,
+  getManagerUserIdForEmployee,
+  sendNotification,
+} from '@/lib/notifications';
 
 type ReconcileOptions = {
   employeeId: string;
@@ -295,6 +300,32 @@ export async function reconcileAttendanceDay(db: PrismaClient, options: Reconcil
         description: item.description,
       })),
     });
+    try {
+      const missingClockOut = exceptionRows.some((item) => item.type === 'missing_check_out');
+      if (missingClockOut) {
+        const employee = await db.employee.findUnique({
+          where: { id: options.employeeId },
+          select: { firstName: true, lastName: true },
+        });
+        const managerEssId = await getManagerUserIdForEmployee(options.employeeId);
+        const employeeEssId = await getEssPortalUserIdForEmployee(options.employeeId);
+        await sendNotification({
+          event: 'missing_clock_out',
+          recipientEssPortalUserIds: [
+            ...(managerEssId ? [managerEssId] : []),
+            ...(employeeEssId ? [employeeEssId] : []),
+          ],
+          title: 'Missing clock-out',
+          body: `${employee ? `${employee.firstName} ${employee.lastName}` : 'Employee'} has no clock-out recorded for ${options.workDate}. Please review.`,
+          href: '/dashboard/outsourcing/attendance',
+          priority: 'action_required',
+          channel: 'in_app',
+          metadata: { employeeId: options.employeeId, workDate: options.workDate },
+        });
+      }
+    } catch (err) {
+      console.error('[notifications] Failed to send missing_clock_out:', err);
+    }
   }
 
   return summary;

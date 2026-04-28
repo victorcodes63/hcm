@@ -5,6 +5,7 @@ import { reconcileAttendanceDay, resolveReconcileWorkDatesForObservedAt } from '
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { unauthorizedResponse } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
+import { getEssPortalUserIdForEmployee, sendNotification } from '@/lib/notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -172,6 +173,23 @@ export async function POST(request: NextRequest) {
       route: 'POST /api/outsourcing/attendance',
       metadata: { employeeId, workDate, kind: kindRaw === 'check_out' ? 'check_out' : 'check_in' },
     });
+    try {
+      const essId = await getEssPortalUserIdForEmployee(employeeId);
+      if (essId) {
+        await sendNotification({
+          event: 'attendance_corrected',
+          recipientEssPortalUserIds: [essId],
+          title: 'Attendance corrected',
+          body: `Your attendance record for ${workDate} has been updated by ${user.name}.`,
+          href: '/ess/attendance',
+          priority: 'info',
+          channel: 'in_app',
+          metadata: { employeeId, date: workDate, corrector: user.name },
+        });
+      }
+    } catch (err) {
+      console.error('[notifications] Failed to send attendance_corrected:', err);
+    }
     return NextResponse.json({ ok: true, summary: summaries[0] ?? null, reconciledDates: workDates });
   } catch (error) {
     console.error('[outsourcing/attendance POST]', error);
