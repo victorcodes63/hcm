@@ -12,6 +12,9 @@ import { reconcileAttendanceDay, resolveReconcileWorkDatesForObservedAt } from '
 
 const THROTTLE_LOCK_KEY = 'biometric-poll';
 
+/** Max look-back when a device has never been polled and has no punches yet. */
+const COLD_START_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+
 export function biometricPollIntervalSeconds(): number {
   const raw = process.env.BIOMETRIC_POLL_INTERVAL_SECONDS;
   if (raw == null || String(raw).trim() === '') return 60;
@@ -25,6 +28,13 @@ function directionToEnum(
 ): BiometricPunchDirection {
   if (d === 'in' || d === 'out' || d === 'unknown') return d;
   return 'unknown';
+}
+
+function clampSince(since: Date, now: Date): Date {
+  if (since.getTime() > now.getTime()) {
+    return new Date(now.getTime() - 60_000);
+  }
+  return since;
 }
 
 /**
@@ -63,22 +73,32 @@ export async function runBiometricIngestion(
   const devices = await db.biometricDevice.findMany({ where: { isActive: true } });
   let devicesPolled = 0;
   let punchAttemptCount = 0;
-  const toInsert: Prisma.BiometricPunchCreateManyInput[] = [];
+  let punchesInserted = 0;
 
   for (const device of devices) {
     const adapter = adapterForDevice(device);
-    const last = await db.biometricPunch.findFirst({
+    const lastPunch = await db.biometricPunch.findFirst({
       where: { biometricDeviceId: device.id },
       orderBy: { observedAt: 'desc' },
       select: { observedAt: true },
     });
-    const since = last?.observedAt;
-    const events = await adapter.pollEvents(since);
+    const coldStart = new Date(now.getTime() - COLD_START_LOOKBACK_MS);
+    const since = clampSince(device.lastPollAt ?? lastPunch?.observedAt ?? coldStart, now);
+
+    let events: RawPunch[] = [];
+    try {
+      events = await adapter.pollEvents(since);
+    } catch (err) {
+      console.error('[runBiometricIngestion] device poll failed', device.id, err);
+      devicesPolled += 1;
+      continue;
+    }
+
     devicesPolled += 1;
 
+    const toInsert: Prisma.BiometricPunchCreateManyInput[] = [];
     for (const e of events) {
       if (e.deviceConfigRef.id !== device.id) {
-        // Defensive: ignore events for another device
         continue;
       }
       punchAttemptCount += 1;
@@ -95,41 +115,54 @@ export async function runBiometricIngestion(
         createdAt: now,
       });
     }
-  }
 
-  let punchesInserted = 0;
-  if (toInsert.length > 0) {
-    const r = await db.biometricPunch.createMany({ data: toInsert, skipDuplicates: true });
-    punchesInserted = r.count;
-    if (isFeatureEnabled('attendanceV2') && punchesInserted > 0) {
-      const ids = toInsert.map((item) => item.externalEventId);
-      const insertedRows = await db.biometricPunch.findMany({
-        where: { externalEventId: { in: ids } },
-        select: { id: true, employeeId: true, observedAt: true, direction: true, biometricDeviceId: true },
-      });
-      const deviceClient = new Map(devices.map((d) => [d.id, d.outsourcingClientId] as const));
-      for (const row of insertedRows) {
-        if (!row.employeeId) continue;
-        const clientId = deviceClient.get(row.biometricDeviceId);
-        if (!clientId) continue;
-        const workDate = row.observedAt.toISOString().slice(0, 10);
-        await db.attendanceEvent.create({
-          data: {
-            employeeId: row.employeeId,
-            outsourcingClientId: clientId,
-            observedAt: row.observedAt,
-            workDate: new Date(`${workDate}T00:00:00.000Z`),
-            source: 'biometric',
-            kind: row.direction === 'out' ? 'check_out' : 'check_in',
-            biometricPunchId: row.id,
+    if (toInsert.length > 0) {
+      const r = await db.biometricPunch.createMany({ data: toInsert, skipDuplicates: true });
+      punchesInserted += r.count;
+
+      if (isFeatureEnabled('attendanceV2') && r.count > 0) {
+        const ids = toInsert.map((item) => item.externalEventId);
+        const insertedRows = await db.biometricPunch.findMany({
+          where: { biometricDeviceId: device.id, externalEventId: { in: ids } },
+          select: {
+            id: true,
+            employeeId: true,
+            observedAt: true,
+            direction: true,
+            biometricDeviceId: true,
           },
         });
-        const workDates = await resolveReconcileWorkDatesForObservedAt(db, row.employeeId, row.observedAt);
-        for (const dateKey of workDates) {
-          await reconcileAttendanceDay(db, { employeeId: row.employeeId, workDate: dateKey });
+        const clientId = device.outsourcingClientId;
+        for (const row of insertedRows) {
+          if (!row.employeeId) continue;
+          const workDate = row.observedAt.toISOString().slice(0, 10);
+          await db.attendanceEvent.create({
+            data: {
+              employeeId: row.employeeId,
+              outsourcingClientId: clientId,
+              observedAt: row.observedAt,
+              workDate: new Date(`${workDate}T00:00:00.000Z`),
+              source: 'biometric',
+              kind: row.direction === 'out' ? 'check_out' : 'check_in',
+              biometricPunchId: row.id,
+            },
+          });
+          const workDates = await resolveReconcileWorkDatesForObservedAt(
+            db,
+            row.employeeId,
+            row.observedAt
+          );
+          for (const dateKey of workDates) {
+            await reconcileAttendanceDay(db, { employeeId: row.employeeId, workDate: dateKey });
+          }
         }
       }
     }
+
+    await db.biometricDevice.update({
+      where: { id: device.id },
+      data: { lastPollAt: now },
+    });
   }
 
   await db.schedulerLock.upsert({
