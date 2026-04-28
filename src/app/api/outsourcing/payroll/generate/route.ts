@@ -111,15 +111,35 @@ export async function POST(request: NextRequest) {
             workDate: { gte: periodStart, lt: periodEnd },
             status: { in: [...ATTENDANCE_SUMMARY_STATUSES_FOR_PAYROLL] },
           },
-          _sum: { overtimeMinutes: true },
+          _sum: { overtimeMinutes: true, holidayOvertimeMinutes: true },
         });
         const overtimeMinutes = attendanceAggregate._sum.overtimeMinutes ?? 0;
+        const holidayOvertimeMinutes = attendanceAggregate._sum.holidayOvertimeMinutes ?? 0;
+        const regularOvertimeMinutes = Math.max(0, overtimeMinutes - holidayOvertimeMinutes);
         const hourlyRate = basic > 0 ? basic / (26 * 8) : 0;
-        const overtimeAmount = Math.round((overtimeMinutes / 60) * hourlyRate * 1.5 * 100) / 100;
-        const overtimeAllowance =
-          overtimeAmount > 0
-            ? [{ name: `Overtime (${(overtimeMinutes / 60).toFixed(2)}h)`, amount: overtimeAmount }]
-            : [];
+        const regularOvertimeAmount =
+          Math.round((regularOvertimeMinutes / 60) * hourlyRate * 1.5 * 100) / 100;
+        const holidayOvertimeAmount =
+          Math.round((holidayOvertimeMinutes / 60) * hourlyRate * 2.0 * 100) / 100;
+        const overtimeAmount = regularOvertimeAmount + holidayOvertimeAmount;
+        const overtimeAllowance = [
+          ...(regularOvertimeAmount > 0
+            ? [
+                {
+                  name: `Overtime 1.5x (${(regularOvertimeMinutes / 60).toFixed(2)}h)`,
+                  amount: regularOvertimeAmount,
+                },
+              ]
+            : []),
+          ...(holidayOvertimeAmount > 0
+            ? [
+                {
+                  name: `Public holiday overtime (2x) (${(holidayOvertimeMinutes / 60).toFixed(2)}h)`,
+                  amount: holidayOvertimeAmount,
+                },
+              ]
+            : []),
+        ];
         const lp =
           mode === 'included_in_gross' || mode === 'paye_only' ? defaultLeavePay : 0;
         if (biweekly && clientId && basic > 0) {

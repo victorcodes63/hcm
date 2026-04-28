@@ -90,6 +90,8 @@ export async function GET(request: NextRequest) {
           minutesWorked: workedMinutes,
           lateMinutes: 0,
           overtimeMinutes: 0,
+          holidayOvertimeMinutes: 0,
+          publicHolidayName: null,
           status: row.checkOut ? 'reconciled' : 'draft',
           employee: row.employee,
         };

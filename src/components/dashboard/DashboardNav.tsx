@@ -7,6 +7,9 @@ import type { UserRole } from '@/types/dashboard';
 import {
   LayoutDashboard,
   Users,
+  Briefcase,
+  UserSearch,
+  FileText,
   FolderOpen,
   ChevronRight,
   Building2,
@@ -23,6 +26,7 @@ import {
   Landmark,
   BarChart3,
   Shield,
+  UserCog,
   KeyRound,
   History,
   Settings,
@@ -60,7 +64,20 @@ const primarySections: AccordionSection[] = [
       { href: '/dashboard/people/contracts', label: 'Contracts', icon: FileSignature },
       { href: '/dashboard/credentials', label: 'Credentials', icon: BadgeCheck },
       { href: '/dashboard/people/performance', label: 'Performance', icon: TrendingUp },
-      { href: '/dashboard/people/tasks', label: 'Tasks', icon: ListTodo },
+      { href: '/dashboard/onboarding', label: 'Onboarding', icon: ListTodo },
+    ],
+  },
+  {
+    id: 'recruitment',
+    label: 'Recruitment',
+    icon: Briefcase,
+    items: [
+      { href: '/dashboard/jobs', label: 'Job openings', icon: Briefcase },
+      { href: '/dashboard/applications', label: 'Applications', icon: FileText },
+      { href: '/dashboard/candidates', label: 'Talent pool', icon: UserSearch },
+      { href: '/dashboard/interviews', label: 'Interviews', icon: CalendarDays },
+      { href: '/dashboard/interviews/schedule', label: 'Interview calendar', icon: Clock4 },
+      { href: '/dashboard/recruitment/profile', label: 'Careers profile', icon: Building2 },
     ],
   },
   {
@@ -94,6 +111,7 @@ const adminSection: AccordionSection = {
   items: [
     { href: '/dashboard/users/staff', label: 'System users', icon: Shield },
     { href: '/dashboard/admin/roles-permissions', label: 'Roles & permissions', icon: KeyRound },
+    { href: '/dashboard/admin/holidays', label: 'Public holidays', icon: CalendarDays },
     { href: '/dashboard/admin/audit-log', label: 'Audit log', icon: History },
     { href: '/dashboard/admin/ess-portal-users', label: 'ESS portal users', icon: UserCog },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
@@ -139,7 +157,7 @@ function NavLink({
       }`}
     >
       {isActive ? <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary-500" /> : null}
-      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-700' : ''}`} />
+      <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-primary-700' : ''}`} />
       <span className="truncate">{label}</span>
     </Link>
   );
@@ -268,14 +286,14 @@ export default function DashboardNav({
 
   return (
     <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-      <p className="px-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-neutral-500">Menu</p>
+      <p className="px-3 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.06em] text-neutral-400">Menu</p>
       <NavLink href="/dashboard" label="Overview" icon={LayoutDashboard} pathname={pathname} />
 
       {sections.map((section) => {
         const isExpanded = expanded.has(section.id);
         const FolderIcon = isExpanded ? FolderOpen : section.icon;
         return (
-          <div key={section.id} className="pt-2">
+          <div key={section.id} className="pt-4">
             <button
               type="button"
               onClick={() => toggleSection(section.id)}
@@ -289,8 +307,8 @@ export default function DashboardNav({
                   isExpanded ? 'rotate-90' : ''
                 }`}
               />
-              <FolderIcon className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1 text-[11px] font-semibold tracking-[0.02em]">{section.label}</span>
+              <FolderIcon className="w-[18px] h-[18px] flex-shrink-0" />
+              <span className="flex-1 text-xs font-semibold uppercase tracking-[0.06em]">{section.label}</span>
             </button>
             <div
               id={`nav-section-${section.id}`}

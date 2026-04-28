@@ -4,6 +4,7 @@ import {
   type EnginePunch,
   type EngineShiftAssignment,
 } from '@/lib/shift-engine/computeAttendance';
+import { doesShiftTouchPublicHoliday } from '@/lib/holidays';
 import {
   getEssPortalUserIdForEmployee,
   getManagerUserIdForEmployee,
@@ -92,17 +93,20 @@ function shiftsToEngineAssignments(
  * Uses `computeAttendance` for debounce, cross-midnight pairing, and multi-shift matching.
  * Overtime minutes follow production rules: worked minutes minus scheduled shift length (minus break), not engine daily buckets.
  */
-export function computeReconciledSummaryMetrics(
+export async function computeReconciledSummaryMetrics(
   events: ReconcileEventInput[],
   shiftRows: ReconcileShiftInput[],
-  employeeId: string
-): {
+  employeeId: string,
+  holidayResolver: (clockIn: Date | null, clockOut: Date | null) => Promise<{ isHoliday: boolean; holidayName?: string }> = doesShiftTouchPublicHoliday
+): Promise<{
   firstInAt: Date | null;
   lastOutAt: Date | null;
   minutesWorked: number;
   overtimeMinutes: number;
+  holidayOvertimeMinutes: number;
+  publicHolidayName: string | null;
   summaryStatus: 'draft' | 'reconciled';
-} {
+}> {
   const punches = eventsToEnginePunches(events, employeeId);
   const engineAssignments = shiftsToEngineAssignments(shiftRows, employeeId);
   const records = computeAttendance(punches, engineAssignments, {
@@ -112,6 +116,8 @@ export function computeReconciledSummaryMetrics(
 
   let minutesWorked = 0;
   let overtimeMinutes = 0;
+  let holidayOvertimeMinutes = 0;
+  let publicHolidayName: string | null = null;
   let firstInAt: Date | null = null;
   let lastOutAt: Date | null = null;
   let anyPending = false;
@@ -126,7 +132,16 @@ export function computeReconciledSummaryMetrics(
       const segmentMinutes = Math.round((r.clockOut.getTime() - r.clockIn.getTime()) / 60000);
       minutesWorked += segmentMinutes;
       const scheduledMinutes = scheduledWorkMinutes(shift);
-      overtimeMinutes += Math.max(0, segmentMinutes - scheduledMinutes);
+      const holidayCheck = await holidayResolver(r.clockIn, r.clockOut);
+      if (holidayCheck.isHoliday) {
+        holidayOvertimeMinutes += segmentMinutes;
+        overtimeMinutes += segmentMinutes;
+        if (!publicHolidayName && holidayCheck.holidayName) {
+          publicHolidayName = holidayCheck.holidayName;
+        }
+      } else {
+        overtimeMinutes += Math.max(0, segmentMinutes - scheduledMinutes);
+      }
     }
   }
 
@@ -134,7 +149,15 @@ export function computeReconciledSummaryMetrics(
   const summaryStatus =
     events.length === 0 ? 'draft' : anyPending || !complete ? 'draft' : 'reconciled';
 
-  return { firstInAt, lastOutAt, minutesWorked, overtimeMinutes, summaryStatus };
+  return {
+    firstInAt,
+    lastOutAt,
+    minutesWorked,
+    overtimeMinutes,
+    holidayOvertimeMinutes,
+    publicHolidayName,
+    summaryStatus,
+  };
 }
 
 function legacyFirstLastMetrics(events: ReconcileEventInput[]): {
@@ -230,14 +253,18 @@ export async function reconcileAttendanceDay(db: PrismaClient, options: Reconcil
   let lastOutAt: Date | null;
   let minutesWorked: number;
   let overtimeMinutes: number;
+  let holidayOvertimeMinutes = 0;
+  let publicHolidayName: string | null = null;
   let summaryStatus: 'draft' | 'reconciled';
 
   if (assignments.length > 0) {
-    const m = computeReconciledSummaryMetrics(events, shiftInputs, options.employeeId);
+    const m = await computeReconciledSummaryMetrics(events, shiftInputs, options.employeeId);
     firstInAt = m.firstInAt;
     lastOutAt = m.lastOutAt;
     minutesWorked = m.minutesWorked;
     overtimeMinutes = m.overtimeMinutes;
+    holidayOvertimeMinutes = m.holidayOvertimeMinutes;
+    publicHolidayName = m.publicHolidayName;
     summaryStatus = m.summaryStatus;
   } else {
     const legacy = legacyFirstLastMetrics(events);
@@ -245,6 +272,8 @@ export async function reconcileAttendanceDay(db: PrismaClient, options: Reconcil
     lastOutAt = legacy.lastOutAt;
     minutesWorked = legacy.minutesWorked;
     overtimeMinutes = legacy.overtimeMinutes;
+    holidayOvertimeMinutes = 0;
+    publicHolidayName = null;
     summaryStatus = legacy.summaryStatus;
   }
 
@@ -260,6 +289,8 @@ export async function reconcileAttendanceDay(db: PrismaClient, options: Reconcil
       lastOutAt,
       minutesWorked,
       overtimeMinutes,
+      holidayOvertimeMinutes,
+      publicHolidayName,
       status: summaryStatus,
       sourceBreakdown: {
         biometric: events.filter((e) => e.source === 'biometric').length,
@@ -273,6 +304,8 @@ export async function reconcileAttendanceDay(db: PrismaClient, options: Reconcil
       lastOutAt,
       minutesWorked,
       overtimeMinutes,
+      holidayOvertimeMinutes,
+      publicHolidayName,
       status: summaryStatus,
       sourceBreakdown: {
         biometric: events.filter((e) => e.source === 'biometric').length,

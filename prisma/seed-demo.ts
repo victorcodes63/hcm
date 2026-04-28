@@ -24,6 +24,21 @@ const HOSPITAL = {
   leavePayMode: 'none',
 } as const;
 
+const kenyanHolidays = [
+  { name: "New Year's Day", recurDay: 1, recurMonth: 1, recurring: true },
+  { name: 'Labour Day', recurDay: 1, recurMonth: 5, recurring: true },
+  { name: 'Madaraka Day', recurDay: 1, recurMonth: 6, recurring: true },
+  { name: 'Mashujaa Day', recurDay: 20, recurMonth: 10, recurring: true },
+  { name: 'Jamhuri Day', recurDay: 12, recurMonth: 12, recurring: true },
+  { name: 'Christmas Day', recurDay: 25, recurMonth: 12, recurring: true },
+  { name: 'Boxing Day', recurDay: 26, recurMonth: 12, recurring: true },
+  { name: 'Good Friday', date: '2026-04-03', recurring: false },
+  { name: 'Easter Monday', date: '2026-04-06', recurring: false },
+  { name: 'Eid ul-Fitr', date: '2026-03-20', recurring: false },
+  { name: 'Eid ul-Adha', date: '2026-05-27', recurring: false },
+  { name: 'Utamaduni Day', recurDay: 10, recurMonth: 10, recurring: true },
+];
+
 type EmployeeSeed = {
   employeeNumber: string;
   firstName: string;
@@ -138,6 +153,45 @@ async function main() {
           ...HOSPITAL,
         },
       });
+
+  if (hasModel('publicHoliday')) {
+    for (const holiday of kenyanHolidays) {
+      const existing = await prismaAny.publicHoliday.findFirst({
+        where: holiday.recurring
+          ? {
+              name: holiday.name,
+              recurring: true,
+              recurMonth: holiday.recurMonth,
+              recurDay: holiday.recurDay,
+            }
+          : { name: holiday.name, date: new Date(`${holiday.date}T00:00:00.000Z`) },
+        select: { id: true },
+      });
+      if (existing) {
+        await prismaAny.publicHoliday.update({
+          where: { id: existing.id },
+          data: {
+            recurring: holiday.recurring,
+            date: holiday.recurring ? null : new Date(`${holiday.date}T00:00:00.000Z`),
+            recurMonth: holiday.recurring ? holiday.recurMonth : null,
+            recurDay: holiday.recurring ? holiday.recurDay : null,
+            isActive: true,
+          },
+        });
+      } else {
+        await prismaAny.publicHoliday.create({
+          data: {
+            name: holiday.name,
+            recurring: holiday.recurring,
+            date: holiday.recurring ? null : new Date(`${holiday.date}T00:00:00.000Z`),
+            recurMonth: holiday.recurring ? holiday.recurMonth : null,
+            recurDay: holiday.recurring ? holiday.recurDay : null,
+            isActive: true,
+          },
+        });
+      }
+    }
+  }
 
   const deptByName = new Map<string, string>();
   for (const name of departments) {
@@ -451,6 +505,8 @@ async function main() {
           minutesWorked: workedMinutes,
           lateMinutes: row.lateMinutes,
           overtimeMinutes: row.overtimeMinutes,
+          holidayOvertimeMinutes: 0,
+          publicHolidayName: null,
           status: checkOut ? AttendanceSummaryStatus.reconciled : AttendanceSummaryStatus.draft,
         },
         create: {
@@ -462,6 +518,8 @@ async function main() {
           minutesWorked: workedMinutes,
           lateMinutes: row.lateMinutes,
           overtimeMinutes: row.overtimeMinutes,
+          holidayOvertimeMinutes: 0,
+          publicHolidayName: null,
           status: checkOut ? AttendanceSummaryStatus.reconciled : AttendanceSummaryStatus.draft,
         },
       });

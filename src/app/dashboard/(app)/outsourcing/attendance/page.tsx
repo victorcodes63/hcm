@@ -13,6 +13,8 @@ type Summary = {
   minutesWorked: number;
   lateMinutes: number;
   overtimeMinutes: number;
+  holidayOvertimeMinutes?: number;
+  publicHolidayName?: string | null;
   status: 'draft' | 'reconciled' | 'approved';
   employee: { firstName: string; lastName: string; employeeNumber: string | null };
 };
@@ -166,6 +168,7 @@ export default function OutsourcingAttendancePage() {
               <th className="text-left px-3 py-2">Worked</th>
               <th className="text-left px-3 py-2">Late</th>
               <th className="text-left px-3 py-2">Overtime</th>
+              <th className="text-left px-3 py-2">Holiday</th>
               <th className="text-left px-3 py-2">Status</th>
             </tr>
           </thead>
@@ -181,7 +184,27 @@ export default function OutsourcingAttendancePage() {
                 <td className="px-3 py-2">{summary.lastOutAt ? new Date(summary.lastOutAt).toLocaleString() : 'Missing'}</td>
                 <td className="px-3 py-2">{(summary.minutesWorked / 60).toFixed(2)}h</td>
                 <td className="px-3 py-2">{summary.lateMinutes}m</td>
-                <td className="px-3 py-2">{summary.overtimeMinutes}m</td>
+                <td className="px-3 py-2">
+                  {summary.publicHolidayName ? (
+                    <div className="flex flex-col gap-1">
+                      <span>{summary.overtimeMinutes}m</span>
+                      <span className="inline-flex w-fit rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        Holiday 2x
+                      </span>
+                    </div>
+                  ) : (
+                    `${summary.overtimeMinutes}m`
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {summary.publicHolidayName ? (
+                    <span className="inline-flex rounded bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700">
+                      {summary.publicHolidayName}
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   {(() => {
                     const key = `${summary.employeeId}:${summary.workDate.slice(0, 10)}`;
@@ -200,7 +223,7 @@ export default function OutsourcingAttendancePage() {
               </tr>
             ))}
             {!loading && summaries.length === 0 ? (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-neutral-500">No attendance summaries found.</td></tr>
+              <tr><td colSpan={9} className="px-3 py-8 text-center text-neutral-500">No attendance summaries found.</td></tr>
             ) : null}
           </tbody>
         </table>
