@@ -22,6 +22,7 @@ interface PayrollRecord {
   nssf: string;
   nhif: string;
   ahl: string;
+  nita?: string;
   netPay: string;
   status: string;
   payrollFrequency?: string;
@@ -97,6 +98,7 @@ export default function AccountsPayrollPage() {
   const [duplicateResolution, setDuplicateResolution] = useState<Record<string, number>>({});
   const [acceptSheetValueUpdates, setAcceptSheetValueUpdates] = useState(false);
   const [pendingSendAction, setPendingSendAction] = useState<PendingSendAction | null>(null);
+  const [bankExportWarning, setBankExportWarning] = useState<string | null>(null);
 
   // Table-level filters (search + status)
   const [tableSearchQuery, setTableSearchQuery] = useState('');
@@ -510,6 +512,56 @@ export default function AccountsPayrollPage() {
     }
   };
 
+  const bankExportState = useMemo(() => {
+    if (payrolls.length === 0) return { enabled: false, title: 'No payroll records to export.' as const };
+    if (payrolls.some((p) => p.status === 'draft')) {
+      return { enabled: false, title: 'Approve the payroll run before exporting.' as const };
+    }
+    if (!payrolls.every((p) => p.status === 'approved' || p.status === 'paid')) {
+      return { enabled: false, title: 'All visible payroll records must be approved or paid before exporting.' as const };
+    }
+    return { enabled: true, title: 'Download CSV for bank batch payment (net pay)' as const };
+  }, [payrolls]);
+
+  const handleBankExport = async () => {
+    if (!bankExportState.enabled) return;
+    setBankExportWarning(null);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('month', String(month));
+      params.set('year', String(year));
+      if (scope === 'client' && clientId.trim()) params.set('clientId', clientId.trim());
+      if (scope === 'department' && departmentId.trim()) params.set('departmentId', departmentId.trim());
+      const res = await fetch(`/api/outsourcing/payroll/bank-export?${params.toString()}`, { credentials: 'include' });
+      const miss = parseInt(res.headers.get('X-Missing-Bank-Details-Count') || '0', 10);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || 'Bank export failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition');
+      const match = cd?.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? `payroll-${year}-${String(month).padStart(2, '0')}-bank-export.csv`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (miss > 0) {
+        setBankExportWarning(
+          `${miss} employee(s) are missing bank name or account number and may need manual payment.`,
+        );
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Bank export failed');
+    }
+  };
+
   return (
     <div className="w-full min-w-0">
       <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
@@ -547,6 +599,15 @@ export default function AccountsPayrollPage() {
         <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg text-primary-800 text-sm flex items-center justify-between">
           <span>{generateResult}</span>
           <button type="button" onClick={() => setGenerateResult(null)} className="text-primary-600 hover:underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {bankExportWarning && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm flex items-center justify-between gap-3">
+          <span>{bankExportWarning}</span>
+          <button type="button" onClick={() => setBankExportWarning(null)} className="text-amber-800 hover:underline shrink-0">
             Dismiss
           </button>
         </div>
@@ -661,11 +722,21 @@ export default function AccountsPayrollPage() {
               type="button"
               onClick={handleRecalculateStatutory}
               disabled={payrolls.length === 0 || recalculating}
-              title="Recalculate PAYE, NSSF, SHIF, AHL for all in scope"
+              title="Recalculate PAYE, NSSF, SHIF, AHL, NITA for all in scope"
               className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {recalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
               Recalculate statutory (all)
+            </button>
+            <button
+              type="button"
+              onClick={handleBankExport}
+              disabled={!bankExportState.enabled}
+              title={bankExportState.title}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download bank file
             </button>
           </div>
         </div>
@@ -862,6 +933,9 @@ export default function AccountsPayrollPage() {
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">NSSF</th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">SHIF</th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">AHL</th>
+                  <th className="text-right px-4 py-3 font-medium text-neutral-600" title="Employer NITA (not from net pay)">
+                    NITA (emp.)
+                  </th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">Net pay</th>
                   <th className="text-left px-4 py-3 font-medium text-neutral-600">Status</th>
                   <th className="w-10 px-4 py-3 text-center font-medium text-neutral-600">Edit</th>
@@ -917,6 +991,7 @@ export default function AccountsPayrollPage() {
                         <td className="px-4 py-3 text-right tabular-nums">{Number(p.nssf).toLocaleString()}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{Number(p.nhif).toLocaleString()}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{Number(p.ahl ?? 0).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-neutral-600">{Number(p.nita ?? 0).toLocaleString()}</td>
                         <td className="px-4 py-3 text-right tabular-nums font-medium">{Number(p.netPay).toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${

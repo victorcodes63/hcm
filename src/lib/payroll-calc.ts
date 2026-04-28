@@ -16,6 +16,9 @@ const PAYE_BRACKETS = [
 ];
 const PERSONAL_RELIEF = 2_400;
 
+/** Kenya NITA employer levy: flat per employee per month (not taken from net pay). */
+export const NITA_LEVY_PER_EMPLOYEE_KES = 50;
+
 /** PAYE stored/displayed to exactly 2 decimal places */
 function roundPaye2(n: number): number {
   return Math.max(0, Math.round((n + Number.EPSILON) * 100) / 100);
@@ -61,6 +64,8 @@ export interface StatutoryResult {
   nssf: number;
   nhif: number;
   ahl: number;
+  /** Employer NITA levy per employee per month; does not reduce netPay. */
+  nita: number;
   netPay: number;
   employmentGross?: number;
   leavePay?: number;
@@ -93,6 +98,7 @@ export function calculateStatutoryForPayroll(
       nssf,
       nhif: shif,
       ahl,
+      nita: NITA_LEVY_PER_EMPLOYEE_KES,
       netPay,
       employmentGross,
       leavePay: lp,
@@ -112,13 +118,13 @@ export function calculateStatutoryForPayroll(
     nssf,
     nhif: shif,
     ahl,
+    nita: NITA_LEVY_PER_EMPLOYEE_KES,
     netPay,
     employmentGross,
     leavePay: mode === 'included_in_gross' ? lp : 0,
   };
 }
 
-/** @deprecated use calculateStatutoryForPayroll('none', gross, 0, other) */
 export function calculateStatutory(
   grossPay: number,
   otherDeductionsTotal: number = 0

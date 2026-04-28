@@ -6,6 +6,12 @@ const prisma = new PrismaClient();
 const prismaAny = prisma as any;
 const PASSWORD_ROUNDS = 10;
 
+type CompatibilityItem = {
+  key: string;
+  available: boolean;
+  reasonIfSkipped: string;
+};
+
 const HOSPITAL = {
   name: '3rd Park Hospital',
   contactName: 'Hospital Administration',
@@ -103,6 +109,8 @@ async function main() {
   const todayYmd = isoDate(now);
   const currentYear = now.getUTCFullYear();
   const currentMonth = now.getUTCMonth() + 1;
+  const compatibility: CompatibilityItem[] = [];
+  const hasModel = (name: string) => Boolean(prismaAny[name]);
 
   const marchYear = currentMonth >= 4 ? currentYear : currentYear - 1;
   const aprilYear = marchYear;
@@ -433,7 +441,7 @@ async function main() {
     });
 
     const workedMinutes = checkOut ? Math.max(0, Math.round((checkOut.getTime() - checkIn.getTime()) / 60000)) : 0;
-    if (prismaAny.attendanceDaySummary) {
+    if (hasModel('attendanceDaySummary')) {
       await prismaAny.attendanceDaySummary.upsert({
         where: { employeeId_workDate: { employeeId: employee.id, workDate } },
         update: {
@@ -462,7 +470,7 @@ async function main() {
 
   const grace = employeeByEmail.get(roleEmails.grace);
   const mary = employeeByEmail.get(roleEmails.mary);
-  if (grace && prismaAny.attendanceException) {
+  if (grace && hasModel('attendanceException')) {
     await upsertAttendanceException({
       employeeId: grace.id,
       workDate: new Date(`${todayYmd}T00:00:00.000Z`),
@@ -471,7 +479,7 @@ async function main() {
       description: 'No check-out event found for this shift/day window.',
     });
   }
-  if (mary && prismaAny.attendanceException) {
+  if (mary && hasModel('attendanceException')) {
     await upsertAttendanceException({
       employeeId: mary.id,
       workDate: new Date(`${isoDate(daysFromToday(-1))}T00:00:00.000Z`),
@@ -481,7 +489,7 @@ async function main() {
     });
   }
 
-  if (prismaAny.attendancePolicy && prismaAny.attendancePolicyAssignment) {
+  if (hasModel('attendancePolicy') && hasModel('attendancePolicyAssignment')) {
     const policy = await prismaAny.attendancePolicy.upsert({
     where: { id: `default-attendance-${hospital.id}` },
     update: {
@@ -629,7 +637,6 @@ async function main() {
   await upsertLeaveApplication(joseph.id, sickLeaveType, daysFromToday(-1), daysFromToday(2), LeaveStatus.approved, 'Medical recovery leave');
   await upsertLeaveApplication(maryEmp.id, annualLeaveType, daysFromToday(7), daysFromToday(11), LeaveStatus.pending, 'Pending annual leave request');
 
-  const nitaDeduction = { name: 'NITA', amount: 50 };
   for (const monthData of [
     { month: 3, year: marchYear, status: PayrollStatus.approved },
     { month: 4, year: aprilYear, status: PayrollStatus.draft },
@@ -637,7 +644,7 @@ async function main() {
     for (const seed of employeesSeed) {
       const employee = employeeByEmail.get(seed.email);
       if (!employee) continue;
-      const overtimeMinutes = prismaAny.attendanceDaySummary
+      const overtimeMinutes = hasModel('attendanceDaySummary')
         ? ((await prismaAny.attendanceDaySummary.aggregate({
             where: {
               employeeId: employee.id,
@@ -651,9 +658,9 @@ async function main() {
         : 0;
       const overtimeAmount = Math.round((seed.baseSalary / 22560) * overtimeMinutes);
       const allowances = [...seed.allowances, { name: 'Overtime', amount: overtimeAmount }];
-      const deductions = [nitaDeduction];
+      const deductions: { name: string; amount: number }[] = [];
       const employmentGross = seed.baseSalary + allowances.reduce((sum, a) => sum + a.amount, 0);
-      const statutory = calculateStatutoryForPayroll('none', employmentGross, 0, deductions.reduce((s, d) => s + d.amount, 0));
+      const statutory = calculateStatutoryForPayroll('none', employmentGross, 0, 0);
 
       await prisma.payroll.upsert({
         where: { employeeId_month_year: { employeeId: employee.id, month: monthData.month, year: monthData.year } },
@@ -666,6 +673,7 @@ async function main() {
           nssf: new Prisma.Decimal(statutory.nssf),
           nhif: new Prisma.Decimal(statutory.nhif),
           ahl: new Prisma.Decimal(statutory.ahl),
+          nita: new Prisma.Decimal(statutory.nita),
           netPay: new Prisma.Decimal(statutory.netPay),
           status: monthData.status,
         },
@@ -682,6 +690,7 @@ async function main() {
           nssf: new Prisma.Decimal(statutory.nssf),
           nhif: new Prisma.Decimal(statutory.nhif),
           ahl: new Prisma.Decimal(statutory.ahl),
+          nita: new Prisma.Decimal(statutory.nita),
           netPay: new Prisma.Decimal(statutory.netPay),
           status: monthData.status,
         },
@@ -772,6 +781,45 @@ async function main() {
 
   const clinicalCount = employeesSeed.filter((e) => e.clinical).length;
   const nonClinicalCount = employeesSeed.length - clinicalCount;
+
+  compatibility.push(
+    {
+      key: 'attendanceDaySummary',
+      available: hasModel('attendanceDaySummary'),
+      reasonIfSkipped: 'Attendance summary records and overtime-from-summary aggregation skipped.',
+    },
+    {
+      key: 'attendanceException',
+      available: hasModel('attendanceException'),
+      reasonIfSkipped: 'Missing clock-out / late-arrival exception rows skipped.',
+    },
+    {
+      key: 'attendancePolicy',
+      available: hasModel('attendancePolicy'),
+      reasonIfSkipped: 'Default attendance policy creation skipped.',
+    },
+    {
+      key: 'attendancePolicyAssignment',
+      available: hasModel('attendancePolicyAssignment'),
+      reasonIfSkipped: 'Per-employee attendance policy assignment skipped.',
+    },
+    {
+      key: 'leavePolicy',
+      available: hasModel('leavePolicy'),
+      reasonIfSkipped: 'Leave policy scaffold skipped (balances/applications still seeded).',
+    },
+    {
+      key: 'leavePolicyRule',
+      available: hasModel('leavePolicyRule'),
+      reasonIfSkipped: 'Leave policy rules skipped.',
+    },
+    {
+      key: 'leavePolicyAssignment',
+      available: hasModel('leavePolicyAssignment'),
+      reasonIfSkipped: 'Per-employee leave policy assignment skipped.',
+    },
+  );
+
   console.log(`Seed complete for ${HOSPITAL.name}`);
   console.log(`Employees: ${employeesSeed.length} (${clinicalCount} clinical / ${nonClinicalCount} non-clinical)`);
   console.log(`Credentials: ${credentialsSeed.length} (1 expiring in 14 days, 1 expired 37 days ago)`);
@@ -779,6 +827,14 @@ async function main() {
   console.log(`Attendance: ${attendanceRows.length} summary rows seeded for last 14 days`);
   console.log(`Payroll: March ${marchYear} approved, April ${aprilYear} draft`);
   console.log(`Users: demo admin + HR + payroll seeded with password Demo@2026!`);
+  console.log('Compatibility report:');
+  for (const item of compatibility) {
+    if (item.available) {
+      console.log(` - ${item.key}: available`);
+    } else {
+      console.log(` - ${item.key}: skipped (${item.reasonIfSkipped})`);
+    }
+  }
 }
 
 async function upsertAttendanceException(input: {

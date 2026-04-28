@@ -774,6 +774,8 @@ export interface PayslipEmailData {
   nssf: string;
   nhif: string;
   ahl: string;
+  /** Employer NITA; informational on payslip, not deducted from net pay. */
+  employerNita?: string;
   netPay: string;
   biweekly?: boolean;
   period1Gross?: string;
@@ -875,6 +877,18 @@ function buildPayslipHtml(data: PayslipEmailData, month: number, year: number): 
             </table>
           </td>
         </tr>
+        ${
+          Number(data.employerNita ?? 0) > 0
+            ? `<tr>
+          <td style="padding:12px 0 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:12px;border-collapse:collapse;">
+              <tr><td colspan="2" style="padding:8px 0;font-weight:600;color:#6b7280;border-bottom:1px solid #e5e7eb;">Employer contributions (informational)</td></tr>
+              <tr><td style="padding:6px 0;color:#6b7280;">NITA levy (employer — not deducted from your pay)</td><td style="text-align:right;font-family:monospace;color:#6b7280;">KES ${formatPayslipAmount(data.employerNita!)}</td></tr>
+            </table>
+          </td>
+        </tr>`
+            : ''
+        }
         <tr>
           <td style="padding:16px 0;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
             Computer-generated payslip. For queries, contact 3rd Park Hospital HR.

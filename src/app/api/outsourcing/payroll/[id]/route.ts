@@ -272,7 +272,7 @@ export async function PATCH(
       nssf = nssfOverride ?? existing.nssf;
       nhif = nhifOverride ?? existing.nhif;
       ahl = ahlOverride ?? existing.ahl;
-      nita = existing.nita != null ? toDecimal(existing.nita) : toDecimal(0);
+      nita = toDecimal(Number(existing.nita ?? 0));
       const payeNum = Number(paye);
       const nssfNum = Number(nssf);
       const nhifNum = Number(nhif);

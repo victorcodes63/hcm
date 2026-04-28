@@ -22,6 +22,8 @@ export interface PayslipPdfData {
   nssf: string;
   nhif: string;
   ahl: string;
+  /** Employer NITA levy (flat/month); shown for transparency, not deducted from net pay. */
+  employerNita?: string;
   netPay: string;
   biweekly?: boolean;
   period1Gross?: string;
@@ -228,7 +230,7 @@ export async function generatePayslipPdf(
   const leavePayNum = Number(data.leavePay ?? 0);
   const earningsRows: [string, string][] = [
     ['Basic pay', fmt(data.basicPay)],
-    ...(data.allowances ?? []).map((a) => [a.name, fmt(a.amount)]),
+    ...(data.allowances ?? []).map((a): [string, string] => [a.name, fmt(a.amount)]),
     ...(leavePayNum > 0 ? ([['Leave pay', fmt(data.leavePay!)]] as [string, string][]) : []),
     ['Gross pay', fmt(data.grossPay)],
   ];
@@ -269,7 +271,7 @@ export async function generatePayslipPdf(
     ['NSSF', fmt(data.nssf)],
     ['SHIF', fmt(data.nhif)],
     ['AHL (1.5%)', fmt(data.ahl ?? 0)],
-    ...(data.deductions ?? []).map((d) => [d.name, fmt(d.amount)]),
+    ...(data.deductions ?? []).map((d): [string, string] => [d.name, fmt(d.amount)]),
     ['Net pay', fmt(data.netPay)],
   ];
   for (let i = 0; i < deductionsRows.length; i++) {
@@ -290,6 +292,30 @@ export async function generatePayslipPdf(
     const amtW = font.widthOfTextAtSize(amt, 11);
     page.drawText(amt, { x: width - margin - amtW, y, size: 11, font, color });
     y -= rowH;
+  }
+  y -= 8;
+
+  const nitaNum = Number(data.employerNita ?? 0);
+  if (nitaNum > 0) {
+    page.drawText('Employer contributions (informational)', {
+      x: margin,
+      y,
+      size: 11,
+      font: helveticaBold,
+      color: GRAY_500,
+    });
+    y -= 16;
+    page.drawText('NITA levy (employer — not deducted from your pay)', {
+      x: margin,
+      y,
+      size: 10,
+      font: helvetica,
+      color: GRAY_600,
+    });
+    const nitaAmt = fmt(data.employerNita!);
+    const nitaW = helvetica.widthOfTextAtSize(nitaAmt, 10);
+    page.drawText(nitaAmt, { x: width - margin - nitaW, y, size: 10, font: helvetica, color: GRAY_600 });
+    y -= rowH + 8;
   }
 
   // 6. Footer (centered)

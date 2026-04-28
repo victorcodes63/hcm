@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
         nssf: toDecimal(statutory.nssf),
         nhif: toDecimal(statutory.nhif),
         ahl: toDecimal(statutory.ahl),
+        nita: toDecimal(statutory.nita),
         netPay: toDecimal(statutory.netPay),
         allowances: [...allowances, ...daysWorkedLine],
         deductions: [],

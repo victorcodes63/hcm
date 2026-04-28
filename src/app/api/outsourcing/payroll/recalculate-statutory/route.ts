@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
           nssf: toDecimal(calc.nssf),
           nhif: toDecimal(calc.nhif),
           ahl: toDecimal(calc.ahl),
+          nita: toDecimal(calc.nita),
           netPay: toDecimal(calc.netPay),
         },
       });

@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
       nssf: String(p.nssf),
       nhif: String(p.nhif),
       ahl: String(p.ahl ?? 0),
+      nita: String(p.nita ?? 0),
       netPay: String(p.netPay),
       status: p.status,
       attendanceSummaryStatus: 'legacy',

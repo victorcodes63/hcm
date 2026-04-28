@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
           nssf: String(p.nssf),
           nhif: String(p.nhif),
           ahl: String(p.ahl ?? 0),
+          employerNita: String(p.nita ?? 0),
           netPay: String(p.netPay),
           ...(biweekly
             ? {

@@ -23,6 +23,7 @@ interface PayrollRecord {
   nssf: string;
   nhif: string;
   ahl: string;
+  nita?: string;
   netPay: string;
   status: string;
   payrollFrequency?: string;
@@ -336,8 +337,8 @@ function PayslipsContent() {
               >
                 <div className={`mb-4 pb-3 ${printLayout === 'four' ? 'border-b border-neutral-400' : 'border-b border-primary-900'}`}>
                   <div className="flex items-center justify-between gap-3">
-                    <Image src="/images/logo/logo_dark_ubxaCll.png" alt="Eagle HR" width={120} height={36} className="h-9 w-auto print:h-6" />
-                    <span className="text-sm font-medium text-neutral-600 print:text-xs text-right ml-auto">Eagle HR Consultants</span>
+                    <Image src="/brand/3rd-park-logo.webp" alt="3rd Park HRIS" width={120} height={36} className="h-9 w-auto print:h-6" />
+                    <span className="text-sm font-medium text-neutral-600 print:text-xs text-right ml-auto">3rd Park HRIS</span>
                   </div>
                 </div>
 
@@ -407,12 +408,15 @@ function PayslipsContent() {
                           <td className="py-1">AHL (1.5%)</td>
                           <td className="text-right tabular-nums">KES {formatAmount(p.ahl ?? 0)}</td>
                         </tr>
-                        {Array.isArray(p.deductions) && p.deductions.length > 0 && p.deductions.map((d, i) => (
-                          <tr key={i}>
-                            <td className="py-1">{d.name}</td>
-                            <td className="text-right tabular-nums">KES {formatAmount(d.amount)}</td>
-                          </tr>
-                        ))}
+                        {Array.isArray(p.deductions) &&
+                          p.deductions
+                            .filter((d) => String(d.name).trim().toUpperCase() !== 'NITA')
+                            .map((d, i) => (
+                              <tr key={i}>
+                                <td className="py-1">{d.name}</td>
+                                <td className="text-right tabular-nums">KES {formatAmount(d.amount)}</td>
+                              </tr>
+                            ))}
                         <tr className="border-t border-neutral-200 font-semibold">
                           <td className="py-2">Net pay</td>
                           <td className="text-right tabular-nums text-primary-700">KES {formatAmount(p.netPay)}</td>
@@ -420,6 +424,21 @@ function PayslipsContent() {
                       </tbody>
                     </table>
                   </div>
+
+                  {Number(p.nita ?? 0) > 0 && (
+                    <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50/90">
+                      <h2 className="text-xs font-semibold uppercase text-neutral-500 mb-2">Employer contributions (informational)</h2>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr>
+                            <td className="py-1">NITA levy (employer)</td>
+                            <td className="text-right tabular-nums">KES {formatAmount(p.nita ?? 0)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p className="text-[11px] text-neutral-500 mt-2">Not deducted from your net pay.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             );

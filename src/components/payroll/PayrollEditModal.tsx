@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, Calculator } from 'lucide-react';
-import { calculateStatutoryForPayroll } from '@/lib/payroll-calc';
+import { calculateStatutoryForPayroll, NITA_LEVY_PER_EMPLOYEE_KES } from '@/lib/payroll-calc';
 import { allocateStatutoryBiweekly } from '@/lib/biweekly-payroll';
 import {
   workingDaysInPeriod,
@@ -65,6 +65,7 @@ export default function PayrollEditModal({
   const [nssf, setNssf] = useState('');
   const [nhif, setNhif] = useState('');
   const [ahl, setAhl] = useState('');
+  const [nita, setNita] = useState(String(NITA_LEVY_PER_EMPLOYEE_KES));
   const [grossPay, setGrossPay] = useState(0);
   const [netPay, setNetPay] = useState(0);
   const [recalcStatutory, setRecalcStatutory] = useState(false);
@@ -105,6 +106,7 @@ export default function PayrollEditModal({
         setNssf(String(data.nssf ?? 0));
         setNhif(String(data.nhif ?? 0));
         setAhl(String(data.ahl ?? 0));
+        setNita(String(data.nita ?? NITA_LEVY_PER_EMPLOYEE_KES));
         setGrossPay(Number(data.grossPay ?? 0));
         setNetPay(Number(data.netPay ?? 0));
         setPayrollFrequency(data.payrollFrequency ?? 'monthly');
@@ -226,6 +228,7 @@ export default function PayrollEditModal({
     setNssf(String(calc.nssf));
     setNhif(String(calc.nhif));
     setAhl(String(calc.ahl));
+    setNita(String(calc.nita));
     setRecalcStatutory(true);
     if (biweekly && p1n + p2n > 0) {
       setBiweeklyAllocation(
@@ -397,6 +400,7 @@ export default function PayrollEditModal({
                             setNssf(String(data.nssf ?? 0));
                             setNhif(String(data.nhif ?? 0));
                             setAhl(String(data.ahl ?? 0));
+                            setNita(String(data.nita ?? NITA_LEVY_PER_EMPLOYEE_KES));
                             setGrossPay(Number(data.grossPay ?? 0));
                             setNetPay(Number(data.netPay ?? 0));
                             setBasicPay(String(data.basicPay ?? 0));
@@ -526,7 +530,8 @@ export default function PayrollEditModal({
               <div>
                 <h3 className="text-sm font-semibold text-primary-900 mb-2">Statutory deductions (editable)</h3>
                 <p className="text-xs text-neutral-500 mb-3">
-                  PAYE uses taxable income after NSSF, SHIF, and <strong>AHL (1.5% gross)</strong>. Recalculate applies current Kenyan rules.
+                  PAYE uses taxable income after NSSF, SHIF, and <strong>AHL (1.5% gross)</strong>. Recalculate applies current Kenyan rules.{' '}
+                  <strong>NITA</strong> is an employer levy (KES {NITA_LEVY_PER_EMPLOYEE_KES}/month per employee) and does not reduce net pay.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
@@ -582,12 +587,21 @@ export default function PayrollEditModal({
                   <Calculator className="w-4 h-4" />
                   Recalculate statutory (apply Kenyan rates)
                 </button>
+                <div className="mt-4 p-3 rounded-lg border border-neutral-200 bg-neutral-50/90">
+                  <h4 className="text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-1">Employer — NITA</h4>
+                  <p className="text-sm text-neutral-800">
+                    KES <span className="tabular-nums font-medium">{Number(nita || 0).toLocaleString('en-KE', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-xs text-neutral-500 block mt-1">Shown for remittance reporting only; not deducted from employee net pay.</span>
+                  </p>
+                </div>
               </div>
 
               <div>
                 <h3 className="text-sm font-semibold text-primary-900 mb-2">Other deductions</h3>
                 <div className="space-y-2">
-                  {deductions.map((d) => (
+                  {deductions
+                    .filter((d) => String(d.name).trim().toUpperCase() !== 'NITA')
+                    .map((d) => (
                     <div key={d.name} className="flex items-center gap-2">
                       <span className="flex-1 text-sm">{d.name}</span>
                       <span className="tabular-nums text-sm">{d.amount.toLocaleString('en-KE')}</span>
