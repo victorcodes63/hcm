@@ -1066,7 +1066,7 @@ model User {
   staffLeaveBalances     StaffLeaveBalance[]
   staffLeaveApplications StaffLeaveApplication[] @relation("StaffLeaveApplicant")
   staffLeaveReviews      StaffLeaveApplication[] @relation("StaffLeaveReviewer")
-  staffNotifications     StaffNotification[]
+  staffNotifications     StaffNotification[] @relation("StaffUserNotifications")
   accountsStaffAccess    AccountsStaffAccess[]
   contractManagers       ContractManager[]
   credentialReminders    CredentialReminderSent[]
@@ -1146,6 +1146,8 @@ model EssPortalUser {
 
   employee      Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   createdByUser User?     @relation("EssPortalUserCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  notifications  StaffNotification[] @relation("EssUserNotifications")
 
   @@index([employeeId])
   @@index([isActive])
@@ -1662,18 +1664,24 @@ model AccountsVendorPaymentAllocation {
 
 model StaffNotification {
   id         String    @id @default(cuid())
-  userId     String
+  userId     String?
+  essPortalUserId String?
   title      String
   body       String    @db.Text
   readAt     DateTime?
   href       String?
   contractId String?
+  event      String?
+  priority   String    @default("info")
   createdAt  DateTime  @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation("StaffUserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  essPortalUser EssPortalUser? @relation("EssUserNotifications", fields: [essPortalUserId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([essPortalUserId, createdAt])
   @@index([readAt])
+  @@index([event, priority])
 }
 
 model SchedulerLock {

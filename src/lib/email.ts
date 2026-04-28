@@ -290,6 +290,51 @@ async function sendViaMicrosoftGraph(params: {
   return { sent: true, messageId: 'graph-sendmail-accepted' };
 }
 
+export async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  cc?: string;
+}): Promise<EmailSendResult> {
+  const graphResult = await sendViaMicrosoftGraph({
+    to: params.to,
+    cc: params.cc,
+    subject: params.subject,
+    html: params.html,
+  });
+  if (graphResult.sent) return graphResult;
+
+  const transporter = getTransporter();
+  if (!transporter) return graphResult;
+  if (!FROM_EMAIL) {
+    return {
+      sent: false,
+      reason: 'from_email_missing',
+      error: 'From email is missing. Set SMTP_USER or SMTP_FROM_EMAIL.',
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+
+  try {
+    const info = (await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to: params.to,
+      cc: params.cc?.trim() || undefined,
+      subject: params.subject,
+      html: params.html,
+    })) as { messageId?: string };
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      sent: false,
+      reason: 'smtp_error',
+      error: message,
+      diagnostics: { provider: 'smtp', ...getSmtpDiagnostics() },
+    };
+  }
+}
+
 /**
  * Send "application received" confirmation to the applicant (and your records).
  * Provider order: Microsoft Graph (recommended on Vercel) -> SMTP fallback.
