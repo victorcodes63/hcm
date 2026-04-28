@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { requireEssUser } from '@/lib/ess-api-auth';
 import { logAuditEvent } from '@/lib/audit-events';
+import { sendNotification } from '@/lib/notifications';
 
 const ROUNDS = 10;
 
@@ -50,6 +51,20 @@ export async function POST(request: NextRequest) {
     route: 'POST /api/ess/auth/password',
     metadata: { mustResetPassword: false },
   });
+  try {
+    await sendNotification({
+      event: 'password_changed',
+      recipientEssPortalUserIds: [user.id],
+      title: 'Password changed',
+      body: "Your password was changed. If you didn't do this, contact your administrator immediately.",
+      href: '/ess/account-security',
+      priority: 'urgent',
+      channel: 'both',
+      metadata: { timestamp: new Date().toISOString() },
+    });
+  } catch (err) {
+    console.error('[notifications] Failed to send password_changed:', err);
+  }
 
   return NextResponse.json({ success: true });
 }

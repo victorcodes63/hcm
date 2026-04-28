@@ -8,6 +8,7 @@ import { isStaffUserType } from '@/lib/staff-permissions';
 import type { StaffUserType, UserRole } from '@/types/dashboard';
 import { userRowToSummary } from '@/lib/user-summary-api';
 import { logAuditEvent } from '@/lib/audit-events';
+import { sendNotification } from '@/lib/notifications';
 
 const ROUNDS = 10;
 const ROLES: UserRole[] = ['admin', 'staff', 'viewer'];
@@ -141,6 +142,23 @@ export async function POST(request: NextRequest) {
       route: 'POST /api/users',
       metadata: { role: user.role, staffUserType: user.staffUserType },
     });
+    try {
+      await sendNotification({
+        event: 'user_invited',
+        recipientUserIds: [user.id],
+        title: 'Welcome to 3rd Park Hospital HR',
+        body: `An account has been created for you. Log in with ${user.email}.`,
+        href: '/dashboard/login',
+        priority: 'info',
+        channel: 'email',
+        metadata: {
+          email: user.email,
+          loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ''}/dashboard/login`,
+        },
+      });
+    } catch (err) {
+      console.error('[notifications] Failed to send user_invited:', err);
+    }
     return NextResponse.json(await userRowToSummary(user));
   } catch (e) {
     console.error('POST /api/users error:', e);

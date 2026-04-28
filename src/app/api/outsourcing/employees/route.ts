@@ -11,6 +11,7 @@ import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canViewSalaryFields, unauthorizedResponse } from '@/lib/demo-route-access';
 import { ensureEssUserForEmployee } from '@/lib/ess-provision';
 import { logAuditEvent } from '@/lib/audit-events';
+import { getHrUserIds, sendNotification } from '@/lib/notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -237,6 +238,21 @@ export async function POST(request: NextRequest) {
       route: 'POST /api/outsourcing/employees',
       metadata: { clientId: employee.outsourcingClientId, departmentId: employee.departmentId },
     });
+    try {
+      const hrUserIds = await getHrUserIds();
+      await sendNotification({
+        event: 'employee_created',
+        recipientUserIds: hrUserIds,
+        title: 'New employee',
+        body: `${employee.firstName} ${employee.lastName} has been added as ${employee.jobTitle || 'staff'} in ${employee.department?.name || 'Unassigned'} department.`,
+        href: `/dashboard/outsourcing/employees/${employee.id}`,
+        priority: 'info',
+        channel: 'in_app',
+        metadata: { employeeId: employee.id },
+      });
+    } catch (err) {
+      console.error('[notifications] Failed to send employee_created:', err);
+    }
     return NextResponse.json({
       id: employee.id,
       employeeNumber: employee.employeeNumber,

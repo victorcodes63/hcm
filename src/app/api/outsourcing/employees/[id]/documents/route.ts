@@ -9,6 +9,7 @@ import {
 } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
 import { DocumentUploadError, uploadEmployeeDocument } from '@/lib/document-upload';
+import { getEssPortalUserIdForEmployee, sendNotification } from '@/lib/notifications';
 
 const CATEGORIES = new Set([
   'CONTRACT',
@@ -146,6 +147,23 @@ export async function POST(
         fileSize: created.fileSize,
       },
     });
+    try {
+      const essId = await getEssPortalUserIdForEmployee(id);
+      if (essId) {
+        await sendNotification({
+          event: 'document_uploaded',
+          recipientEssPortalUserIds: [essId],
+          title: 'Document added',
+          body: `A new document (${created.title}) has been added to your profile.`,
+          href: '/ess/profile',
+          priority: 'info',
+          channel: 'in_app',
+          metadata: { employeeId: id, documentId: created.id, docTitle: created.title },
+        });
+      }
+    } catch (err) {
+      console.error('[notifications] Failed to send document_uploaded:', err);
+    }
 
     return NextResponse.json(
       {

@@ -7,6 +7,7 @@ import { canViewSalaryFields, unauthorizedResponse } from '@/lib/demo-route-acce
 import { logAuditEvent } from '@/lib/audit-events';
 import { ensureEssUserForEmployee } from '@/lib/ess-provision';
 import { diffSensitiveFields } from '@/lib/audit-helpers';
+import { getHrUserIds, sendNotification } from '@/lib/notifications';
 
 function str(b: Record<string, unknown>, key: string): string | null {
   const v = b[key];
@@ -314,6 +315,23 @@ export async function PATCH(
         sensitiveChanges,
       },
     });
+    try {
+      if (employmentStatus === 'terminated' || employee.employmentStatus === 'terminated') {
+        const hrUserIds = await getHrUserIds();
+        await sendNotification({
+          event: 'employee_terminated',
+          recipientUserIds: hrUserIds,
+          title: 'Employee offboarded',
+          body: `${employee.firstName} ${employee.lastName} has been terminated/archived.`,
+          href: '/dashboard/outsourcing/employees',
+          priority: 'info',
+          channel: 'in_app',
+          metadata: { employeeId: employee.id },
+        });
+      }
+    } catch (err) {
+      console.error('[notifications] Failed to send employee_terminated:', err);
+    }
     return NextResponse.json(mapEmployeeToJson(employee, canViewSalaryFields(user)));
   } catch (e) {
     const err = e as { code?: string; meta?: { target?: string[] } };
@@ -355,6 +373,21 @@ export async function DELETE(
       route: 'DELETE /api/outsourcing/employees/[id]',
       metadata: { employeeName: existing ? `${existing.firstName} ${existing.lastName}` : null },
     });
+    try {
+      const hrUserIds = await getHrUserIds();
+      await sendNotification({
+        event: 'employee_terminated',
+        recipientUserIds: hrUserIds,
+        title: 'Employee offboarded',
+        body: `${existing ? `${existing.firstName} ${existing.lastName}` : 'Employee'} has been terminated/archived.`,
+        href: '/dashboard/outsourcing/employees',
+        priority: 'info',
+        channel: 'in_app',
+        metadata: { employeeId: id },
+      });
+    } catch (err) {
+      console.error('[notifications] Failed to send employee_terminated on delete:', err);
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     const err = e as { code?: string };
