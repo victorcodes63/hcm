@@ -9,6 +9,7 @@ import { ensureEssUserForEmployee } from '@/lib/ess-provision';
 import { diffSensitiveFields } from '@/lib/audit-helpers';
 import { getHrUserIds, sendNotification } from '@/lib/notifications';
 import { startWorkflowForEmployee } from '@/lib/onboarding-workflows';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 function str(b: Record<string, unknown>, key: string): string | null {
   const v = b[key];
@@ -106,6 +107,10 @@ export async function GET(
       },
     });
     if (!employee) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    const workspaceId = await resolvePrimaryWorkspaceClientId(prisma, null, _request);
+    if (employee.outsourcingClientId !== workspaceId) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
     await logAuditEvent({
       actor: { userId: user.id, email: user.email, name: user.name },
       action: canViewSalaryFields(user) ? 'employee.salary.view' : 'employee.profile.view',
@@ -232,6 +237,10 @@ export async function PATCH(
       },
     });
     if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    const workspaceId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
+    if (existing.outsourcingClientId !== workspaceId) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
 
     if (email !== undefined && email) {
       const duplicate = await prisma.employee.findFirst({
@@ -369,8 +378,13 @@ export async function DELETE(
     }
     const existing = await prisma.employee.findUnique({
       where: { id },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, firstName: true, lastName: true, outsourcingClientId: true },
     });
+    if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    const workspaceId = await resolvePrimaryWorkspaceClientId(prisma, null, _request);
+    if (existing.outsourcingClientId !== workspaceId) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
     await prisma.employee.delete({ where: { id } });
     await logAuditEvent({
       actor: { userId: user.id, email: user.email, name: user.name },

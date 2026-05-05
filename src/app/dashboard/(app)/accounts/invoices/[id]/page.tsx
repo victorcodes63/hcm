@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import BrandLogo from '@/components/BrandLogo';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -19,7 +19,9 @@ import {
   InvoiceBankDisplay,
   InvoicePaymentBankSelect,
 } from '@/components/accounts/InvoiceBankPanel';
-import type { InvoicePaymentBankKind } from '@/lib/eagle-hr-bank-accounts';
+import type { InvoicePaymentBankKind } from '@/lib/invoice-bank-accounts';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type Line = {
   id: string;
@@ -61,10 +63,6 @@ type InvoiceDetail = {
   lines: Line[];
 };
 
-function money(n: number, currency: string) {
-  return `${n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
-
 function computeInvoiceTotalFromSubtotal(subtotalExVat: number, vatRateBps: number): number {
   const rate = vatRateBps / 10000;
   const vatAmount = Math.round(subtotalExVat * rate * 100) / 100;
@@ -99,6 +97,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function AccountsInvoiceDetailPage() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
   const [data, setData] = useState<InvoiceDetail | null>(null);
@@ -257,7 +257,7 @@ export default function AccountsInvoiceDetailPage() {
       if (editRoundToWholeKes && editRoundingPreview) {
         payload.lines.push({
           item: 'Rounding adjustment',
-          description: 'Auto-added to round invoice total (incl. VAT) to whole KES for ETIMS alignment.',
+          description: `Auto-added to round invoice total (incl. VAT) to whole ${entityConfig.currency.code} for ${entityConfig.payroll.taxAuthority} filing alignment.`,
           amountExVat: editRoundingPreview.adjExVat,
         });
       }
@@ -313,8 +313,6 @@ export default function AccountsInvoiceDetailPage() {
     );
   }
 
-  const vatPct = data.vatRateBps / 100;
-
   return (
     <div className="w-full min-w-0">
       <div className="print:hidden mb-6 space-y-4">
@@ -337,6 +335,7 @@ export default function AccountsInvoiceDetailPage() {
             </li>
           </ol>
         </nav>
+        <EntityContextBanner />
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-wrap gap-2">
             <button
@@ -471,7 +470,7 @@ export default function AccountsInvoiceDetailPage() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <label className="text-xs text-neutral-600">
-                    VAT rate (%)
+                    {entityConfig.tax.vatLabel} rate (%)
                     <input
                       type="number"
                       min={0}
@@ -600,33 +599,23 @@ export default function AccountsInvoiceDetailPage() {
                         disabled={!editRoundingPreview}
                         onChange={(e) => setEditRoundToWholeKes(e.target.checked)}
                       />
-                      Round total up to whole KES (ETIMS-friendly)
+                      Round total up to whole {entityConfig.currency.code} ({entityConfig.payroll.taxAuthority}{' '}
+                      friendly)
                     </label>
                     {editRoundingPreview ? (
                       editRoundToWholeKes ? (
                         <>
                           <p className="text-xs text-neutral-700 tabular-nums">
                             Rounding adjustment (ex-VAT):{' '}
-                            {editRoundingPreview.adjExVat.toLocaleString('en-KE', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}{' '}
-                            {data.currency}
+                            {displayMoney(editRoundingPreview.adjExVat, data.currency)}
                           </p>
                           <p className="text-xs font-semibold text-primary-900 tabular-nums">
-                            Rounded total: {editRoundingPreview.achievedTotal.toLocaleString('en-KE', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}{' '}
-                            {data.currency}
+                            Rounded total: {displayMoney(editRoundingPreview.achievedTotal, data.currency)}
                           </p>
                           {!editRoundingPreview.hitsTarget ? (
                             <p className="text-xs text-amber-700">
-                              Exact {editRoundingPreview.targetTotal.toLocaleString('en-KE', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}{' '}
-                              {data.currency} is not attainable at this VAT rate with 2dp amounts; using the closest
+                              Exact {displayMoney(editRoundingPreview.targetTotal, data.currency)} is not attainable at
+                              this VAT rate with 2dp amounts; using the closest
                               possible value above it.
                             </p>
                           ) : null}
@@ -641,11 +630,7 @@ export default function AccountsInvoiceDetailPage() {
                     )}
                     {editManualTotalOverride != null ? (
                       <p className="text-xs font-semibold text-primary-900 tabular-nums">
-                        Override total: {editManualTotalOverride.toLocaleString('en-KE', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        {data.currency}
+                        Override total: {displayMoney(editManualTotalOverride, data.currency)}
                       </p>
                     ) : (
                       <p className="text-xs text-neutral-600">
@@ -702,14 +687,14 @@ export default function AccountsInvoiceDetailPage() {
             <p className="text-neutral-700">
               Credited (incl. VAT):{' '}
               <span className="font-semibold tabular-nums">
-                {money(data.creditTotalApplied ?? 0, data.currency)}
+                {displayMoney(data.creditTotalApplied ?? 0, data.currency)}
               </span>
               {data.remainingCreditable != null && (
                 <>
                   {' '}
                   · Remaining creditable:{' '}
                   <span className="font-semibold tabular-nums text-primary-900">
-                    {money(Math.max(0, data.remainingCreditable), data.currency)}
+                    {displayMoney(Math.max(0, data.remainingCreditable), data.currency)}
                   </span>
                 </>
               )}
@@ -720,7 +705,7 @@ export default function AccountsInvoiceDetailPage() {
               {data.creditNotes.map((cn) => (
                 <li key={cn.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-neutral-800">
                   <span>
-                    CN #{cn.creditNoteNumber} · {cn.issueDate} · {money(cn.totalIncVat, data.currency)}
+                    CN #{cn.creditNoteNumber} · {cn.issueDate} · {displayMoney(cn.totalIncVat, data.currency)}
                   </span>
                   <a
                     href={`/api/accounts/credit-notes/${cn.id}/pdf?disposition=inline`}
@@ -770,11 +755,8 @@ export default function AccountsInvoiceDetailPage() {
             aria-hidden
           />
           <div className="flex items-center mb-8 print:mb-7">
-            <Image
-              src="/images/logo/logo_dark_ubxaCll.png"
-              alt="Eagle HR Consultants"
-              width={180}
-              height={54}
+            <BrandLogo
+              variant="header"
               className="h-11 w-auto max-w-[10rem] sm:max-w-[11rem] object-contain object-left"
               priority
             />
@@ -843,7 +825,7 @@ export default function AccountsInvoiceDetailPage() {
                         ) : null}
                       </td>
                       <td className="py-4 px-3 align-middle text-right tabular-nums text-neutral-800 font-medium">
-                        {Number(l.amountExVat).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
+                        {displayMoney(Number(l.amountExVat), data.currency)}
                       </td>
                     </tr>
                   ))}
@@ -864,19 +846,19 @@ export default function AccountsInvoiceDetailPage() {
                     <tr>
                       <td className="py-2 pr-4 text-left text-neutral-700">Subtotal (ex-VAT)</td>
                       <td className="py-2 text-right tabular-nums font-medium text-neutral-900">
-                        {money(data.subtotalExVat, data.currency)}
+                        {displayMoney(data.subtotalExVat, data.currency)}
                       </td>
                     </tr>
                     <tr>
-                      <td className="py-2 pr-4 text-left text-neutral-700">VAT ({vatPct.toFixed(0)}%)</td>
+                      <td className="py-2 pr-4 text-left text-neutral-700">{entityConfig.tax.vatLabel}</td>
                       <td className="py-2 text-right tabular-nums text-neutral-800">
-                        {money(data.vatAmount, data.currency)}
+                        {displayMoney(data.vatAmount, data.currency)}
                       </td>
                     </tr>
                     <tr className="border-t border-neutral-200 print:border-neutral-300">
                       <td className="py-3 pr-4 text-left font-semibold text-primary-900">Total (incl. VAT)</td>
                       <td className="py-3 text-right tabular-nums font-bold text-primary-900 text-base print:text-[10px]">
-                        {money(data.totalIncVat, data.currency)}
+                        {displayMoney(data.totalIncVat, data.currency)}
                       </td>
                     </tr>
                   </tbody>

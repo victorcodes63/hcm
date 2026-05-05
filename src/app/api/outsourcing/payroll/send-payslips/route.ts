@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendPayslipEmail } from '@/lib/email';
 import { normalizeAttendance } from '@/lib/biweekly-attendance';
 import { isBiweeklyClient } from '@/lib/biweekly-payroll';
-import { resolveHospitalClientId } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const month = body.month != null ? parseInt(String(body.month), 10) : new Date().getMonth() + 1;
     const year = body.year != null ? parseInt(String(body.year), 10) : new Date().getFullYear();
     const requestedClientId = typeof body.clientId === 'string' ? body.clientId : undefined;
-    const clientId = await resolveHospitalClientId(prisma, requestedClientId);
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const departmentId = typeof body.departmentId === 'string' ? body.departmentId : undefined;
     const testTo = typeof body.testTo === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.testTo) ? body.testTo : undefined;
     const employeeIds = Array.isArray(body.employeeIds)

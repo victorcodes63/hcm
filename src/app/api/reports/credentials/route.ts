@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { toCSV } from '@/lib/report-export';
 import { downloadHeaders, jsonOrPdf, parseFormat, requireReportsUser, ymd } from '@/app/api/reports/_shared';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 type DetailStatus = 'valid' | 'expiring' | 'expired';
 
@@ -18,8 +19,10 @@ export async function GET(request: NextRequest) {
   const now = toDayStart(new Date());
   const day30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   const day90 = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
 
   const credentials = await prisma.employeeCredential.findMany({
+    where: { employee: { outsourcingClientId: workspaceClientId } },
     include: {
       employee: {
         select: {

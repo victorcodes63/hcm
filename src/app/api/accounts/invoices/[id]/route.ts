@@ -290,7 +290,7 @@ export async function PATCH(
         : null;
   }
 
-  let lineCreates: { item: string; description: string | null; amountExVat: string; sortOrder: number }[] = [];
+  const lineCreates: { item: string; description: string | null; amountExVat: string; sortOrder: number }[] = [];
   if (hasLines) {
     if (!Array.isArray(payload.lines) || payload.lines.length < 1) {
       return NextResponse.json({ error: 'At least one line item is required.' }, { status: 400 });

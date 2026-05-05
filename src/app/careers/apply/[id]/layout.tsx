@@ -22,13 +22,13 @@ export async function generateMetadata({
       ? `Apply for ${data.title}${data.company ? ` at ${data.company}` : ''}`
       : 'Apply for this role';
     const description = data.title
-      ? `Apply now for ${data.title}. ${data.company ? data.company + ' – ' : ''}Eagle HR job board.`
+      ? `Apply now for ${data.title}. ${data.company ? data.company + ' – ' : ''}HRIS Demo job board.`
       : undefined;
     return {
       title,
       description,
       openGraph: {
-        title: `${title} | Eagle HR Consultants`,
+        title: `${title} | HRIS Demo`,
         description,
         url: `/careers/apply/${id}`,
       },

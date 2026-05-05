@@ -9,9 +9,9 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-const STAFF_EMAIL = 'vchumo@eaglehr.co.ke';
-// Default to "Eaglehr" as requested, but allow overriding via env when needed.
-const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'Eaglehr';
+const STAFF_EMAIL = 'vchumo@example.com';
+// Default dev password; override with STAFF_PASSWORD in production.
+const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'stabex-demo-hris';
 const STAFF_NAME = 'Victor Chumo';
 const ROUNDS = 10;
 

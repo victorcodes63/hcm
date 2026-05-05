@@ -5,6 +5,7 @@ import { canAccessDisciplinaryRecords } from '@/lib/hr-access';
 import { logAuditEvent } from '@/lib/audit-events';
 import { getEssPortalUserIdForEmployee, getHrUserIds, sendNotification } from '@/lib/notifications';
 import { toCaseNumber } from '@/lib/disciplinary';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 export async function GET(request: NextRequest) {
   const user = await requireStaffUser(request);
@@ -14,9 +15,15 @@ export async function GET(request: NextRequest) {
   const status = request.nextUrl.searchParams.get('status') || undefined;
   const employeeId = request.nextUrl.searchParams.get('employeeId') || undefined;
   const type = request.nextUrl.searchParams.get('type') || undefined;
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
 
   const cases = await prisma.disciplinaryCase.findMany({
-    where: { ...(status ? { status: status as never } : {}), ...(employeeId ? { employeeId } : {}), ...(type ? { type: type as never } : {}) },
+    where: {
+      employee: { outsourcingClientId: workspaceClientId },
+      ...(status ? { status: status as never } : {}),
+      ...(employeeId ? { employeeId } : {}),
+      ...(type ? { type: type as never } : {}),
+    },
     include: { employee: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } }, actions: { select: { id: true } } },
     orderBy: { createdAt: 'desc' },
   });
@@ -35,12 +42,33 @@ export async function POST(request: NextRequest) {
   const incidentDate = typeof body.incidentDate === 'string' ? new Date(body.incidentDate) : new Date();
   const type = (typeof body.type === 'string' ? body.type : 'OTHER') as never;
   const severity = (typeof body.severity === 'string' ? body.severity : 'MINOR') as never;
+  const laborJurisdiction =
+    typeof body.laborJurisdiction === 'string' && body.laborJurisdiction.trim()
+      ? body.laborJurisdiction.trim().toUpperCase().slice(0, 8)
+      : 'KE';
   if (!employeeId || !subject || !description) return NextResponse.json({ error: 'employeeId, subject, description required' }, { status: 400 });
+
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
+  const empInScope = await prisma.employee.findFirst({
+    where: { id: employeeId, outsourcingClientId: workspaceClientId },
+    select: { id: true },
+  });
+  if (!empInScope) return NextResponse.json({ error: 'Employee not found for this entity' }, { status: 404 });
 
   const year = new Date().getUTCFullYear();
   const existingCount = await prisma.disciplinaryCase.count({ where: { createdAt: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } } });
   const created = await prisma.disciplinaryCase.create({
-    data: { employeeId, caseNumber: toCaseNumber(year, existingCount + 1), type, severity, subject, description, incidentDate, reportedById: user.id },
+    data: {
+      employeeId,
+      caseNumber: toCaseNumber(year, existingCount + 1),
+      type,
+      severity,
+      subject,
+      description,
+      incidentDate,
+      reportedById: user.id,
+      laborJurisdiction,
+    },
   });
   await logAuditEvent({ actor: { userId: user.id, email: user.email, name: user.name }, action: 'disciplinary.case.created', entityType: 'DisciplinaryCase', entityId: created.id, route: 'POST /api/disciplinary/cases' });
   try {

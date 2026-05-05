@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveHospitalClientId } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
     const year = searchParams.get('year');
     const requestedClientId = searchParams.get('clientId') || undefined;
-    const clientId = await resolveHospitalClientId(prisma, requestedClientId);
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const departmentId = searchParams.get('departmentId') || undefined;
     const employeeIdsCsv = searchParams.get('employeeIds') || '';
     const employeeIds = employeeIdsCsv
@@ -93,16 +93,32 @@ export async function GET(request: NextRequest) {
       attendanceSummaryStatus: 'legacy',
     }));
 
-    for (const row of list) {
-      const start = new Date(Date.UTC(y, m - 1, 1));
-      const end = new Date(Date.UTC(y, m, 1));
-      const summary = await prisma.attendanceDaySummary.aggregate({
-        where: { employeeId: row.employeeId, workDate: { gte: start, lt: end } },
-        _sum: { minutesWorked: true },
-        _count: { _all: true },
-      });
-      (row as Record<string, unknown>).attendanceDays = summary._count._all;
-      (row as Record<string, unknown>).attendanceMinutes = summary._sum.minutesWorked ?? 0;
+    const prismaAny = prisma as unknown as {
+      attendanceDaySummary?: {
+        aggregate: (args: unknown) => Promise<{ _count: { _all: number }; _sum: { minutesWorked: number | null } }>;
+      };
+    };
+    const hasSummaryModel = typeof prismaAny.attendanceDaySummary?.aggregate === 'function';
+    const start = new Date(Date.UTC(y, m - 1, 1));
+    const end = new Date(Date.UTC(y, m, 1));
+
+    if (hasSummaryModel) {
+      await Promise.all(
+        list.map(async (row) => {
+          const summary = await prismaAny.attendanceDaySummary!.aggregate({
+            where: { employeeId: row.employeeId, workDate: { gte: start, lt: end } },
+            _sum: { minutesWorked: true },
+            _count: { _all: true },
+          });
+          (row as Record<string, unknown>).attendanceDays = summary._count._all;
+          (row as Record<string, unknown>).attendanceMinutes = summary._sum.minutesWorked ?? 0;
+        })
+      );
+    } else {
+      for (const row of list) {
+        (row as Record<string, unknown>).attendanceDays = 0;
+        (row as Record<string, unknown>).attendanceMinutes = 0;
+      }
     }
 
     await logAuditEvent({

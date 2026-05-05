@@ -62,10 +62,26 @@ export async function GET(request: NextRequest) {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json([]);
     }
+    const { searchParams } = new URL(request.url);
+    const contractManagerPicker =
+      searchParams.get('contractManagerPicker') === '1' || searchParams.get('picker') === 'contractManagers';
+
     const users = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' },
     });
-    return NextResponse.json(await Promise.all(users.map((u) => userRowToSummary(u))));
+
+    let list = users;
+    if (contractManagerPicker) {
+      const seen = new Map<string, (typeof users)[0]>();
+      for (const u of users) {
+        const key = `${u.name.trim().toLowerCase()}|${u.role}`;
+        if (!seen.has(key)) seen.set(key, u);
+      }
+      list = [...seen.values()];
+    }
+
+    list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    return NextResponse.json(await Promise.all(list.map((u) => userRowToSummary(u))));
   } catch (e) {
     console.error('GET /api/users error:', e);
     return NextResponse.json({ error: 'Failed to load users.' }, { status: 500 });
@@ -146,7 +162,7 @@ export async function POST(request: NextRequest) {
       await sendNotification({
         event: 'user_invited',
         recipientUserIds: [user.id],
-        title: 'Welcome to 3rd Park Hospital HR',
+        title: 'Welcome to Stabex International HR',
         body: `An account has been created for you. Log in with ${user.email}.`,
         href: '/dashboard/login',
         priority: 'info',

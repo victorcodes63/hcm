@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEntity } from '@/components/EntitySwitcher';
 import {
   LayoutGrid,
   FileSpreadsheet,
@@ -132,7 +133,14 @@ function hoursBetween(startIso: string, endIso: string, breakMinutes = 0) {
   return Math.max(0, ms / (60 * 60 * 1000));
 }
 
+/** Single-line shift label for narrow timeline bars (24h, en dash). */
+function formatShiftRangeCompact(startIso: string, endIso: string) {
+  const o: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+  return `${new Date(startIso).toLocaleTimeString(undefined, o)}–${new Date(endIso).toLocaleTimeString(undefined, o)}`;
+}
+
 export default function RotaPage() {
+  const { activeEntity } = useEntity();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -259,23 +267,29 @@ export default function RotaPage() {
   }, [templates]);
 
   const timelineRows = useMemo(() => {
-    const weekStart = new Date(`${weekDays[0]}T00:00:00`).getTime();
-    const weekEnd = weekStart + 7 * 24 * 60 * 60 * 1000;
     return filteredEmployees.map((employee) => {
       const all = assignments.filter((a) => a.employeeId === employee.id);
       const weekAssignments = all
         .map((a) => {
+          const workYmd = toYmd(a.workDate);
+          const dayIndex = weekDays.indexOf(workYmd);
+          if (dayIndex < 0) return null;
+          const dayStart = new Date(`${workYmd}T00:00:00`).getTime();
+          const dayEnd = dayStart + 24 * 60 * 60 * 1000;
           const start = new Date(a.startsAt).getTime();
           const end = new Date(a.endsAt).getTime();
-          const clampedStart = Math.max(start, weekStart);
-          const clampedEnd = Math.min(end, weekEnd);
+          const clampedStart = Math.max(start, dayStart);
+          const clampedEnd = Math.min(end, dayEnd);
           if (clampedEnd <= clampedStart) return null;
+          const startHourOffset = (clampedStart - dayStart) / (1000 * 60 * 60);
+          const endHourOffset = (clampedEnd - dayStart) / (1000 * 60 * 60);
           return {
             assignment: a,
             startMs: clampedStart,
             endMs: clampedEnd,
-            startHourOffset: (clampedStart - weekStart) / (1000 * 60 * 60),
-            endHourOffset: (clampedEnd - weekStart) / (1000 * 60 * 60),
+            dayIndex,
+            startHourOffset,
+            endHourOffset,
           };
         })
         .filter((x): x is NonNullable<typeof x> => Boolean(x))
@@ -314,8 +328,13 @@ export default function RotaPage() {
     const res = await fetch('/api/outsourcing/clients', { cache: 'no-store' });
     const data = await readJson<OutsourcingClient[]>(res);
     setClients(data);
-    if (!selectedClientId && data.length) setSelectedClientId(data[0]!.id);
-  }, [readJson, selectedClientId]);
+    setSelectedClientId((prev) => {
+      if (data.length === 1 && data[0]?.id) return data[0].id;
+      if (!prev && data[0]?.id) return data[0].id;
+      if (prev && data.some((c) => c.id === prev)) return prev;
+      return data[0]?.id ?? '';
+    });
+  }, [readJson]);
 
   const loadClientContext = useCallback(async (clientId: string) => {
     const [empRes, tRes, pRes] = await Promise.all([
@@ -331,8 +350,11 @@ export default function RotaPage() {
     setEmployees(empData);
     setTemplates(tData);
     setPeriods(pData);
-    if (!selectedPeriodId && pData.length) setSelectedPeriodId(pData[0]!.id);
-  }, [readJson, selectedPeriodId]);
+    setSelectedPeriodId((pid) => {
+      if (pid && pData.some((p) => p.id === pid)) return pid;
+      return pData[0]?.id ?? '';
+    });
+  }, [readJson]);
 
   const loadAssignments = useCallback(async (periodId: string) => {
     if (!periodId) return;
@@ -355,14 +377,14 @@ export default function RotaPage() {
 
   useEffect(() => {
     void refreshAll();
-  }, [refreshAll]);
+  }, [refreshAll, activeEntity.id]);
 
   useEffect(() => {
     if (!selectedClientId) return;
     setError(null);
     setBusy(true);
     void loadClientContext(selectedClientId)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load hospital data'))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load rota data'))
       .finally(() => setBusy(false));
   }, [loadClientContext, selectedClientId]);
 
@@ -395,7 +417,7 @@ export default function RotaPage() {
       );
       setPendingLeaveCount(Array.isArray(leaveJson) ? leaveJson.length : 0);
     })();
-  }, [selectedClientId, weekDays]);
+  }, [selectedClientId, weekDays, activeEntity.id]);
 
   useEffect(() => {
     const y = new Date(`${weekDays[0]}T00:00:00.000Z`).getUTCFullYear();
@@ -844,12 +866,12 @@ export default function RotaPage() {
     }
   }
 
-  async function ensureHospitalSeedTemplates() {
+  async function ensureDefaultShiftTemplates() {
     if (!selectedClientId) return {} as Record<'day' | 'evening' | 'night', string>;
     const defs = [
-      { key: 'day' as const, name: 'Hospital Day Shift', startMinutes: 7 * 60, endMinutes: 15 * 60, breakMinutes: 45, color: '#3b82f6' },
-      { key: 'evening' as const, name: 'Hospital Evening Shift', startMinutes: 15 * 60, endMinutes: 23 * 60, breakMinutes: 45, color: '#f59e0b' },
-      { key: 'night' as const, name: 'Hospital Night Shift', startMinutes: 23 * 60, endMinutes: 7 * 60, breakMinutes: 60, color: '#8b5cf6' },
+      { key: 'day' as const, name: 'Day shift', startMinutes: 7 * 60, endMinutes: 15 * 60, breakMinutes: 45, color: '#3b82f6' },
+      { key: 'evening' as const, name: 'Evening shift', startMinutes: 15 * 60, endMinutes: 23 * 60, breakMinutes: 45, color: '#f59e0b' },
+      { key: 'night' as const, name: 'Night shift', startMinutes: 23 * 60, endMinutes: 7 * 60, breakMinutes: 60, color: '#8b5cf6' },
     ];
     const templateMap: Record<'day' | 'evening' | 'night', string> = {
       day: '',
@@ -880,18 +902,18 @@ export default function RotaPage() {
     }
 
     if (Object.values(templateMap).some((id) => !id)) {
-      throw new Error('Failed to resolve hospital templates');
+      throw new Error('Failed to resolve shift templates');
     }
     await loadClientContext(selectedClientId);
     return templateMap;
   }
 
-  async function seedHospitalWeekFromExistingEmployees() {
+  async function seedDemoWeekFromExistingEmployees() {
     if (!selectedPeriodId || !weekDays.length || !employees.length || isPublished) return;
     setBusy(true);
     setError(null);
     try {
-      const templateIds = await ensureHospitalSeedTemplates();
+      const templateIds = await ensureDefaultShiftTemplates();
       const shiftCycle: Array<'day' | 'day' | 'evening' | 'evening' | 'night' | 'night' | 'off'> = [
         'day',
         'day',
@@ -939,14 +961,14 @@ export default function RotaPage() {
 
       await loadAssignments(selectedPeriodId);
       setLastResult({
-        title: 'Hospital week seeded using existing employees',
+        title: 'Demo rota week seeded using existing employees',
         created,
         skipped,
         conflicts: conflictsCount,
       });
       setPlannerView('timeline');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to seed hospital week');
+      setError(e instanceof Error ? e.message : 'Failed to seed rota week');
     } finally {
       setBusy(false);
     }
@@ -1118,7 +1140,7 @@ export default function RotaPage() {
             onChange={(e) => setSelectedClientId(e.target.value)}
             className="h-10 rounded-lg border border-neutral-300 px-3 text-sm bg-white min-w-[220px]"
           >
-            <option value="">Select hospital workspace</option>
+            <option value="">Select workspace</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -1451,11 +1473,11 @@ export default function RotaPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void seedHospitalWeekFromExistingEmployees()}
+                    onClick={() => void seedDemoWeekFromExistingEmployees()}
                     disabled={busy || isPublished || !employees.length}
                     className="h-8 rounded border border-neutral-300 px-2 text-xs bg-white inline-flex items-center gap-1 disabled:opacity-50"
                   >
-                    Seed hospital week
+                    Seed demo week
                   </button>
                   <button
                     type="button"
@@ -1594,11 +1616,13 @@ export default function RotaPage() {
                     </table>
                   </div>
                 ) : (
-                  <div className="overflow-auto rounded border border-neutral-200 bg-white">
-                    <div className="min-w-[1300px]">
-                      <div className="sticky top-0 z-10 flex border-b border-neutral-200 bg-neutral-50 text-xs text-neutral-600">
-                        <div className="w-56 shrink-0 px-3 py-2 font-medium">Employee</div>
-                        <div className="relative" style={{ width: TIMELINE_DAY_WIDTH * 7 }}>
+                  <div className="max-h-[min(560px,calc(100vh-16rem))] overflow-auto rounded border border-neutral-200 bg-white pb-2 [scrollbar-gutter:stable]">
+                    <div className="min-w-[calc(14rem+180px*7)]">
+                      <div className="sticky top-0 z-30 flex border-b border-neutral-200 bg-neutral-50 text-xs text-neutral-600 shadow-[2px_0_0_rgba(0,0,0,0.04)_inset]">
+                        <div className="sticky left-0 z-40 w-56 shrink-0 border-r border-neutral-200 bg-neutral-50 px-3 py-2 font-medium text-neutral-800">
+                          Employee
+                        </div>
+                        <div className="relative shrink-0" style={{ width: TIMELINE_DAY_WIDTH * 7 }}>
                           <div className="flex">
                             {weekDays.map((d) => {
                               const total = dayTotals[d] ?? { shifts: 0, hours: 0 };
@@ -1606,7 +1630,7 @@ export default function RotaPage() {
                                 <div
                                   key={`head-${d}`}
                                   className="border-l border-neutral-200 px-2 py-2"
-                                  style={{ width: TIMELINE_DAY_WIDTH }}
+                                  style={{ width: TIMELINE_DAY_WIDTH, minWidth: TIMELINE_DAY_WIDTH }}
                                 >
                                   <div>{d}</div>
                                   {weekHolidays.get(d) ? (
@@ -1623,13 +1647,19 @@ export default function RotaPage() {
                       </div>
                       {timelineRows.map((row) => {
                         const selected = bulkEmployeeIds.includes(row.employee.id);
-                        const rowHeight = Math.max(44, row.laneCount * 24 + 8);
+                        const laneH = 28;
+                        const barH = 24;
+                        const rowHeight = Math.max(48, row.laneCount * laneH + 10);
                         return (
-                          <div key={`timeline-${row.employee.id}`} className="flex border-b border-neutral-100 text-xs">
-                            <div className="w-56 shrink-0 px-3 py-2">
-                              <label className="inline-flex items-start gap-2 cursor-pointer">
+                          <div
+                            key={`timeline-${row.employee.id}`}
+                            className="flex border-b border-neutral-100 text-xs bg-white"
+                          >
+                            <div className="sticky left-0 z-20 w-56 shrink-0 border-r border-neutral-200 bg-white px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                              <label className="inline-flex items-start gap-2 cursor-pointer min-w-0">
                                 <input
                                   type="checkbox"
+                                  className="mt-0.5 shrink-0"
                                   checked={selected}
                                   onChange={(ev) => {
                                     setBulkEmployeeIds((prev) =>
@@ -1639,25 +1669,40 @@ export default function RotaPage() {
                                     );
                                   }}
                                 />
-                                <span className="text-neutral-700">
-                                  {row.employee.employeeNumber ? `${row.employee.employeeNumber} - ` : ''}
+                                <span className="text-neutral-800 leading-snug break-words">
+                                  {row.employee.employeeNumber ? `${row.employee.employeeNumber} · ` : ''}
                                   {row.employee.firstName} {row.employee.lastName}
                                 </span>
                               </label>
                             </div>
-                            <div className="relative" style={{ width: TIMELINE_DAY_WIDTH * 7, height: rowHeight }}>
+                            <div
+                              className="relative shrink-0 min-w-0"
+                              style={{ width: TIMELINE_DAY_WIDTH * 7, height: rowHeight }}
+                            >
                               <div className="absolute inset-0 flex pointer-events-none">
                                 {weekDays.map((d) => (
-                                  <div key={`grid-${row.employee.id}-${d}`} className="border-l border-neutral-100" style={{ width: TIMELINE_DAY_WIDTH }} />
+                                  <div
+                                    key={`grid-${row.employee.id}-${d}`}
+                                    className="border-l border-neutral-100 bg-neutral-50/40"
+                                    style={{ width: TIMELINE_DAY_WIDTH, minWidth: TIMELINE_DAY_WIDTH }}
+                                  />
                                 ))}
                               </div>
                               {row.bars.map((entry) => {
                                 const a = entry.assignment;
                                 const conflictHit = conflicts.some((c) => c.assignmentIds.includes(a.id));
-                                const left = (entry.startHourOffset / 24) * TIMELINE_DAY_WIDTH;
-                                const width = ((entry.endHourOffset - entry.startHourOffset) / 24) * TIMELINE_DAY_WIDTH;
-                                const templateColor = a.shiftTemplate?.id ? assignmentTemplateColor.get(a.shiftTemplate.id) : null;
+                                const dayLeft = entry.dayIndex * TIMELINE_DAY_WIDTH;
+                                const left =
+                                  dayLeft + (entry.startHourOffset / 24) * TIMELINE_DAY_WIDTH + 2;
+                                const width = Math.max(
+                                  8,
+                                  ((entry.endHourOffset - entry.startHourOffset) / 24) * TIMELINE_DAY_WIDTH - 4,
+                                );
+                                const templateColor = a.shiftTemplate?.id
+                                  ? assignmentTemplateColor.get(a.shiftTemplate.id)
+                                  : null;
                                 const bg = templateColor || (conflictHit ? '#fef3c7' : '#e5e7eb');
+                                const label = formatShiftRangeCompact(a.startsAt, a.endsAt);
                                 return (
                                   <button
                                     key={`bar-${a.id}`}
@@ -1676,20 +1721,20 @@ export default function RotaPage() {
                                         useTemplate: false,
                                       });
                                     }}
-                                    className={`absolute rounded-md border px-2 text-left text-[11px] text-neutral-800 shadow-sm disabled:cursor-default ${
-                                      conflictHit ? 'border-amber-300' : 'border-neutral-200'
-                                    }`}
+                                    className={`absolute flex items-center justify-center rounded-md border px-1.5 text-center font-medium tabular-nums tracking-tight text-neutral-900 shadow-sm disabled:cursor-default whitespace-nowrap overflow-hidden text-ellipsis ${
+                                      conflictHit ? 'border-amber-400' : 'border-neutral-300/80'
+                                    } ${width < 72 ? 'text-[9px]' : 'text-[10px]'}`}
                                     style={{
                                       left,
-                                      width: Math.max(22, width - 2),
-                                      top: 4 + entry.lane * 24,
-                                      height: 20,
+                                      width,
+                                      top: 5 + entry.lane * laneH,
+                                      height: barH,
+                                      minWidth: 8,
                                       backgroundColor: bg,
                                     }}
-                                    title={`${new Date(a.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(a.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                    title={`${a.shiftTemplate?.name ? `${a.shiftTemplate.name} · ` : ''}${label}`}
                                   >
-                                    {new Date(a.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}-
-                                    {new Date(a.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <span className="truncate max-w-full">{label}</span>
                                   </button>
                                 );
                               })}
@@ -1760,52 +1805,64 @@ export default function RotaPage() {
                   </div>
                 </div>
               ) : null}
-              <div className="overflow-x-auto rounded border border-neutral-200">
-                <table className="w-full text-xs">
-                  <thead className="bg-neutral-50 text-neutral-600">
-                    <tr>
-                      <th className="text-left px-2 py-2">Date</th>
-                      <th className="text-left px-2 py-2">Employee</th>
-                      <th className="text-left px-2 py-2">Shift</th>
-                      <th className="text-left px-2 py-2">Template</th>
-                      <th className="text-left px-2 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assignments.map((a) => (
-                      <tr key={a.id} className="border-t border-neutral-200">
-                        <td className="px-2 py-2">{toYmd(a.workDate)}</td>
-                        <td className="px-2 py-2">
-                          {a.employee?.employeeNumber ? `${a.employee.employeeNumber} - ` : ''}
-                          {a.employee?.firstName} {a.employee?.lastName}
-                        </td>
-                        <td className="px-2 py-2">
-                          {new Date(a.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
-                          {new Date(a.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-2 py-2">{a.shiftTemplate?.name || 'Custom'}</td>
-                        <td className="px-2 py-2">
-                          <button
-                            type="button"
-                            onClick={() => void removeAssignment(a.id)}
-                            disabled={isPublished}
-                            className="rounded border border-red-300 px-2 py-1 text-red-700 disabled:opacity-50"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!assignments.length ? (
+              <details
+                key={plannerView}
+                className="mt-3 rounded-lg border border-neutral-200 bg-white overflow-hidden"
+                defaultOpen={plannerView === 'table'}
+              >
+                <summary className="cursor-pointer select-none px-3 py-2 text-xs font-medium text-neutral-700 bg-neutral-50 border-b border-neutral-200 list-none [&::-webkit-details-marker]:hidden flex items-center gap-2">
+                  <span className="text-neutral-400">▸</span>
+                  Full assignment list (date, template, delete)
+                  {plannerView === 'timeline' ? (
+                    <span className="text-[10px] font-normal text-neutral-500">— expand when you need row actions</span>
+                  ) : null}
+                </summary>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs min-w-[640px]">
+                    <thead className="bg-neutral-50 text-neutral-600">
                       <tr>
-                        <td colSpan={5} className="px-2 py-4 text-neutral-500 text-center">
-                          No assignments in this period yet.
-                        </td>
+                        <th className="text-left px-2 py-2">Date</th>
+                        <th className="text-left px-2 py-2">Employee</th>
+                        <th className="text-left px-2 py-2">Shift</th>
+                        <th className="text-left px-2 py-2">Template</th>
+                        <th className="text-left px-2 py-2">Actions</th>
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {assignments.map((a) => (
+                        <tr key={a.id} className="border-t border-neutral-200">
+                          <td className="px-2 py-2 whitespace-nowrap">{toYmd(a.workDate)}</td>
+                          <td className="px-2 py-2">
+                            {a.employee?.employeeNumber ? `${a.employee.employeeNumber} - ` : ''}
+                            {a.employee?.firstName} {a.employee?.lastName}
+                          </td>
+                          <td className="px-2 py-2 whitespace-nowrap tabular-nums">
+                            {formatShiftRangeCompact(a.startsAt, a.endsAt)}
+                          </td>
+                          <td className="px-2 py-2">{a.shiftTemplate?.name || 'Custom'}</td>
+                          <td className="px-2 py-2">
+                            <button
+                              type="button"
+                              onClick={() => void removeAssignment(a.id)}
+                              disabled={isPublished}
+                              className="rounded border border-red-300 px-2 py-1 text-red-700 disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {!assignments.length ? (
+                        <tr>
+                          <td colSpan={5} className="px-2 py-4 text-neutral-500 text-center">
+                            No assignments in this period yet.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </>
           )}
         </div>

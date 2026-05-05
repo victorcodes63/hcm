@@ -1,16 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
+  Clock3,
   CalendarDays,
-  Plus,
-  Loader2,
   Check,
-  X,
   Ban,
-  Settings,
   LayoutList,
+  Loader2,
+  Plus,
+  Settings,
+  ShieldPlus,
+  Stethoscope,
   Users,
+  X,
 } from 'lucide-react';
 
 type BalanceRow = {
@@ -39,6 +43,20 @@ type Application = {
   leaveType: { name: string; color: string | null };
   user: { name: string; email: string };
   reviewedBy: { name: string } | null;
+  approvalSteps?: Array<{
+    id: string;
+    stepOrder: number;
+    status: string;
+    actedAt: string | null;
+    approver: { id: string; name: string };
+  }>;
+  approvalActions?: Array<{
+    id: string;
+    action: string;
+    note: string | null;
+    createdAt: string;
+    actor: { id: string; name: string };
+  }>;
 };
 
 type LeaveType = {
@@ -51,6 +69,108 @@ type LeaveType = {
   description: string | null;
   sortOrder: number;
 };
+
+type StaffLeaveOpsMeta = {
+  unit: string;
+  role: string;
+  criticality: 'routine' | 'essential' | 'critical';
+  coveragePlan: string;
+  handoverNote: string;
+  reliefOfficer: string;
+  contactDuringLeave: string;
+};
+
+const TAG_OPS_OPEN = '[StaffLeaveOps]';
+const TAG_OPS_CLOSE = '[/StaffLeaveOps]';
+/** Legacy tag — still parsed for older leave records */
+const TAG_LEGACY_OPEN = '[HospitalContext]';
+const TAG_LEGACY_CLOSE = '[/HospitalContext]';
+
+const DEFAULT_STAFF_LEAVE_OPS: StaffLeaveOpsMeta = {
+  unit: '',
+  role: '',
+  criticality: 'essential',
+  coveragePlan: '',
+  handoverNote: '',
+  reliefOfficer: '',
+  contactDuringLeave: '',
+};
+
+function parseStaffLeaveOps(reason?: string | null): { coreReason: string; opsMeta: StaffLeaveOpsMeta | null } {
+  if (!reason) return { coreReason: '', opsMeta: null };
+  let start = reason.indexOf(TAG_OPS_OPEN);
+  let end = reason.indexOf(TAG_OPS_CLOSE);
+  let openTag = TAG_OPS_OPEN;
+  let closeTag = TAG_OPS_CLOSE;
+  if (start === -1 || end === -1) {
+    start = reason.indexOf(TAG_LEGACY_OPEN);
+    end = reason.indexOf(TAG_LEGACY_CLOSE);
+    openTag = TAG_LEGACY_OPEN;
+    closeTag = TAG_LEGACY_CLOSE;
+  }
+  if (start === -1 || end === -1 || end < start) {
+    return { coreReason: reason.trim(), opsMeta: null };
+  }
+  const block = reason.slice(start + openTag.length, end).trim();
+  const coreReason = reason.slice(end + closeTag.length).trim();
+  const map = new Map<string, string>();
+  for (const line of block.split('\n')) {
+    const [k, ...rest] = line.split(':');
+    if (!k || rest.length === 0) continue;
+    map.set(k.trim().toLowerCase(), rest.join(':').trim());
+  }
+  const criticalityRaw = map.get('criticality');
+  const criticality: StaffLeaveOpsMeta['criticality'] =
+    criticalityRaw === 'routine' || criticalityRaw === 'critical' ? criticalityRaw : 'essential';
+  return {
+    coreReason,
+    opsMeta: {
+      unit: map.get('unit') || '',
+      role: map.get('role') || '',
+      criticality,
+      coveragePlan: map.get('coverage') || '',
+      handoverNote: map.get('handover') || '',
+      reliefOfficer: map.get('relief officer') || '',
+      contactDuringLeave: map.get('contact') || '',
+    },
+  };
+}
+
+function buildStaffLeaveOpsReason(coreReason: string, ctx: StaffLeaveOpsMeta) {
+  const block = [
+    TAG_OPS_OPEN,
+    `Unit: ${ctx.unit || '-'}`,
+    `Role: ${ctx.role || '-'}`,
+    `Criticality: ${ctx.criticality}`,
+    `Coverage: ${ctx.coveragePlan || '-'}`,
+    `Handover: ${ctx.handoverNote || '-'}`,
+    `Relief Officer: ${ctx.reliefOfficer || '-'}`,
+    `Contact: ${ctx.contactDuringLeave || '-'}`,
+    TAG_OPS_CLOSE,
+  ].join('\n');
+  return `${block}\n${coreReason.trim()}`.trim();
+}
+
+function daysFromToday(targetIsoDate: string) {
+  const t = new Date(targetIsoDate);
+  t.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((t.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function computeRisk(app: Application) {
+  const { opsMeta } = parseStaffLeaveOps(app.reason);
+  let score = 0;
+  if (daysFromToday(app.startDate) < 3) score += 2;
+  if (app.totalDays >= 7) score += 1;
+  if (opsMeta?.criticality === 'critical') score += 2;
+  if (opsMeta?.criticality === 'essential') score += 1;
+  if (!opsMeta?.coveragePlan || opsMeta.coveragePlan === '-') score += 1;
+  if (score >= 4) return { label: 'High risk', style: 'bg-red-100 text-red-800' };
+  if (score >= 2) return { label: 'Medium risk', style: 'bg-amber-100 text-amber-900' };
+  return { label: 'Low risk', style: 'bg-emerald-100 text-emerald-800' };
+}
 
 export default function StaffLeavePage() {
   const [tab, setTab] = useState<'my' | 'team' | 'types'>('my');
@@ -72,6 +192,8 @@ export default function StaffLeavePage() {
     endDate: '',
     reason: '',
   });
+  const [opsMeta, setOpsMeta] = useState<StaffLeaveOpsMeta>(DEFAULT_STAFF_LEAVE_OPS);
+  const [policyInfo, setPolicyInfo] = useState<{ leavePolicyV2: boolean; attendanceV2: boolean } | null>(null);
 
   const loadMe = useCallback(async () => {
     const me = await fetch('/api/auth/me').then((r) => r.json());
@@ -88,6 +210,8 @@ export default function StaffLeavePage() {
     if (b.balances) setBalances(b.balances);
     if (Array.isArray(a)) setApplications(a);
     if (Array.isArray(t)) setTypes(t);
+    const overview = await fetch('/api/reports/overview').then((r) => r.json()).catch(() => null);
+    if (overview?.featureFlags) setPolicyInfo(overview.featureFlags);
     if (approver) {
       const team = await fetch('/api/staff/leave/applications?scope=team&status=pending').then((r) =>
         r.json()
@@ -108,7 +232,11 @@ export default function StaffLeavePage() {
     setError(null);
     loadMe()
       .catch(() => {
-        if (!c) setError('Could not load leave data. Run db migrate + db:seed-staff-leave.');
+        if (!c) {
+          setError(
+            'Could not load leave data. Run npm run db:generate, npx prisma migrate deploy, then npm run db:seed-staff-leave.'
+          );
+        }
       })
       .finally(() => {
         if (!c) setLoading(false);
@@ -120,11 +248,36 @@ export default function StaffLeavePage() {
 
   const refresh = () => loadMe().catch(() => {});
 
+  const pendingMine = useMemo(() => applications.filter((a) => a.status === 'pending').length, [applications]);
+  const approvedDays = useMemo(
+    () => applications.filter((a) => a.status === 'approved').reduce((sum, a) => sum + a.totalDays, 0),
+    [applications]
+  );
+  const totalRemaining = useMemo(() => balances.reduce((sum, b) => sum + b.remaining, 0), [balances]);
+  const highRiskApprovals = useMemo(
+    () => teamApps.filter((a) => computeRisk(a).label === 'High risk').length,
+    [teamApps]
+  );
+
   const submitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
+      const startLeadDays = daysFromToday(form.startDate);
+      if (
+        opsMeta.criticality === 'critical' &&
+        startLeadDays < 7 &&
+        !/emergency|urgent|sudden|incident/i.test(form.reason)
+      ) {
+        throw new Error('Critical-care roles require at least 7 days notice unless emergency leave is stated.');
+      }
+      if (!opsMeta.coveragePlan.trim()) {
+        throw new Error('Coverage plan is required for workplace leave requests.');
+      }
+      if (!opsMeta.handoverNote.trim()) {
+        throw new Error('Handover note is required before submitting leave.');
+      }
       const res = await fetch('/api/staff/leave/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,13 +285,14 @@ export default function StaffLeavePage() {
           leaveTypeId: form.leaveTypeId,
           startDate: form.startDate,
           endDate: form.endDate,
-          reason: form.reason || undefined,
+          reason: buildStaffLeaveOpsReason(form.reason, opsMeta),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setModal(false);
       setForm({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+      setOpsMeta(DEFAULT_STAFF_LEAVE_OPS);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -195,10 +349,10 @@ export default function StaffLeavePage() {
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 flex items-center gap-2">
             <CalendarDays className="w-8 h-8 text-primary-600" />
-            Staff leave
+            Staff leave command center
           </h1>
           <p className="text-neutral-600 text-sm mt-1">
-            Eagle HR internal team — balances, requests, and approvals. Refine policies under Types.
+            Safe staffing leave management for clinical and support teams.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -264,11 +418,35 @@ export default function StaffLeavePage() {
         )}
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-neutral-500">Pending requests</div>
+          <div className="text-2xl font-bold text-primary-900 mt-1">{pendingMine}</div>
+        </div>
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-neutral-500">Approved days (year)</div>
+          <div className="text-2xl font-bold text-primary-900 mt-1">{approvedDays}</div>
+        </div>
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-neutral-500">Total remaining</div>
+          <div className="text-2xl font-bold text-emerald-700 mt-1">{totalRemaining}</div>
+        </div>
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-neutral-500">High-risk approvals</div>
+          <div className="text-2xl font-bold text-red-700 mt-1">{highRiskApprovals}</div>
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm">
           {error}
         </div>
       )}
+      {policyInfo ? (
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+          Policy engine flags - leavePolicyV2: {policyInfo.leavePolicyV2 ? 'enabled' : 'disabled'} | attendanceV2: {policyInfo.attendanceV2 ? 'enabled' : 'disabled'}
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -309,6 +487,7 @@ export default function StaffLeavePage() {
                 <thead className="bg-neutral-50 text-left text-neutral-600">
                   <tr>
                     <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Unit / role</th>
                     <th className="px-4 py-3">Dates</th>
                     <th className="px-4 py-3">Days</th>
                     <th className="px-4 py-3">Status</th>
@@ -320,11 +499,23 @@ export default function StaffLeavePage() {
                     <tr key={a.id} className="border-t border-neutral-100">
                       <td className="px-4 py-3 font-medium">{a.leaveType.name}</td>
                       <td className="px-4 py-3 text-neutral-600">
+                        {(() => {
+                          const parsed = parseStaffLeaveOps(a.reason).opsMeta;
+                          if (!parsed) return '—';
+                          return `${parsed.unit || 'N/A'} / ${parsed.role || 'N/A'}`;
+                        })()}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-600">
                         {a.startDate.slice(0, 10)} → {a.endDate.slice(0, 10)}
                       </td>
                       <td className="px-4 py-3 tabular-nums">{a.totalDays}</td>
                       <td className="px-4 py-3">
                         <StatusPill status={a.status} />
+                        {a.approvalSteps?.length ? (
+                          <div className="mt-1 text-[11px] text-neutral-500">
+                            Step {a.approvalSteps.find((s) => s.status === 'pending')?.stepOrder ?? 'final'} of {a.approvalSteps.length}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3">
                         {a.status === 'pending' && (
@@ -354,8 +545,10 @@ export default function StaffLeavePage() {
               <tr>
                 <th className="px-4 py-3">Staff</th>
                 <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Unit</th>
                 <th className="px-4 py-3">Dates</th>
                 <th className="px-4 py-3">Days</th>
+                <th className="px-4 py-3">Risk</th>
                 <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
@@ -369,11 +562,19 @@ export default function StaffLeavePage() {
                   </td>
                   <td className="px-4 py-3">{a.leaveType.name}</td>
                   <td className="px-4 py-3 text-neutral-600">
+                    {parseStaffLeaveOps(a.reason).opsMeta?.unit || '—'}
+                  </td>
+                  <td className="px-4 py-3 text-neutral-600">
                     {a.startDate.slice(0, 10)} – {a.endDate.slice(0, 10)}
                   </td>
                   <td className="px-4 py-3">{a.totalDays}</td>
-                  <td className="px-4 py-3 max-w-xs truncate" title={a.reason || ''}>
-                    {a.reason || '—'}
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${computeRisk(a).style}`}>
+                      {computeRisk(a).label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 max-w-xs truncate" title={parseStaffLeaveOps(a.reason).coreReason || ''}>
+                    {parseStaffLeaveOps(a.reason).coreReason || '—'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -479,9 +680,12 @@ export default function StaffLeavePage() {
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-primary-900 mb-4">Request leave</h3>
-            <form onSubmit={submitApplication} className="space-y-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full p-6 md:p-8 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-primary-900 mb-4 flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-primary-700" />
+              Request clinical leave
+            </h3>
+            <form onSubmit={submitApplication} className="space-y-5">
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
                 <select
@@ -498,7 +702,7 @@ export default function StaffLeavePage() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 mb-1">Start</label>
                   <input
@@ -520,6 +724,87 @@ export default function StaffLeavePage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1">Unit / ward</label>
+                  <input
+                    required
+                    value={opsMeta.unit}
+                    onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, unit: e.target.value }))}
+                    placeholder="ICU, Theatre, OPD..."
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1">Role</label>
+                  <input
+                    required
+                    value={opsMeta.role}
+                    onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, role: e.target.value }))}
+                    placeholder="Nurse, MO, Anaesthetist..."
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1">Service criticality</label>
+                  <select
+                    value={opsMeta.criticality}
+                    onChange={(e) =>
+                      setOpsMeta((ctx) => ({
+                        ...ctx,
+                        criticality: e.target.value as StaffLeaveOpsMeta['criticality'],
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  >
+                    <option value="routine">Routine</option>
+                    <option value="essential">Essential</option>
+                    <option value="critical">Critical care</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1">Contact during leave</label>
+                  <input
+                    value={opsMeta.contactDuringLeave}
+                    onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, contactDuringLeave: e.target.value }))}
+                    placeholder="Phone or alternate contact"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">Coverage plan</label>
+                <textarea
+                  required
+                  value={opsMeta.coveragePlan}
+                  onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, coveragePlan: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  placeholder="Who covers shifts/rounds while you are away?"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">Handover note</label>
+                <textarea
+                  required
+                  value={opsMeta.handoverNote}
+                  onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, handoverNote: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  placeholder="Pending patient handover, meds, theatre lists, etc."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">Relief officer (optional)</label>
+                <input
+                  value={opsMeta.reliefOfficer}
+                  onChange={(e) => setOpsMeta((ctx) => ({ ...ctx, reliefOfficer: e.target.value }))}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
+                  placeholder="Assigned backup staff"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">Reason (optional)</label>
                 <textarea
@@ -528,6 +813,14 @@ export default function StaffLeavePage() {
                   rows={3}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg"
                 />
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 flex gap-2">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                For critical-care roles, requests with less than 7 days lead time should be emergency based.
+              </div>
+              <div className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs text-primary-900 flex gap-2">
+                <ShieldPlus className="w-4 h-4 mt-0.5 shrink-0" />
+                Coverage and handover details are attached to your request for approver safety review.
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 border rounded-lg text-sm">
@@ -560,6 +853,7 @@ function StatusPill({ status }: { status: string }) {
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${map[status] || ''}`}>
       {status === 'approved' && <Check className="w-3 h-3" />}
       {status === 'rejected' && <Ban className="w-3 h-3" />}
+      {status === 'pending' && <Clock3 className="w-3 h-3" />}
       {status}
     </span>
   );

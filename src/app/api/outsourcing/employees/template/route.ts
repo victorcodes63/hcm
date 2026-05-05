@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import ExcelJS from 'exceljs';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 const HEADERS = [
   'EMP No.',
@@ -52,7 +53,7 @@ const PAYROLL_INPUT_HEADERS = [
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const clientId = searchParams.get('clientId') || undefined;
+  const requestedClientId = searchParams.get('clientId') || undefined;
   const mode = (searchParams.get('mode') || '').trim().toLowerCase();
   const isPayrollTemplate = mode === 'payroll-input';
 
@@ -61,7 +62,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     }
 
-    let client: { name: string; departments: { name: string }[] } | null = null;
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
+
+    let client: { id: string; name: string; departments: { name: string }[] } | null = null;
     let clientEmployees: Array<{
       employeeNumber: string | null;
       firstName: string;
@@ -80,41 +83,39 @@ export async function GET(request: NextRequest) {
       baseSalary: unknown;
       department: { name: string } | null;
     }> = [];
-    if (clientId) {
-      const c = await prisma.outsourcingClient.findUnique({
-        where: { id: clientId },
-        include: { departments: { orderBy: { name: 'asc' } } },
+    const c = await prisma.outsourcingClient.findUnique({
+      where: { id: clientId },
+      include: { departments: { orderBy: { name: 'asc' } } },
+    });
+    if (c) client = c;
+    if (c && isPayrollTemplate) {
+      const rows = await prisma.employee.findMany({
+        where: { outsourcingClientId: c.id },
+        include: { department: { select: { name: true } } },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       });
-      if (c) client = c;
-      if (c && isPayrollTemplate) {
-        const rows = await prisma.employee.findMany({
-          where: { outsourcingClientId: c.id },
-          include: { department: { select: { name: true } } },
-          orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-        });
-        clientEmployees = rows.map((r) => ({
-          employeeNumber: r.employeeNumber,
-          firstName: r.firstName,
-          lastName: r.lastName,
-          email: r.email,
-          phone: r.phone,
-          jobTitle: r.jobTitle,
-          idNumber: r.idNumber,
-          kraPin: r.kraPin,
-          nssfNumber: r.nssfNumber,
-          nhifNumber: r.nhifNumber,
-          dateOfJoining: r.dateOfJoining,
-          bankName: r.bankName,
-          bankBranch: r.bankBranch,
-          bankAccountNumber: r.bankAccountNumber,
-          baseSalary: r.baseSalary,
-          department: r.department ? { name: r.department.name } : null,
-        }));
-      }
+      clientEmployees = rows.map((r) => ({
+        employeeNumber: r.employeeNumber,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+        phone: r.phone,
+        jobTitle: r.jobTitle,
+        idNumber: r.idNumber,
+        kraPin: r.kraPin,
+        nssfNumber: r.nssfNumber,
+        nhifNumber: r.nhifNumber,
+        dateOfJoining: r.dateOfJoining,
+        bankName: r.bankName,
+        bankBranch: r.bankBranch,
+        bankAccountNumber: r.bankAccountNumber,
+        baseSalary: r.baseSalary,
+        department: r.department ? { name: r.department.name } : null,
+      }));
     }
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Eagle HR ATS';
+    workbook.creator = 'HRIS Demo';
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet(isPayrollTemplate ? 'Payroll Input' : 'Employees', {

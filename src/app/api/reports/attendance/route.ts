@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { toCSV } from '@/lib/report-export';
 import { downloadHeaders, jsonOrPdf, parseDateParam, parseFormat, requireReportsUser, startOfDayUtc, ymd } from '@/app/api/reports/_shared';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 function toHours(minutes: number): number {
   return Math.round((minutes / 60) * 100) / 100;
@@ -33,15 +34,18 @@ export async function GET(request: NextRequest) {
   const from = startOfDayUtc(parseDateParam(request.nextUrl.searchParams.get('from'), defaultFrom));
   const to = startOfDayUtc(parseDateParam(request.nextUrl.searchParams.get('to'), now));
   const format = parseFormat(request);
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
 
   const [scheduled, summaries, exceptions] = await Promise.all([
     prisma.shiftAssignment.count({
       where: {
         workDate: { gte: from, lte: to },
+        employee: { outsourcingClientId: workspaceClientId },
       },
     }),
     prisma.attendanceDaySummary.findMany({
       where: {
+        outsourcingClientId: workspaceClientId,
         workDate: { gte: from, lte: to },
       },
       include: {
@@ -56,6 +60,7 @@ export async function GET(request: NextRequest) {
     }),
     prisma.attendanceException.findMany({
       where: {
+        employee: { outsourcingClientId: workspaceClientId },
         workDate: { gte: from, lte: to },
         type: { in: ['late_arrival', 'missing_check_out'] },
       },

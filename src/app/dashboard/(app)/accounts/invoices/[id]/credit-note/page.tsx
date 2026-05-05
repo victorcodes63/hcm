@@ -8,7 +8,9 @@ import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
 import {
   InvoicePaymentBankSelect,
 } from '@/components/accounts/InvoiceBankPanel';
-import type { InvoicePaymentBankKind } from '@/lib/eagle-hr-bank-accounts';
+import type { InvoicePaymentBankKind } from '@/lib/invoice-bank-accounts';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type LineDraft = { item: string; amountExVat: string; description: string };
 
@@ -21,6 +23,8 @@ function todayIso(): string {
 }
 
 export default function NewCreditNotePage() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const params = useParams();
   const router = useRouter();
   const invoiceId = typeof params.id === 'string' ? params.id : '';
@@ -130,7 +134,7 @@ export default function NewCreditNotePage() {
     );
     if (t.totalIncVat > inv.remainingCreditable + 0.02) {
       setFormError(
-        `Credit total (incl. VAT) ${t.totalIncVat.toFixed(2)} exceeds remaining creditable ${inv.remainingCreditable.toFixed(2)} for this invoice.`,
+        `Credit total (incl. VAT) ${displayMoney(t.totalIncVat, inv.currency)} exceeds remaining creditable ${displayMoney(inv.remainingCreditable, inv.currency)} for this invoice.`,
       );
       return;
     }
@@ -199,7 +203,7 @@ export default function NewCreditNotePage() {
         </nav>
         <p className="text-neutral-700 text-sm">
           Nothing left to credit on this invoice (or you don&apos;t have permission). Remaining creditable:{' '}
-          {inv.remainingCreditable.toFixed(2)} {inv.currency}
+          {displayMoney(inv.remainingCreditable, inv.currency)}
         </p>
         <Link
           href={`/dashboard/accounts/invoices/${invoiceId}`}
@@ -229,16 +233,11 @@ export default function NewCreditNotePage() {
         <FileMinus2 className="w-9 h-9 text-primary-700 shrink-0" />
         <div>
           <h1 className="text-xl font-bold text-primary-900 tracking-tight">Credit note</h1>
+          <EntityContextBanner />
           <p className="text-sm text-neutral-600 mt-1">
             Invoice #{inv.invoiceNumber} · {inv.clientName}. Remaining creditable:{' '}
-            <strong>
-              {inv.remainingCreditable.toLocaleString('en-KE', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{' '}
-              {inv.currency}
-            </strong>{' '}
-            (incl. VAT).
+            <strong>{displayMoney(inv.remainingCreditable, inv.currency)}</strong> (incl. VAT).{' '}
+            {entityConfig.tax.whtLabel}: {entityConfig.tax.whtRates}.
           </p>
         </div>
       </div>
@@ -348,9 +347,7 @@ export default function NewCreditNotePage() {
           {totals && (
             <p className="text-sm text-neutral-700">
               Credit total (incl. VAT):{' '}
-              <span className="font-semibold tabular-nums">
-                {totals.totalIncVat.toLocaleString('en-KE', { minimumFractionDigits: 2 })} {inv.currency}
-              </span>
+              <span className="font-semibold tabular-nums">{displayMoney(totals.totalIncVat, inv.currency)}</span>
             </p>
           )}
         </div>

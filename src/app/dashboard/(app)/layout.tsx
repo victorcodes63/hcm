@@ -1,19 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import BrandLogo from '@/components/BrandLogo';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardNav, { readSidebarCollapsed, writeSidebarCollapsed } from '@/components/dashboard/DashboardNav';
 import DashboardTopbar from '@/components/dashboard/DashboardTopbar';
 import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { UserSummary } from '@/types/dashboard';
+import { usePublicBrand } from '@/components/BrandProvider';
+import { EntityProvider } from '@/components/EntitySwitcher';
 
 export default function DashboardAppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { appName } = usePublicBrand();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserSummary | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -58,7 +61,7 @@ export default function DashboardAppLayout({
   }, [router]);
 
   const displayName = currentUser?.name || 'Staff User';
-  const displayEmail = currentUser?.email || 'staff@3rdparkhospital.com';
+  const displayEmail = currentUser?.email || 'staff@example.com';
   const initials = displayName
     .trim()
     .split(/\s+/)
@@ -73,12 +76,13 @@ export default function DashboardAppLayout({
   };
 
   return (
+    <EntityProvider>
     <div className="h-screen overflow-hidden flex bg-white">
       {/* Sidebar — collapsible for more content width on laptops */}
       <aside
         className={`print:hidden relative h-screen flex-shrink-0 flex flex-col border-r border-neutral-200 bg-white transition-[width] duration-200 ease-out overflow-visible ${
-          sidebarReady && sidebarCollapsed ? 'w-16' : 'w-[240px]'
-        } ${!sidebarReady ? 'w-[240px]' : ''}`}
+          sidebarReady && sidebarCollapsed ? 'w-16' : 'w-64'
+        } ${!sidebarReady ? 'w-64' : ''}`}
       >
         {/* Vertically centered collapse/expand — sits on sidebar edge, arrow out when collapsed */}
         <button
@@ -99,30 +103,18 @@ export default function DashboardAppLayout({
         <div className="flex-shrink-0 border-b border-neutral-200 overflow-hidden">
           <div
             className={`flex w-full items-center justify-center ${
-              sidebarCollapsed ? 'py-3 px-2' : 'py-4 px-4'
+              sidebarCollapsed ? 'py-3 px-2' : 'py-5 px-6'
             }`}
           >
             <Link
               href="/dashboard"
               className="flex w-full justify-center items-center rounded-lg hover:bg-neutral-50 transition-colors py-1"
-              title="3rd Park Hospital HR"
+              title={appName}
             >
               {sidebarCollapsed ? (
-                <Image
-                  src="/brand/3rd-park-logo.webp"
-                  alt=""
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 object-contain mx-auto"
-                />
+                <BrandLogo variant="sidebarCollapsed" alt="" />
               ) : (
-                <Image
-                  src="/brand/3rd-park-logo.webp"
-                  alt="3rd Park Hospital"
-                  width={150}
-                  height={45}
-                  className="h-11 w-auto object-contain mx-auto max-w-[10rem]"
-                />
+                <BrandLogo variant="sidebarExpanded" />
               )}
             </Link>
           </div>
@@ -181,11 +173,12 @@ export default function DashboardAppLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardTopbar currentUser={currentUser} />
         <main className="flex-1 overflow-auto">
-          <div className="w-full min-w-0 max-w-[1280px] mx-auto px-6 md:px-8 xl:px-12 py-6 md:py-8">
+          <div className="w-full min-w-0 max-w-[1360px] mx-auto px-6 md:px-8 xl:px-12 py-6 md:py-8">
             {children}
           </div>
         </main>
       </div>
     </div>
+    </EntityProvider>
   );
 }

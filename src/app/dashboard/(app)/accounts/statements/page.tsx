@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import AccountsModulePlaceholder from '@/components/dashboard/accounts/AccountsModulePlaceholder';
 
 export const metadata: Metadata = {
-  title: 'Statements | Eagle HR Accounts',
+  title: 'Statements | HRIS Demo (Accounts)',
 };
 
 export default function AccountsStatementsPage() {

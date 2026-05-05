@@ -70,7 +70,7 @@ export default function TermsOfServicePage() {
               <SectionTitle
                 label="Overview"
                 title="Service terms & conditions."
-                subtitle="These terms and conditions outline the rights and responsibilities of both Eagle HR Consultants and our clients when using our HR consulting services."
+                subtitle="These terms and conditions outline the rights and responsibilities of both HRIS Demo and our clients when using our HR consulting services."
                 variant="section"
                 className="text-left mb-6"
               />
@@ -121,7 +121,7 @@ export default function TermsOfServicePage() {
                 <div>
                   <h4 className="text-lg font-semibold text-primary-900 mb-3">1. Service Provision</h4>
                   <p className="text-neutral-600 leading-relaxed">
-                    Eagle HR Consultants will provide HR consulting services as agreed in the service contract. 
+                    HRIS Demo will provide HR consulting services as agreed in the service contract. 
                     Services may include recruitment, training, compliance, and other HR-related activities.
                   </p>
                 </div>
@@ -177,11 +177,11 @@ export default function TermsOfServicePage() {
               />
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
                 <a
-                  href="mailto:info@eaglehr.co.ke"
+                  href="mailto:info@example.com"
                   className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300"
                 >
                   <FileText className="w-5 h-5 mr-2" />
-                  info@eaglehr.co.ke
+                  info@example.com
                 </a>
                 <a
                   href="/contact"

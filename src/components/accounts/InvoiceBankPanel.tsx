@@ -5,7 +5,7 @@ import {
   getInvoiceBankDetails,
   INVOICE_PAYMENT_BANK_OPTIONS,
   type InvoicePaymentBankKind,
-} from '@/lib/eagle-hr-bank-accounts';
+} from '@/lib/invoice-bank-accounts';
 
 export function InvoiceBankDisplay({ kind }: { kind: InvoicePaymentBankKind }) {
   const b = getInvoiceBankDetails(kind);
@@ -63,7 +63,7 @@ export function InvoicePaymentBankSelect({
         )}
       </div>
       <p className="text-[11px] text-neutral-500 print:hidden">
-        Chooses which Eagle HR Equity account appears on the PDF and when printing. Payroll remittances should use
+        Chooses which HRIS Demo Equity account appears on the PDF and when printing. Payroll remittances should use
         the payroll-only account.
       </p>
     </div>

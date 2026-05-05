@@ -7,6 +7,7 @@ import {
   deriveEmployeePrefixFromName,
 } from '@/lib/outsourcing-employee-number';
 import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 const HEADER_MAP: Record<string, string> = {
   'EMP No.': 'employeeNumber',
@@ -77,20 +78,22 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const clientId = formData.get('clientId') as string | null;
+    const requestedClientId = formData.get('clientId') as string | null;
     const autoCreateDepartmentsRaw = formData.get('autoCreateDepartments');
     const autoCreateDepartments =
       autoCreateDepartmentsRaw === 'true' || autoCreateDepartmentsRaw === '1' || autoCreateDepartmentsRaw === true;
 
-    if (!file || !clientId?.trim()) {
+    if (!file) {
       return NextResponse.json(
-        { error: 'Both file and clientId are required.' },
+        { error: 'file is required.' },
         { status: 400 }
       );
     }
 
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId?.trim() ?? null, request);
+
     const client = await prisma.outsourcingClient.findUnique({
-      where: { id: clientId.trim() },
+      where: { id: clientId },
       include: { departments: true },
     });
     if (!client) {
@@ -192,7 +195,7 @@ export async function POST(request: NextRequest) {
       for (const deptDisplayName of missingDepartmentsByNormalized.values()) {
         const createdDept = await prisma.department.create({
           data: {
-            outsourcingClientId: clientId.trim(),
+            outsourcingClientId: clientId,
             name: deptDisplayName,
           },
         });
@@ -264,7 +267,7 @@ export async function POST(request: NextRequest) {
       if (emailNorm) {
         const existing = await prisma.employee.findFirst({
           where: {
-            outsourcingClientId: clientId.trim(),
+            outsourcingClientId: clientId,
             email: emailNorm,
           },
         });
@@ -280,7 +283,7 @@ export async function POST(request: NextRequest) {
       if (!employeeNumber?.trim()) {
         const prefix =
           client.employeeNumberPrefix?.trim() || deriveEmployeePrefixFromName(client.name);
-        employeeNumber = await allocateNextEmployeeNumber(prisma, clientId.trim(), prefix);
+        employeeNumber = await allocateNextEmployeeNumber(prisma, clientId, prefix);
       }
 
       let baseSalary: Decimal | undefined;
@@ -294,7 +297,7 @@ export async function POST(request: NextRequest) {
 
       await prisma.employee.create({
         data: {
-          outsourcingClientId: clientId.trim(),
+            outsourcingClientId: clientId,
           departmentId,
           employeeNumber,
           firstName: firstName.trim(),

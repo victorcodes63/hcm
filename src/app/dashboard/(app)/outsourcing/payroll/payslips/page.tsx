@@ -3,8 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import BrandLogo from '@/components/BrandLogo';
 import { ChevronLeft, Mail, Loader2, Printer, AlertTriangle } from 'lucide-react';
+import useEntityConfig, { useCurrencyFormatter } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { useEntity } from '@/components/EntitySwitcher';
 
 interface PayrollRecord {
   id: string;
@@ -37,11 +40,10 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function formatAmount(val: string | number): string {
-  return Number(val).toLocaleString('en-KE', { minimumFractionDigits: 2 });
-}
-
 function PayslipsContent() {
+  const { activeEntity } = useEntity();
+  const entityConfig = useEntityConfig();
+  const formatCurrency = useCurrencyFormatter();
   const searchParams = useSearchParams();
   const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1), 10);
   const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()), 10);
@@ -92,7 +94,7 @@ function PayslipsContent() {
         setError('Failed to load payroll');
       })
       .finally(() => setLoading(false));
-  }, [month, year, clientId, departmentId, employeeIdsParam]);
+  }, [month, year, clientId, departmentId, employeeIdsParam, activeEntity.id]);
 
   const handlePrint = () => {
     window.print();
@@ -156,7 +158,8 @@ function PayslipsContent() {
           : 'print-single-mode h-screen overflow-y-auto'
       }`}
     >
-      <div className="print:hidden flex items-center justify-between gap-4 mb-6 flex-wrap">
+      <div className="print:hidden flex flex-col gap-2 mb-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
         <Link
           href="/dashboard/outsourcing/payroll"
           className="inline-flex items-center gap-2 text-neutral-600 hover:text-primary-700"
@@ -194,6 +197,8 @@ function PayslipsContent() {
             Print payslips
           </button>
         </div>
+        </div>
+        <EntityContextBanner />
       </div>
 
       {sendResult && (
@@ -282,8 +287,8 @@ function PayslipsContent() {
               >
                 <div className={`mb-4 pb-3 ${printLayout === 'four' ? 'border-b border-neutral-400' : 'border-b border-primary-900'}`}>
                   <div className="flex items-center justify-between gap-3">
-                    <Image src="/brand/3rd-park-logo.webp" alt="3rd Park HRIS" width={120} height={36} className="h-9 w-auto print:h-6" />
-                    <span className="text-sm font-medium text-neutral-600 print:text-xs text-right ml-auto">3rd Park HRIS</span>
+                    <BrandLogo variant="header" className="h-9 w-auto object-contain print:h-6" />
+                    <span className="text-sm font-medium text-neutral-600 print:text-xs text-right ml-auto">HRIS Demo</span>
                   </div>
                 </div>
 
@@ -305,29 +310,31 @@ function PayslipsContent() {
                       <tbody>
                         <tr>
                           <td className="py-1">Basic pay</td>
-                          <td className="text-right tabular-nums font-medium">KES {formatAmount(p.basicPay)}</td>
+                          <td className="text-right tabular-nums font-medium">{formatCurrency(Number(p.basicPay))}</td>
                         </tr>
                         {daysWorkedFromAllowances && (
                           <tr>
                             <td className="py-1">Days worked</td>
-                            <td className="text-right tabular-nums">{Number(daysWorkedFromAllowances.amount).toLocaleString('en-KE')}</td>
+                            <td className="text-right tabular-nums">
+                              {Number(daysWorkedFromAllowances.amount).toLocaleString(entityConfig.currency.locale)}
+                            </td>
                           </tr>
                         )}
                         {displayAllowances.map((a, i) => (
                           <tr key={i}>
                             <td className="py-1">{a.name}</td>
-                            <td className="text-right tabular-nums">KES {formatAmount(a.amount)}</td>
+                            <td className="text-right tabular-nums">{formatCurrency(Number(a.amount))}</td>
                           </tr>
                         ))}
                         {Number(p.leavePay ?? 0) > 0 && (
                           <tr>
                             <td className="py-1">Leave pay</td>
-                            <td className="text-right tabular-nums">KES {formatAmount(p.leavePay!)}</td>
+                            <td className="text-right tabular-nums">{formatCurrency(Number(p.leavePay!))}</td>
                           </tr>
                         )}
                         <tr className="border-t border-neutral-200 font-semibold">
                           <td className="py-2">Gross</td>
-                          <td className="text-right tabular-nums">KES {formatAmount(p.grossPay)}</td>
+                          <td className="text-right tabular-nums">{formatCurrency(Number(p.grossPay))}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -338,20 +345,23 @@ function PayslipsContent() {
                     <table className="w-full text-sm">
                       <tbody>
                         <tr>
-                          <td className="py-1">PAYE</td>
-                          <td className="text-right tabular-nums">KES {formatAmount(p.paye)}</td>
+                          <td className="py-1">{entityConfig.payroll.deductionColumnHeaders.paye}</td>
+                          <td className="text-right tabular-nums">{formatCurrency(Number(p.paye))}</td>
                         </tr>
                         <tr>
-                          <td className="py-1">NSSF</td>
-                          <td className="text-right tabular-nums">KES {formatAmount(p.nssf)}</td>
+                          <td className="py-1">{entityConfig.payroll.deductionColumnHeaders.nssf}</td>
+                          <td className="text-right tabular-nums">{formatCurrency(Number(p.nssf))}</td>
                         </tr>
                         <tr>
-                          <td className="py-1">SHIF</td>
-                          <td className="text-right tabular-nums">KES {formatAmount(p.nhif)}</td>
+                          <td className="py-1">{entityConfig.payroll.deductionColumnHeaders.nhif}</td>
+                          <td className="text-right tabular-nums">{formatCurrency(Number(p.nhif))}</td>
                         </tr>
                         <tr>
-                          <td className="py-1">AHL (1.5%)</td>
-                          <td className="text-right tabular-nums">KES {formatAmount(p.ahl ?? 0)}</td>
+                          <td className="py-1">
+                            {entityConfig.payroll.statutoryItems.find((i) => i.key === 'ahl')?.label ??
+                              entityConfig.payroll.deductionColumnHeaders.ahl}
+                          </td>
+                          <td className="text-right tabular-nums">{formatCurrency(Number(p.ahl ?? 0))}</td>
                         </tr>
                         {Array.isArray(p.deductions) &&
                           p.deductions
@@ -359,12 +369,12 @@ function PayslipsContent() {
                             .map((d, i) => (
                               <tr key={i}>
                                 <td className="py-1">{d.name}</td>
-                                <td className="text-right tabular-nums">KES {formatAmount(d.amount)}</td>
+                                <td className="text-right tabular-nums">{formatCurrency(Number(d.amount))}</td>
                               </tr>
                             ))}
                         <tr className="border-t border-neutral-200 font-semibold">
                           <td className="py-2">Net pay</td>
-                          <td className="text-right tabular-nums text-primary-700">KES {formatAmount(p.netPay)}</td>
+                          <td className="text-right tabular-nums text-primary-700">{formatCurrency(Number(p.netPay))}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -376,8 +386,12 @@ function PayslipsContent() {
                       <table className="w-full text-sm">
                         <tbody>
                           <tr>
-                            <td className="py-1">NITA levy (employer)</td>
-                            <td className="text-right tabular-nums">KES {formatAmount(p.nita ?? 0)}</td>
+                            <td className="py-1">
+                              {entityConfig.payroll.statutoryItems.find((i) => i.key === 'nita' || i.key === 'nita-u')
+                                ?.label ?? entityConfig.payroll.deductionColumnHeaders.nita}{' '}
+                              (employer)
+                            </td>
+                            <td className="text-right tabular-nums">{formatCurrency(Number(p.nita ?? 0))}</td>
                           </tr>
                         </tbody>
                       </table>

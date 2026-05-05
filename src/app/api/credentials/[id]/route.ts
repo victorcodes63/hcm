@@ -1,35 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { CredentialCategory, CredentialStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessCredentials, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { logAuditEvent } from '@/lib/audit-events';
 
-type CredentialCategoryValue =
-  | 'medical_license'
-  | 'specialist_certification'
-  | 'life_support'
-  | 'regulatory_compliance'
-  | 'training'
-  | 'other';
-
-type CredentialStatusValue = 'active' | 'expiring_soon' | 'expired' | 'suspended' | 'revoked';
-
-const CATEGORIES = new Set<CredentialCategoryValue>([
-  'medical_license',
-  'specialist_certification',
-  'life_support',
-  'regulatory_compliance',
-  'training',
-  'other',
-]);
-
-const STATUSES = new Set<CredentialStatusValue>([
-  'active',
-  'expiring_soon',
-  'expired',
-  'suspended',
-  'revoked',
-]);
+const CATEGORIES = new Set<string>(Object.values(CredentialCategory));
+const STATUSES = new Set<string>(Object.values(CredentialStatus));
 
 function asOptionalString(value: unknown): string | null {
   return typeof value === 'string' ? value.trim() || null : null;
@@ -42,10 +19,10 @@ function asDate(value: unknown): Date | null {
 }
 
 function deriveStatus(
-  status: CredentialStatusValue,
+  status: CredentialStatus,
   expiryDate: Date | null,
   reminderDays: number
-): CredentialStatusValue {
+): CredentialStatus {
   if (status === 'suspended' || status === 'revoked') return status;
   if (!expiryDate) return status;
   const now = new Date();
@@ -58,14 +35,14 @@ function deriveStatus(
 function toResponse(record: {
   id: string;
   employeeId: string;
-  category: CredentialCategoryValue;
+  category: CredentialCategory;
   credentialName: string;
   credentialNumber: string | null;
   issuingAuthority: string | null;
   issueDate: Date | null;
   expiryDate: Date | null;
   reminderDays: number;
-  status: CredentialStatusValue;
+  status: CredentialStatus;
   scopeOfPractice: string | null;
   notes: string | null;
   documentPath: string | null;
@@ -162,17 +139,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
   if (body.category !== undefined) {
     const category = asOptionalString(body.category);
-    if (!category || !CATEGORIES.has(category as CredentialCategoryValue)) {
+    if (!category || !CATEGORIES.has(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
-    data.category = category as CredentialCategoryValue;
+    data.category = category as CredentialCategory;
   }
   if (body.status !== undefined) {
     const status = asOptionalString(body.status);
-    if (!status || !STATUSES.has(status as CredentialStatusValue)) {
+    if (!status || !STATUSES.has(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
-    data.status = status as CredentialStatusValue;
+    data.status = status as CredentialStatus;
   }
   if (body.employeeId !== undefined) {
     const employeeId = asOptionalString(body.employeeId);

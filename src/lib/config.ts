@@ -1,7 +1,7 @@
 // ATS Configuration
 export const ATS_CONFIG = {
   // API Configuration
-  API_BASE_URL: process.env.NEXT_PUBLIC_ATS_API_URL || 'https://api.eaglehr.co.ke',
+  API_BASE_URL: process.env.NEXT_PUBLIC_ATS_API_URL || 'https://api.example.com',
   API_KEY: process.env.NEXT_PUBLIC_ATS_API_KEY || '',
   
   // Feature Flags
@@ -16,13 +16,13 @@ export const ATS_CONFIG = {
     EMPLOYER_DASHBOARD: true,
   },
   
-  // Branding
+  // Branding (defaults; override via NEXT_PUBLIC_* — see src/lib/brand.ts)
   BRANDING: {
-    PRIMARY_COLOR: '#1e40af',
-    SECONDARY_COLOR: '#f59e0b',
-    LOGO: '/images/logo/logo_dark_ubxaCll.png',
-    COMPANY_NAME: 'Eagle HR Consultants',
-    DOMAIN: 'eaglehr.co.ke',
+    PRIMARY_COLOR: '#1D2460',
+    SECONDARY_COLOR: '#D2232A',
+    LOGO: process.env.NEXT_PUBLIC_BRAND_LOGO || '/brand/stabex-logo.png',
+    COMPANY_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'HRIS Demo',
+    DOMAIN: 'example.com',
   },
   
   // File Upload Settings

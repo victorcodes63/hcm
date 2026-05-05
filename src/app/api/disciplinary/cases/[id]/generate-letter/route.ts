@@ -6,6 +6,7 @@ import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessDisciplinaryRecords } from '@/lib/hr-access';
 import { generateShowCauseLetterPdf, generateWarningLetterPdf } from '@/lib/disciplinary-letters';
 import { logAuditEvent } from '@/lib/audit-events';
+import { getJurisdictionPolicy } from '@/lib/east-africa-hr-policy';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireStaffUser(request);
@@ -33,9 +34,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     hrManagerTitle: 'HR Manager',
     date,
   };
+  const policy = getJurisdictionPolicy(disciplinaryCase.laborJurisdiction);
   const pdfBuffer =
     letterType === 'SHOW_CAUSE_LETTER'
-      ? await generateShowCauseLetterPdf(base)
+      ? await generateShowCauseLetterPdf({
+          ...base,
+          responseDays: policy.defaultShowCauseDays,
+          jurisdictionCode: disciplinaryCase.laborJurisdiction,
+        })
       : await generateWarningLetterPdf((letterType || 'WRITTEN_WARNING') as 'VERBAL_WARNING' | 'WRITTEN_WARNING' | 'FINAL_WARNING', base);
 
   const fileName = `${disciplinaryCase.caseNumber}-${letterType || 'LETTER'}-${Date.now()}.pdf`;
@@ -51,5 +57,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await prisma.disciplinaryAction.update({ where: { id: actionId }, data: { letterGenerated: true } }).catch(() => null);
   }
   await logAuditEvent({ actor: { userId: user.id, email: user.email, name: user.name }, action: 'disciplinary.letter.generated', entityType: 'DisciplinaryCase', entityId: id, route: 'POST /api/disciplinary/cases/[id]/generate-letter', metadata: { letterType, documentId: doc.id } });
+
+  if (letterType === 'SHOW_CAUSE_LETTER') {
+    const due = new Date();
+    due.setUTCDate(due.getUTCDate() + policy.defaultShowCauseDays);
+    await prisma.disciplinaryCase
+      .update({
+        where: { id },
+        data: { showCauseResponseDueAt: due, status: 'AWAITING_RESPONSE' },
+      })
+      .catch(() => null);
+  }
+
   return NextResponse.json(doc, { status: 201 });
 }

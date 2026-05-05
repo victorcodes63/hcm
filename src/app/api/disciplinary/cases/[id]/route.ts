@@ -31,11 +31,26 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const body = (await request.json()) as Record<string, unknown>;
   const status = typeof body.status === 'string' ? body.status : undefined;
   const resolution = typeof body.resolution === 'string' ? body.resolution : undefined;
+  const laborJurisdiction =
+    typeof body.laborJurisdiction === 'string' && body.laborJurisdiction.trim()
+      ? body.laborJurisdiction.trim().toUpperCase().slice(0, 8)
+      : undefined;
+  const showCauseResponseDueAt =
+    body.showCauseResponseDueAt === null
+      ? null
+      : typeof body.showCauseResponseDueAt === 'string' && body.showCauseResponseDueAt
+        ? new Date(body.showCauseResponseDueAt)
+        : undefined;
+  const hearingAt =
+    body.hearingAt === null ? null : typeof body.hearingAt === 'string' && body.hearingAt ? new Date(body.hearingAt) : undefined;
   const updated = await prisma.disciplinaryCase.update({
     where: { id },
     data: {
       ...(status ? { status: status as never } : {}),
       ...(resolution !== undefined ? { resolution, resolvedAt: new Date(), resolvedById: user.id } : {}),
+      ...(laborJurisdiction ? { laborJurisdiction } : {}),
+      ...(showCauseResponseDueAt !== undefined ? { showCauseResponseDueAt } : {}),
+      ...(hearingAt !== undefined ? { hearingAt } : {}),
     },
   });
   await logAuditEvent({ actor: { userId: user.id, email: user.email, name: user.name }, action: 'disciplinary.case.updated', entityType: 'DisciplinaryCase', entityId: id, route: 'PUT /api/disciplinary/cases/[id]' });
@@ -49,7 +64,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           recipientEssPortalUserIds: [essId],
           title: `Case ${linked.caseNumber} resolved`,
           body: resolution || 'Disciplinary case has been concluded.',
-          href: '/ess/profile',
+          href: '/ess/disciplinary',
           priority: 'info',
           channel: 'in_app',
         });

@@ -10,12 +10,10 @@
 
 ## Setup
 
-1. **Client** `payrollFrequency = "biweekly"`  
-   - API: `PATCH /api/outsourcing/clients/:id` body `{ "payrollFrequency": "biweekly" }`  
-   - Or seed: `node prisma/seed-biweekly-client.js` → **Two-Week Pay Demo Ltd**
-
+1. **Client** `payrollFrequency = "biweekly"`
+  - API: `PATCH /api/outsourcing/clients/:id` body `{ "payrollFrequency": "biweekly" }`  
+  - Or seed: `node prisma/seed-biweekly-client.js` → **Two-Week Pay Demo Ltd**
 2. **Generate payroll** for that client/month → drafts get **Period 1** / **Period 2** prefilled as half of monthly `baseSalary` (adjust in edit).
-
 3. **Edit payroll** → set **Period 1 gross** and **Period 2 gross** → **Recalculate statutory** → combined gross drives PAYE/NSSF/SHIF/AHL; table shows proportional split for Payslip 1 / Payslip 2 / month.
 
 ## Allocation math

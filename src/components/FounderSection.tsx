@@ -41,7 +41,7 @@ const FounderSection = ({ founder }: FounderSectionProps) => {
             Meet Our Chairman
           </h2>
           <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
-            The vision and leadership behind Eagle HR Consultants
+            The vision and leadership behind HRIS Demo
           </p>
         </motion.div>
 

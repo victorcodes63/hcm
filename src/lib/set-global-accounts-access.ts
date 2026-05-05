@@ -18,9 +18,16 @@ export async function setUserGlobalAccountsAccess(
     perms.canManagePayments ||
     perms.canManageVendors;
 
-  const existing = await prisma.accountsStaffAccess.findFirst({
-    where: { userId, accountsClientId: null },
-  });
+  let existing: Awaited<ReturnType<typeof prisma.accountsStaffAccess.findFirst>> | null = null;
+  try {
+    existing = await prisma.accountsStaffAccess.findFirst({
+      where: { userId, accountsClientId: null },
+    });
+  } catch (error) {
+    const maybeCode = (error as { code?: string })?.code;
+    if (maybeCode === 'P2021') return;
+    throw error;
+  }
 
   if (!any) {
     if (existing) {
@@ -54,9 +61,16 @@ export async function setUserGlobalAccountsAccess(
 }
 
 export async function deleteGlobalAccountsAccessIfExists(userId: string): Promise<void> {
-  const existing = await prisma.accountsStaffAccess.findFirst({
-    where: { userId, accountsClientId: null },
-  });
+  let existing: Awaited<ReturnType<typeof prisma.accountsStaffAccess.findFirst>> | null = null;
+  try {
+    existing = await prisma.accountsStaffAccess.findFirst({
+      where: { userId, accountsClientId: null },
+    });
+  } catch (error) {
+    const maybeCode = (error as { code?: string })?.code;
+    if (maybeCode === 'P2021') return;
+    throw error;
+  }
   if (existing) {
     await prisma.accountsStaffAccess.delete({ where: { id: existing.id } });
   }

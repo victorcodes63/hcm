@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Banknote, FileText, Mail, Loader2, Pencil, Calculator, Search, Upload, Download, AlertTriangle, Eye } from 'lucide-react';
 import PayrollEditModal from '@/components/payroll/PayrollEditModal';
+import useEntityConfig, { useCurrencyFormatter } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { useEntity } from '@/components/EntitySwitcher';
 
 interface PayrollRecord {
   id: string;
@@ -67,6 +70,9 @@ const MONTHS = [
 ];
 
 export default function AccountsPayrollPage() {
+  const { activeEntity } = useEntity();
+  const entityConfig = useEntityConfig();
+  const formatCurrency = useCurrencyFormatter();
   type PendingSendAction =
     | { kind: 'bulk'; employeeIds: string[]; count: number }
     | { kind: 'single'; employeeId: string; employeeName: string };
@@ -153,11 +159,11 @@ export default function AccountsPayrollPage() {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [activeEntity.id]);
 
   useEffect(() => {
     fetchPayrolls();
-  }, [month, year, scope, clientId, departmentId]);
+  }, [month, year, scope, clientId, departmentId, activeEntity.id]);
 
   useEffect(() => {
     if (scope === 'department' && clientId.trim()) {
@@ -311,10 +317,15 @@ export default function AccountsPayrollPage() {
       const res = await fetch('/api/outsourcing/payroll/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Failed to generate');
+      if (!res.ok) {
+        const hint =
+          typeof data.detail === 'string' && data.detail.trim() ? ` ${data.detail}` : '';
+        throw new Error((data.error || 'Failed to generate') + hint);
+      }
       setGenerateResult(data.message || `Created ${data.created ?? 0} payroll record(s).`);
       await fetchPayrolls();
     } catch (e) {
@@ -573,7 +584,7 @@ export default function AccountsPayrollPage() {
           </li>
           <li aria-hidden="true">/</li>
           <li className="text-primary-900 font-medium" aria-current="page">
-            Payroll
+            {entityConfig.payroll.runLabel}
           </li>
         </ol>
       </nav>
@@ -581,8 +592,9 @@ export default function AccountsPayrollPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">
-            Payroll
+            {entityConfig.payroll.runLabel}
           </h1>
+          <EntityContextBanner />
           <p className="text-neutral-600 text-sm sm:text-base">
             Generate payroll and payslips by month. Scope by all employees, client, or department.
           </p>
@@ -616,7 +628,7 @@ export default function AccountsPayrollPage() {
       <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 mb-6">
         <h2 className="text-base font-semibold text-primary-900 mb-4 flex items-center gap-2">
           <Banknote className="w-5 h-5 text-primary-600" />
-          Payroll run
+          {entityConfig.payroll.runLabel} run
         </h2>
         <div className="flex flex-wrap gap-4 items-end">
           <div>
@@ -722,7 +734,7 @@ export default function AccountsPayrollPage() {
               type="button"
               onClick={handleRecalculateStatutory}
               disabled={payrolls.length === 0 || recalculating}
-              title="Recalculate PAYE, NSSF, SHIF, AHL, NITA for all in scope"
+              title={`Recalculate ${entityConfig.payroll.statutoryItems.map((i) => i.badge).join(', ')} for all in scope`}
               className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {recalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
@@ -829,11 +841,15 @@ export default function AccountsPayrollPage() {
                 </div>
                 <div className="rounded-xl border border-neutral-200 bg-white p-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Total gross</p>
-                  <p className="text-2xl font-bold text-primary-700 tabular-nums">{totalsInView.grossTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-primary-700 tabular-nums">
+                    {formatCurrency(totalsInView.grossTotal)}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-neutral-200 bg-white p-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Total net</p>
-                  <p className="text-2xl font-bold text-emerald-700 tabular-nums">{totalsInView.netTotal.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-emerald-700 tabular-nums">
+                    {formatCurrency(totalsInView.netTotal)}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-neutral-200 bg-white p-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">Status</p>
@@ -929,12 +945,23 @@ export default function AccountsPayrollPage() {
                   <th className="text-left px-4 py-3 font-medium text-neutral-600">Dept</th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">Basic</th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">Gross</th>
-                  <th className="text-right px-4 py-3 font-medium text-neutral-600">PAYE</th>
-                  <th className="text-right px-4 py-3 font-medium text-neutral-600">NSSF</th>
-                  <th className="text-right px-4 py-3 font-medium text-neutral-600">SHIF</th>
-                  <th className="text-right px-4 py-3 font-medium text-neutral-600">AHL</th>
-                  <th className="text-right px-4 py-3 font-medium text-neutral-600" title="Employer NITA (not from net pay)">
-                    NITA (emp.)
+                  <th className="text-right px-4 py-3 font-medium text-neutral-600">
+                    {entityConfig.payroll.deductionColumnHeaders.paye}
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-neutral-600">
+                    {entityConfig.payroll.deductionColumnHeaders.nssf}
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-neutral-600">
+                    {entityConfig.payroll.deductionColumnHeaders.nhif}
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-neutral-600">
+                    {entityConfig.payroll.deductionColumnHeaders.ahl}
+                  </th>
+                  <th
+                    className="text-right px-4 py-3 font-medium text-neutral-600"
+                    title="Employer levy (not from net pay)"
+                  >
+                    {entityConfig.payroll.deductionColumnHeaders.nita}
                   </th>
                   <th className="text-right px-4 py-3 font-medium text-neutral-600">Net pay</th>
                   <th className="text-left px-4 py-3 font-medium text-neutral-600">Status</th>
@@ -985,14 +1012,16 @@ export default function AccountsPayrollPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-neutral-600">{p.departmentName ?? '—'}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.basicPay).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.grossPay).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.paye).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.nssf).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.nhif).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{Number(p.ahl ?? 0).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-neutral-600">{Number(p.nita ?? 0).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium">{Number(p.netPay).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.basicPay))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.grossPay))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.paye))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.nssf))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.nhif))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(Number(p.ahl ?? 0))}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-neutral-600">
+                          {formatCurrency(Number(p.nita ?? 0))}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCurrency(Number(p.netPay))}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
                             p.status === 'paid'

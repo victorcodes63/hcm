@@ -17,7 +17,6 @@ import {
   CalendarDays,
   Clock4,
   CalendarOff,
-  TrendingUp,
   FileSignature,
   BadgeCheck,
   ListTodo,
@@ -25,11 +24,17 @@ import {
   Receipt,
   Landmark,
   BarChart3,
+  BarChart2,
   Shield,
+  ShieldAlert,
   UserCog,
   KeyRound,
   History,
   Settings,
+  LayoutGrid,
+  Wallet,
+  FileStack,
+  Scale,
 } from 'lucide-react';
 
 const NAV_STORAGE_KEY = 'dashboard-nav-expanded';
@@ -63,7 +68,7 @@ const primarySections: AccordionSection[] = [
       { href: '/dashboard/departments', label: 'Departments', icon: Building2 },
       { href: '/dashboard/people/contracts', label: 'Contracts', icon: FileSignature },
       { href: '/dashboard/credentials', label: 'Credentials', icon: BadgeCheck },
-      { href: '/dashboard/people/performance', label: 'Performance', icon: TrendingUp },
+      { href: '/dashboard/performance', label: 'Performance', icon: BarChart2 },
       { href: '/dashboard/disciplinary', label: 'Disciplinary', icon: Shield },
       { href: '/dashboard/onboarding', label: 'Onboarding', icon: ListTodo },
     ],
@@ -93,6 +98,13 @@ const primarySections: AccordionSection[] = [
     ],
   },
 ];
+
+const hseComplianceSection: AccordionSection = {
+  id: 'hse-compliance',
+  label: 'HSE & Compliance',
+  icon: ShieldAlert,
+  items: [{ href: '/dashboard/hse', label: 'Incidents', icon: ShieldAlert }],
+};
 
 const payrollSection: AccordionSection = {
   id: 'payroll',
@@ -128,6 +140,23 @@ const reportsSection: AccordionSection = {
   ],
 };
 
+/** Billing / AR-AP — same gate as Accounts APIs (`hasAccountsAccess`: admin always, or AccountsStaffAccess). */
+const financeSection: AccordionSection = {
+  id: 'finance',
+  label: 'Finance',
+  icon: Landmark,
+  items: [
+    { href: '/dashboard/accounts', label: 'Accounts overview', icon: LayoutGrid },
+    { href: '/dashboard/accounts/clients', label: 'Billing clients', icon: Building2 },
+    { href: '/dashboard/accounts/invoices', label: 'Invoices', icon: FileText },
+    { href: '/dashboard/accounts/receipts', label: 'Receipts', icon: Receipt },
+    { href: '/dashboard/accounts/vendors', label: 'Vendors', icon: Wallet },
+    { href: '/dashboard/accounts/vendor-bills', label: 'Vendor bills', icon: FileStack },
+    { href: '/dashboard/accounts/statements', label: 'Statements', icon: Scale },
+    { href: '/dashboard/accounts/payroll', label: 'Payroll (accounts)', icon: Banknote },
+  ],
+};
+
 function NavLink({
   href,
   label,
@@ -149,16 +178,18 @@ function NavLink({
     <Link
       href={href}
       title={label}
-      className={`relative flex h-9 items-center gap-3 rounded-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+      className={`relative flex h-9 items-center gap-3 rounded-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
         indent ? 'ml-2 pl-3 pr-2' : 'px-3'
       } ${
         isActive
-          ? 'bg-primary-50 text-primary-700 font-medium border border-primary-100'
+          ? 'bg-blue-50 text-blue-900 font-medium border border-blue-200'
           : 'text-neutral-700 hover:bg-neutral-50 hover:text-ink border border-transparent'
       }`}
     >
-      {isActive ? <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary-500" /> : null}
-      <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-primary-700' : ''}`} />
+      {isActive ? (
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-600" />
+      ) : null}
+      <Icon className="w-[18px] h-[18px] flex-shrink-0" />
       <span className="truncate">{label}</span>
     </Link>
   );
@@ -184,10 +215,10 @@ function NavLinkIcon({
       href={href}
       title={label}
       aria-label={label}
-      className={`flex items-center justify-center w-9 h-9 mx-auto rounded-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+      className={`flex items-center justify-center w-9 h-9 mx-auto rounded-md transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
         isActive
-          ? 'bg-primary-50 text-primary-700'
-          : 'text-neutral-500 hover:bg-neutral-50 hover:text-primary-700'
+          ? 'bg-blue-50 text-blue-900'
+          : 'text-neutral-500 hover:bg-neutral-50 hover:text-ink'
       }`}
     >
       <Icon className="w-5 h-5" />
@@ -240,13 +271,22 @@ export default function DashboardNav({
 }: DashboardNavProps) {
   const pathname = usePathname();
   const sections = useMemo<AccordionSection[]>(() => {
-    const chunks: AccordionSection[] = [...primarySections, payrollSection, reportsSection];
+    const chunks: AccordionSection[] = [...primarySections, hseComplianceSection, payrollSection, reportsSection];
+    if (hasAccountsAccess) chunks.push(financeSection);
     if (currentUserRole === 'admin' || hasAccountsAccess || canViewSystemAnalytics) chunks.push(adminSection);
     return chunks;
   }, [canViewSystemAnalytics, currentUserRole, hasAccountsAccess]);
 
   const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set([...primarySections.map((s) => s.id), payrollSection.id, reportsSection.id, adminSection.id])
+    () =>
+      new Set([
+        ...primarySections.map((s) => s.id),
+        hseComplianceSection.id,
+        payrollSection.id,
+        reportsSection.id,
+        financeSection.id,
+        adminSection.id,
+      ])
   );
 
   useEffect(() => {

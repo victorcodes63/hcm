@@ -12,6 +12,8 @@ import {
   CircleOff,
   Building2,
 } from 'lucide-react';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type Line = {
   id: string;
@@ -51,10 +53,6 @@ type BillDetail = {
   allocations: Allocation[];
 };
 
-function money(n: number, currency: string) {
-  return `${n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
-
 const STATUS_OPTIONS = [
   { value: 'unpaid' as const, label: 'Unpaid', Icon: CircleOff },
   { value: 'partial' as const, label: 'Partial', Icon: CircleDashed },
@@ -62,6 +60,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function VendorBillDetailPage() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
   const [data, setData] = useState<BillDetail | null>(null);
@@ -151,7 +151,7 @@ export default function VendorBillDetailPage() {
     }
     const rounded = Math.round(amt * 100) / 100;
     if (rounded > data.balanceDue + 0.02) {
-      setPayError(`Amount exceeds balance due (${money(data.balanceDue, data.currency)}).`);
+      setPayError(`Amount exceeds balance due (${displayMoney(data.balanceDue, data.currency)}).`);
       return;
     }
     if (!payDate.trim()) {
@@ -220,8 +220,6 @@ export default function VendorBillDetailPage() {
     );
   }
 
-  const vatPct = data.vatRateBps / 100;
-
   return (
     <div className="w-full min-w-0">
       <nav className="mb-4 print:hidden" aria-label="Breadcrumb">
@@ -261,6 +259,7 @@ export default function VendorBillDetailPage() {
               <Building2 className="w-4 h-4" />
               {data.vendorName}
             </Link>
+            <EntityContextBanner />
           </div>
         </div>
 
@@ -328,12 +327,12 @@ export default function VendorBillDetailPage() {
             </div>
             <div>
               <dt className="text-neutral-500 text-xs uppercase tracking-wide">Allocated</dt>
-              <dd className="font-medium tabular-nums">{money(data.allocatedTotal, data.currency)}</dd>
+              <dd className="font-medium tabular-nums">{displayMoney(data.allocatedTotal, data.currency)}</dd>
             </div>
             <div>
               <dt className="text-neutral-500 text-xs uppercase tracking-wide">Balance</dt>
               <dd className="font-semibold text-primary-900 tabular-nums">
-                {money(Math.max(0, data.balanceDue), data.currency)}
+                {displayMoney(Math.max(0, data.balanceDue), data.currency)}
               </dd>
             </div>
           </dl>
@@ -368,7 +367,7 @@ export default function VendorBillDetailPage() {
                       ) : null}
                     </td>
                     <td className="py-3 px-3 text-right tabular-nums font-medium">
-                      {Number(l.amountExVat).toLocaleString('en-KE', { minimumFractionDigits: 2 })}
+                      {displayMoney(Number(l.amountExVat), data.currency)}
                     </td>
                   </tr>
                 ))}
@@ -380,15 +379,15 @@ export default function VendorBillDetailPage() {
             <div className="w-full max-w-xs border border-neutral-200 rounded-lg p-4 text-sm space-y-2">
               <div className="flex justify-between text-neutral-700">
                 <span>Subtotal ex-VAT</span>
-                <span className="tabular-nums">{money(data.subtotalExVat, data.currency)}</span>
+                <span className="tabular-nums">{displayMoney(data.subtotalExVat, data.currency)}</span>
               </div>
               <div className="flex justify-between text-neutral-700">
-                <span>VAT ({vatPct.toFixed(0)}%)</span>
-                <span className="tabular-nums">{money(data.vatAmount, data.currency)}</span>
+                <span>{entityConfig.tax.vatLabel}</span>
+                <span className="tabular-nums">{displayMoney(data.vatAmount, data.currency)}</span>
               </div>
               <div className="flex justify-between font-bold text-primary-900 pt-2 border-t border-neutral-200">
                 <span>Total</span>
-                <span className="tabular-nums">{money(data.totalIncVat, data.currency)}</span>
+                <span className="tabular-nums">{displayMoney(data.totalIncVat, data.currency)}</span>
               </div>
             </div>
           </div>
@@ -406,7 +405,7 @@ export default function VendorBillDetailPage() {
                   {a.reference ? ` · ${a.reference}` : ''}
                   {a.method ? ` · ${a.method}` : ''}
                 </span>
-                <span className="font-medium tabular-nums">{money(a.amount, data.currency)}</span>
+                <span className="font-medium tabular-nums">{displayMoney(a.amount, data.currency)}</span>
               </li>
             ))}
           </ul>

@@ -4,6 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileStack, Loader2, AlertCircle, Plus } from 'lucide-react';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type BillRow = {
   id: string;
@@ -20,11 +22,9 @@ type BillRow = {
   lineCount: number;
 };
 
-function money(n: number, currency: string) {
-  return `${n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
-
 function VendorBillsListInner() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterVendorId = searchParams.get('vendorId')?.trim() || undefined;
@@ -84,8 +84,10 @@ function VendorBillsListInner() {
             <FileStack className="w-7 h-7 text-primary-700" />
             Vendor bills
           </h1>
+          <EntityContextBanner />
           <p className="text-neutral-600 text-sm mt-1">
-            Creditor invoices (AP): multi-line, VAT, payment allocations update status.
+            Creditor invoices (AP): multi-line, {entityConfig.tax.vatLabel}, payment allocations update status.{' '}
+            {entityConfig.tax.whtLabel}: {entityConfig.tax.whtRates}.
           </p>
         </div>
         <Link
@@ -160,7 +162,7 @@ function VendorBillsListInner() {
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Issued</th>
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Due</th>
                   <th className="text-right px-4 py-3 font-semibold text-neutral-700">Ex-VAT</th>
-                  <th className="text-right px-4 py-3 font-semibold text-neutral-700">VAT</th>
+                  <th className="text-right px-4 py-3 font-semibold text-neutral-700">{entityConfig.tax.vatLabel}</th>
                   <th className="text-right px-4 py-3 font-semibold text-neutral-700">Total</th>
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Status</th>
                 </tr>
@@ -189,13 +191,13 @@ function VendorBillsListInner() {
                     <td className="px-4 py-3 text-neutral-600 tabular-nums">{bill.issueDate}</td>
                     <td className="px-4 py-3 text-neutral-600 tabular-nums">{bill.dueDate ?? '—'}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-neutral-800">
-                      {money(bill.subtotalExVat, bill.currency)}
+                      {displayMoney(bill.subtotalExVat, bill.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-neutral-700">
-                      {money(bill.vatAmount, bill.currency)}
+                      {displayMoney(bill.vatAmount, bill.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary-900">
-                      {money(bill.totalIncVat, bill.currency)}
+                      {displayMoney(bill.totalIncVat, bill.currency)}
                     </td>
                     <td className="px-4 py-3">
                       <span

@@ -131,8 +131,7 @@ export function getInMemoryApplications(filters?: {
       const fromList = fd.professionalCertificationsList?.some((c) =>
         (c.name ?? '').toLowerCase().includes(q)
       );
-      const fromLegacy = (fd.professionalCertifications ?? '').toLowerCase().includes(q);
-      return Boolean(fromList || fromLegacy);
+      return Boolean(fromList);
     });
   }
   if (filters?.membership?.trim()) {

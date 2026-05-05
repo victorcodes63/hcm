@@ -105,7 +105,7 @@ const TestimonialSlider = ({ testimonials }: TestimonialSliderProps) => {
           
           <p className="text-xl text-neutral-700 max-w-3xl mx-auto leading-relaxed">
             Don't just take our word for it. Here's what our clients have to say about 
-            their experience working with Eagle HR Consultants.
+            their experience working with HRIS Demo.
           </p>
         </motion.div>
 

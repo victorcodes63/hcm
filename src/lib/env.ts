@@ -1,7 +1,7 @@
 // Environment configuration for ATS integration
 export const ENV_CONFIG = {
   // ATS API Configuration
-  ATS_API_URL: process.env.NEXT_PUBLIC_ATS_API_URL || 'https://api.eaglehr.co.ke',
+  ATS_API_URL: process.env.NEXT_PUBLIC_ATS_API_URL || 'https://api.example.com',
   ATS_API_KEY: process.env.NEXT_PUBLIC_ATS_API_KEY || '',
   
   // Development mode - when true, uses mock data

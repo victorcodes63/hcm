@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, FileStack, Loader2, Plus, Trash2 } from 'lucide-react';
 import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { getEntityConfig } from '@/lib/entityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type VendorRow = { id: string; name: string; currency: string };
 
@@ -32,6 +35,8 @@ const inputClass =
 type LineDraft = { item: string; amountExVat: string; description: string };
 
 function NewVendorBillForm() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const router = useRouter();
   const searchParams = useSearchParams();
   const presetVendorId = searchParams.get('vendorId')?.trim() ?? '';
@@ -92,6 +97,12 @@ function NewVendorBillForm() {
     if (previewLines.length === 0) return null;
     return computeInvoiceVatFromLines(previewLines, vatRateBps);
   }, [previewLines, vatRateBps]);
+
+  const selectedVendor = useMemo(
+    () => (vendors ?? []).find((v) => v.id === vendorId),
+    [vendors, vendorId],
+  );
+  const previewCurrency = selectedVendor?.currency ?? entityConfig.currency.code;
 
   const addLine = () => {
     setLines((prev) => [...prev, { item: '', amountExVat: '', description: '' }]);
@@ -189,8 +200,10 @@ function NewVendorBillForm() {
         <FileStack className="w-9 h-9 text-primary-700 shrink-0" />
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-primary-900 tracking-tight">New vendor bill</h1>
+          <EntityContextBanner />
           <p className="text-sm text-neutral-600 mt-1">
-            Enter supplier reference, dates, and ex-VAT lines. VAT matches invoice logic (on subtotal).
+            Enter supplier reference, dates, and ex-VAT lines. {entityConfig.tax.vatLabel} matches invoice logic (on
+            subtotal). {entityConfig.tax.whtLabel}: {entityConfig.tax.whtRates}.
           </p>
         </div>
       </div>
@@ -253,7 +266,7 @@ function NewVendorBillForm() {
             </div>
             <div>
               <label htmlFor="vat" className="block text-sm font-medium text-neutral-800 mb-1.5">
-                VAT rate
+                {entityConfig.tax.vatLabel} rate
               </label>
               <select
                 id="vat"
@@ -261,7 +274,8 @@ function NewVendorBillForm() {
                 value={vatRateBps}
                 onChange={(e) => setVatRateBps(parseInt(e.target.value, 10))}
               >
-                <option value={1600}>16% (standard)</option>
+                <option value={1600}>{getEntityConfig('ke').tax.vatRate} (standard)</option>
+                <option value={1800}>{getEntityConfig('ug').tax.vatRate} (standard)</option>
                 <option value={0}>0% (zero-rated / exempt)</option>
               </select>
             </div>
@@ -372,20 +386,16 @@ function NewVendorBillForm() {
               <div className="flex justify-between text-neutral-700">
                 <span>Subtotal ex-VAT</span>
                 <span className="tabular-nums font-medium">
-                  {totalsPreview.subtotalExVat.toLocaleString('en-KE', { minimumFractionDigits: 2 })}
+                  {displayMoney(totalsPreview.subtotalExVat, previewCurrency)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-700">
-                <span>VAT</span>
-                <span className="tabular-nums">
-                  {totalsPreview.vatAmount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}
-                </span>
+                <span>{entityConfig.tax.vatLabel}</span>
+                <span className="tabular-nums">{displayMoney(totalsPreview.vatAmount, previewCurrency)}</span>
               </div>
               <div className="flex justify-between font-semibold text-primary-900 pt-1 border-t border-neutral-100">
                 <span>Total incl. VAT</span>
-                <span className="tabular-nums">
-                  {totalsPreview.totalIncVat.toLocaleString('en-KE', { minimumFractionDigits: 2 })}
-                </span>
+                <span className="tabular-nums">{displayMoney(totalsPreview.totalIncVat, previewCurrency)}</span>
               </div>
             </div>
           )}

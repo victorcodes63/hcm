@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser } from '@/lib/staff-api-auth';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireStaffUser(request);
@@ -16,6 +17,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     },
   });
   if (!workflow) return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
+  if (workflow.employee.outsourcingClientId !== workspaceClientId) {
+    return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+  }
   return NextResponse.json(workflow);
 }
 
@@ -26,6 +31,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const status = body?.status as WorkflowStatus | undefined;
   if (!status) return NextResponse.json({ error: 'status is required' }, { status: 400 });
+
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
+  const existing = await prisma.onboardingWorkflow.findUnique({
+    where: { id },
+    select: { id: true, employee: { select: { outsourcingClientId: true } } },
+  });
+  if (!existing || existing.employee.outsourcingClientId !== workspaceClientId) {
+    return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+  }
 
   const workflow = await prisma.onboardingWorkflow.update({
     where: { id },

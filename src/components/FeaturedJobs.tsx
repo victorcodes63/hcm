@@ -15,7 +15,7 @@ type FeaturedJob = {
   location: string;
   type: string;
   description: string;
-  requirements: string[] | string;
+  requirements: string;
   postedDate: string;
 };
 
@@ -37,7 +37,7 @@ const FeaturedJobs = () => {
           location: string;
           type: string;
           description: string;
-          requirements: string[] | string;
+          requirements: string;
           postedDate: string;
         }) => ({
           id: job.id,
@@ -46,7 +46,7 @@ const FeaturedJobs = () => {
           location: job.location,
           type: job.type,
           description: job.description,
-          requirements: Array.isArray(job.requirements) ? job.requirements : (typeof job.requirements === 'string' ? job.requirements : []),
+          requirements: typeof job.requirements === 'string' ? job.requirements : '',
           postedDate: job.postedDate,
         }));
         setFeaturedJobs(mapped);
@@ -216,13 +216,9 @@ const FeaturedJobs = () => {
 
                   {/* Requirements Preview */}
                   {(() => {
-                    const reqItems = Array.isArray(job.requirements)
-                      ? job.requirements.slice(0, 2)
-                      : htmlToListPreviewItems(typeof job.requirements === 'string' ? job.requirements : '', 2);
+                    const reqItems = htmlToListPreviewItems(job.requirements, 2);
                     if (reqItems.length === 0) return null;
-                    const totalCount = Array.isArray(job.requirements)
-                      ? job.requirements.length
-                      : htmlToListPreviewItems(typeof job.requirements === 'string' ? job.requirements : '', 999).length;
+                    const totalCount = htmlToListPreviewItems(job.requirements, 999).length;
                     return (
                       <div className="mb-4 md:mb-6 flex-1">
                         <h4 className="text-xs md:text-sm font-medium text-primary-900 mb-2 md:mb-3">Key Requirements:</h4>

@@ -5,8 +5,8 @@ import { Loader2, Save, Settings } from 'lucide-react';
 import type { SystemSettingsPayload } from '@/types/dashboard';
 
 const DEFAULTS: SystemSettingsPayload = {
-  companyName: '3rd Park Hospital HR',
-  companyEmail: 'hr@3rdparkhospital.com',
+  companyName: 'Stabex International HR',
+  companyEmail: 'hr@example.com',
   defaultCurrency: 'KES',
   payrollCutoffDay: 25,
   leaveApprovalMode: 'single',

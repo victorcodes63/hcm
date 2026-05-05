@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import {
+  listEntitySwitcherOutsourcingClientIds,
+  resolvePrimaryWorkspaceClientId,
+} from '@/lib/primary-workspace-client';
+import {
+  employeeNumberPrefixForAttendanceRegion,
+  parseAttendanceRegionParam,
+} from '@/lib/attendance-region-filter';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import { reconcileAttendanceDay, resolveReconcileWorkDatesForObservedAt } from '@/lib/attendance-reconciliation';
 import { requireStaffUser } from '@/lib/staff-api-auth';
@@ -14,14 +22,47 @@ export async function GET(request: NextRequest) {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
     }
-    const clientId = request.nextUrl.searchParams.get('clientId') || undefined;
+    const requestedClientId = request.nextUrl.searchParams.get('clientId') || undefined;
+    const combinedRaw = request.nextUrl.searchParams.get('combinedEntities');
+    const combinedEntities =
+      combinedRaw === '1' || combinedRaw === 'true' || combinedRaw === 'yes';
+
+    /** Single client (entity cookie) or multiple when UI requests both KE & UG legal employers. */
+    let clientId: string;
+    let clientIds: string[] | null = null;
+    if (combinedEntities) {
+      const multi = await listEntitySwitcherOutsourcingClientIds(prisma);
+      if (multi.length > 1) {
+        clientIds = multi;
+        clientId = multi[0]!; // unused when clientIds set; satisfies legacy branches
+      } else {
+        clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
+      }
+    } else {
+      clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
+    }
+
     const from = request.nextUrl.searchParams.get('from') || undefined;
     const to = request.nextUrl.searchParams.get('to') || undefined;
     const employeeId = request.nextUrl.searchParams.get('employeeId') || undefined;
+    const region = parseAttendanceRegionParam(request.nextUrl.searchParams.get('region'));
+    const regionPrefix = region ? employeeNumberPrefixForAttendanceRegion(region) : null;
+
+    const clientScope =
+      clientIds && clientIds.length > 1
+        ? { outsourcingClientId: { in: clientIds } }
+        : { outsourcingClientId: clientId };
 
     const where = {
-      ...(clientId ? { outsourcingClientId: clientId } : {}),
+      ...clientScope,
       ...(employeeId ? { employeeId } : {}),
+      ...(regionPrefix
+        ? {
+            employee: {
+              employeeNumber: { startsWith: regionPrefix, mode: 'insensitive' },
+            },
+          }
+        : {}),
       ...(from || to
         ? {
             workDate: {
@@ -67,7 +108,14 @@ export async function GET(request: NextRequest) {
               }
             : {}),
           employee: {
-            ...(clientId ? { outsourcingClientId: clientId } : {}),
+            ...(clientIds && clientIds.length > 1
+              ? { outsourcingClientId: { in: clientIds } }
+              : { outsourcingClientId: clientId }),
+            ...(regionPrefix
+              ? {
+                  employeeNumber: { startsWith: regionPrefix, mode: 'insensitive' },
+                }
+              : {}),
           },
         },
         include: {
@@ -103,6 +151,16 @@ export async function GET(request: NextRequest) {
       exceptions = await prismaAny.attendanceException!.findMany({
         where: {
           ...(employeeId ? { employeeId } : {}),
+          employee: {
+            ...(clientIds && clientIds.length > 1
+              ? { outsourcingClientId: { in: clientIds } }
+              : { outsourcingClientId: clientId }),
+            ...(regionPrefix
+              ? {
+                  employeeNumber: { startsWith: regionPrefix, mode: 'insensitive' },
+                }
+              : {}),
+          },
           ...(from || to
             ? {
                 workDate: {

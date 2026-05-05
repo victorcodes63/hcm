@@ -1,11 +1,11 @@
 /**
  * Generate interview schedule PDF for download.
- * World-class layout with Eagle HR branding.
+ * World-class layout with HRIS Demo branding.
  */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
+import { getLogoFileAbsolutePath } from '@/lib/brand';
 
 export interface InterviewSchedulePdfData {
   positionTitle: string;
@@ -15,9 +15,9 @@ export interface InterviewSchedulePdfData {
   rows: string[][];
 }
 
-const LOGO_PATH = resolve(process.cwd(), 'public/images/logo/logo_dark_ubxaCll.png');
+const LOGO_PATH = getLogoFileAbsolutePath();
 
-// Brand colors (Eagle HR)
+// Brand colors (HRIS Demo)
 const PRIMARY = rgb(11 / 255, 29 / 255, 57 / 255); // #0B1D39
 const GRAY_800 = rgb(38 / 255, 38 / 255, 38 / 255);
 const GRAY_600 = rgb(82 / 255, 82 / 255, 82 / 255);
@@ -342,7 +342,7 @@ export async function generateInterviewSchedulePdf(data: InterviewSchedulePdfDat
   });
 
   // Footer
-  const footer = 'Eagle HR Consultants • Generated schedule. For official use.';
+  const footer = 'HRIS Demo • Generated schedule. For official use.';
   page.drawText(footer, {
     x: width / 2 - helvetica.widthOfTextAtSize(footer, 9) / 2,
     y: 36,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -24,10 +25,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const effectiveClientId = clientId ?? (await resolvePrimaryWorkspaceClientId(prisma, null, request));
     const result = await prisma.employee.deleteMany({
       where: {
         id: { in: employeeIds },
-        ...(clientId ? { outsourcingClientId: clientId } : {}),
+        outsourcingClientId: effectiveClientId,
       },
     });
 

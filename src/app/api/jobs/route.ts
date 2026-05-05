@@ -4,7 +4,7 @@ import { CreateJobInput } from '@/lib/jobs-store';
 import { JobListing } from '@/types/ats';
 import { ensureUniqueSlug, jobSlugBase } from '@/lib/slug';
 import { parseDateTimeAsNairobi } from '@/lib/timezone';
-import { resolveJobCompanyAndClientId } from '@/lib/recruitment-workspace';
+import { getOrCreateRecruitmentSettings, resolveJobCompanyAndClientId } from '@/lib/recruitment-workspace';
 
 type PrismaJobForListing = {
   id: string;
@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
+    const recruitmentSettings = activeOnly ? await getOrCreateRecruitmentSettings(prisma) : null;
     const jobs = await prisma.job.findMany({
         where: {
           ...(activeOnly
@@ -118,6 +119,7 @@ export async function GET(request: NextRequest) {
       const listing = prismaJobToListing(job as unknown as PrismaJobForListing);
       if (activeOnly) {
         if (job.concealCompany) listing.company = 'Confidential';
+        else if (recruitmentSettings?.employerName?.trim()) listing.company = recruitmentSettings.employerName.trim();
         if (!(job as { salaryPublic?: boolean }).salaryPublic) listing.salary = undefined;
       }
       return listing;

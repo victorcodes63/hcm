@@ -25,7 +25,7 @@ export default function NewInsightPage() {
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [body, setBody] = useState('');
-  const [author, setAuthor] = useState('Eagle HR');
+  const [author, setAuthor] = useState('HRIS Demo');
   const [category, setCategory] = useState('Uncategorized');
   const [url, setUrl] = useState('');
   const [image, setImage] = useState('');
@@ -75,7 +75,7 @@ export default function NewInsightPage() {
           title: trimmedTitle,
           excerpt: trimmedExcerpt,
           body: body.trim() || null,
-          author: author.trim() || 'Eagle HR',
+          author: author.trim() || 'HRIS Demo',
           category: category || 'Uncategorized',
           url: url.trim() || '#',
           image: image.trim() || PLACEHOLDER_IMAGE,
@@ -188,7 +188,7 @@ export default function NewInsightPage() {
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                placeholder="e.g. Eagle HR"
+                placeholder="e.g. HRIS Demo"
                 className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
               />
             </div>
@@ -220,7 +220,7 @@ export default function NewInsightPage() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.eaglehr.co.ke/blog/..."
+              placeholder="https://www.example.com/blog/..."
               className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
             />
             <p className="mt-1 text-xs text-neutral-500">

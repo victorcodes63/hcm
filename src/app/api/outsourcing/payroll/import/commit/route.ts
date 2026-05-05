@@ -5,7 +5,7 @@ import { parsePayrollImportWorkbook } from '@/lib/payroll-import-template';
 import { normalizeEmployeeNationalId } from '@/lib/outsourcing-employee-national-id';
 import { calculateStatutoryForPayroll } from '@/lib/payroll-calc';
 import { mapOutsourcingClientsToAccountsClients } from '@/lib/payroll-accounts-link';
-import { resolveHospitalClientId } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'file, month, and year are required.' }, { status: 400 });
     }
 
-    const clientId = await resolveHospitalClientId(prisma, requestedClientId);
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
 
     const client = await prisma.outsourcingClient.findUnique({
       where: { id: clientId },

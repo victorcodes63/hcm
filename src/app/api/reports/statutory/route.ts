@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { toCSV } from '@/lib/report-export';
 import { downloadHeaders, parseFormat, parsePeriod, requireReportsUser } from '@/app/api/reports/_shared';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 type StatutoryType = 'p9' | 'p10' | 'nssf' | 'shif';
 
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
   const { year, month, periodLabel } = parsePeriod(request.nextUrl.searchParams.get('period'));
   const type = reportType(request.nextUrl.searchParams.get('type'));
   const format = parseFormat(request);
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
 
   const where =
     type === 'p9'
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
         };
 
   const payrollRows = await prisma.payroll.findMany({
-    where,
+    where: { ...where, employee: { outsourcingClientId: workspaceClientId } },
     include: {
       employee: {
         select: {

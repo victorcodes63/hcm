@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStaffSessionMaxAgeSeconds } from '@/lib/auth-session';
 import { reportApiError } from '@/lib/monitoring';
+import { getStaffAllowedDomains } from '@/lib/staff-allowed-domains';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
 const STAFF_SESSION_MAX_AGE = getStaffSessionMaxAgeSeconds();
 const OAUTH_STATE_COOKIE = 'staff_oauth_state';
-const ALLOWED_DOMAIN = (process.env.STAFF_ALLOWED_DOMAIN || 'eaglehr.co.ke').toLowerCase();
 const OAUTH_DEBUG = process.env.MS_OAUTH_DEBUG === 'true';
 
 /** Cookie domain so state/session work when start is on www and callback on apex (or vice versa). */
 function getCookieDomain(requestUrl: string): string | undefined {
   if (process.env.NODE_ENV !== 'production') return undefined;
   const host = new URL(requestUrl).hostname.toLowerCase();
-  if (host === 'eaglehr.co.ke' || host === 'www.eaglehr.co.ke') return '.eaglehr.co.ke';
+  if (host === 'example.com' || host === 'www.example.com') return '.example.com';
   return undefined;
 }
 
@@ -45,7 +45,7 @@ function normalizeEmailDomain(email: string) {
 
 function isAllowedEmail(email: string) {
   const normalized = normalizeEmailDomain(email);
-  return normalized.endsWith(`@${ALLOWED_DOMAIN}`);
+  return getStaffAllowedDomains().some((domain) => normalized.endsWith(`@${domain}`));
 }
 
 function logOAuthDebug(step: string, details: Record<string, unknown>) {
@@ -201,13 +201,13 @@ export async function GET(request: NextRequest) {
       hasMail: Boolean(me.mail),
       hasUpn: Boolean(me.userPrincipalName),
       resolvedEmail: email,
-      allowedDomain: ALLOWED_DOMAIN,
+      allowedDomains: getStaffAllowedDomains(),
     });
 
     if (!email || !isAllowedEmail(email)) {
       logOAuthDebug('domain_rejected', {
         resolvedEmail: email || null,
-        allowedDomain: ALLOWED_DOMAIN,
+        allowedDomains: getStaffAllowedDomains(),
       });
       return denyToLogin(request, 'domain');
     }

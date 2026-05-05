@@ -364,9 +364,9 @@ export const defaultATSConfig: ATSConfig = {
     resumeParsing: true,
   },
   branding: {
-    primaryColor: '#1e40af',
-    secondaryColor: '#f59e0b',
-    logo: '/images/logo/logo_dark_ubxaCll.png',
+    primaryColor: '#1D2460',
+    secondaryColor: '#D2232A',
+    logo: '/brand/stabex-logo.png',
   },
 };
 

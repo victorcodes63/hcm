@@ -6,6 +6,7 @@ import { getAccountsAccess } from '@/lib/accounts-access';
 import { computeInvoiceVatFromSubtotal } from '@/lib/accounts-invoice-totals';
 import { sumCreditTotalsByInvoiceIds } from '@/lib/accounts-credit-note-totals';
 import { reportApiError } from '@/lib/monitoring';
+import { getOrCreatePrimaryAccountsClient } from '@/lib/primary-accounts-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const clientId = request.nextUrl.searchParams.get('clientId')?.trim() || undefined;
+    let clientId = request.nextUrl.searchParams.get('clientId')?.trim() || undefined;
+    if (!clientId) {
+      const ac = await getOrCreatePrimaryAccountsClient(prisma, request);
+      clientId = ac.id;
+    }
     const openOnly = ['1', 'true', 'yes'].includes(
       request.nextUrl.searchParams.get('openOnly')?.toLowerCase() ?? '',
     );

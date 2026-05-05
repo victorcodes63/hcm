@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -20,14 +21,14 @@ export async function POST(request: NextRequest) {
     : [];
   const departmentId =
     typeof b.departmentId === 'string' && b.departmentId.trim().length > 0 ? b.departmentId.trim() : null;
-  const clientId = typeof b.clientId === 'string' && b.clientId.trim().length > 0 ? b.clientId.trim() : null;
-
-  if (!clientId) return NextResponse.json({ error: 'clientId is required.' }, { status: 400 });
+  const requestedClientId = typeof b.clientId === 'string' && b.clientId.trim().length > 0 ? b.clientId.trim() : null;
   if (employeeIds.length === 0) {
     return NextResponse.json({ error: 'employeeIds must be a non-empty array.' }, { status: 400 });
   }
 
   try {
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
+
     if (departmentId) {
       const dept = await prisma.department.findUnique({
         where: { id: departmentId },

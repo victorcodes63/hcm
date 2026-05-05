@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import BrandLogo from '@/components/BrandLogo';
 
 type InterviewInfo = {
   valid: boolean;
@@ -118,7 +118,7 @@ export default function InterviewReschedulePage() {
       <div className="max-w-lg w-full bg-white rounded-xl shadow-lg border border-neutral-200 overflow-hidden">
         <div className="bg-neutral-100 px-6 py-4 flex items-center gap-3 border-b border-neutral-200">
           <Link href="/" className="block shrink-0">
-            <Image src="/images/logo/logo_dark_ubxaCll.png" alt="Eagle HR" width={120} height={40} className="h-8 w-auto" />
+            <BrandLogo variant="compact" />
           </Link>
         </div>
         <div className="p-6 sm:p-8">

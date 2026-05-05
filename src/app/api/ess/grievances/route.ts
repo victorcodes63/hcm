@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     recipientUserIds: hrUserIds,
     title: `New grievance ${grievance.grievanceNumber}`,
     body: grievance.subject,
-    href: '/dashboard/disciplinary',
+    href: `/dashboard/disciplinary/grievances/${grievance.id}`,
     priority: 'action_required',
     channel: 'in_app',
     metadata: { grievanceId: grievance.id },

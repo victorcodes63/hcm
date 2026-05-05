@@ -12,7 +12,11 @@ async function syncLinkedBillingClients(prisma) {
     },
   });
 
-  const recruitmentClients = await prisma.client.findMany({ orderBy: { name: 'asc' } });
+  const settings = await prisma.recruitmentSettings.findUnique({ where: { id: 'default' } });
+  const linkedId = settings && settings.linkedClientId ? settings.linkedClientId : null;
+  const recruitmentClients = linkedId
+    ? await prisma.client.findMany({ where: { id: linkedId } })
+    : [];
   for (const c of recruitmentClients) {
     const existing = await prisma.accountsClient.findUnique({
       where: { recruitmentClientId: c.id },

@@ -77,7 +77,7 @@ const StickyAboutSection = () => {
               >
                 <Image
                   src={aboutImages[currentImageIndex]}
-                  alt={`Eagle HR ${currentImageIndex + 1}`}
+                  alt={`HRIS Demo ${currentImageIndex + 1}`}
                   fill
                   className="object-cover"
                   priority={currentImageIndex === 0}
@@ -132,7 +132,7 @@ const StickyAboutSection = () => {
           >
             <div className="space-y-4">
               <p className="text-base md:text-lg text-neutral-700 leading-relaxed">
-                Founded in 2017, Eagle HR Consultants emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.
+                Founded in 2017, HRIS Demo emerged as a response to the growing need for professional HR services in Kenya&apos;s rapidly expanding business landscape.
               </p>
               <p className="text-base md:text-lg text-neutral-700 leading-relaxed">
                 Starting with a small team of HR experts, we quickly established ourselves as trusted partners for organizations seeking to optimize their human capital.

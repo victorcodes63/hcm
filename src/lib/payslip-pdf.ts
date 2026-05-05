@@ -5,7 +5,7 @@
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
+import { brand, getLogoFileAbsolutePath } from '@/lib/brand';
 
 export interface PayslipPdfData {
   employeeName: string;
@@ -48,9 +48,9 @@ const GRAY_500 = rgb(115 / 255, 115 / 255, 115 / 255);
 const LIGHT_BG = rgb(249 / 255, 250 / 255, 251 / 255); // #f9fafb
 const BORDER = rgb(229 / 255, 229 / 255, 229 / 255);
 
-/** PNG for pdf-lib (embedPng). WebP UI asset: `public/brand/3rd-park-logo.webp`. */
-const LOGO_PATH = resolve(process.cwd(), 'public/brand/3rd-park-logo.png');
-const BRAND_LINE = '3RD PARK HOSPITAL';
+/** PNG for pdf-lib (embedPng). Default `public/brand/stabex-logo.png` or set NEXT_PUBLIC_BRAND_LOGO_PNG. */
+const LOGO_PATH = getLogoFileAbsolutePath();
+const BRAND_LINE = brand.wordmark;
 
 export async function generatePayslipPdf(
   data: PayslipPdfData,
@@ -319,7 +319,7 @@ export async function generatePayslipPdf(
   }
 
   // 6. Footer (centered)
-  const footer = '3rd Park Hospital, 3rd Parklands Avenue, Park Medical Centre (PMC), 9th Floor, Parklands, Nairobi, Kenya';
+  const footer = [brand.orgName, brand.contactAddress].filter(Boolean).join(', ');
   const footerW = helvetica.widthOfTextAtSize(footer, 9);
   page.drawText(footer, {
     x: width / 2 - footerW / 2,

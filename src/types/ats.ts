@@ -10,9 +10,9 @@ export interface JobListing {
   category: string;
   postedDate: string;
   description: string;
-  requirements: string[] | string;  // string = raw HTML (new), array = legacy
-  responsibilities: string[] | string;
-  benefits: string[] | string;
+  requirements: string;
+  responsibilities: string;
+  benefits: string;
   salary?: {
     min: number;
     max: number;

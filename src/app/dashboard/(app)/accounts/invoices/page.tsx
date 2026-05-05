@@ -4,6 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileText, FileSpreadsheet, Loader2, AlertCircle, Plus } from 'lucide-react';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type InvoiceRow = {
   id: string;
@@ -20,11 +22,9 @@ type InvoiceRow = {
   lineCount: number;
 };
 
-function money(n: number, currency: string) {
-  return `${n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-}
-
 function AccountsInvoicesPageInner() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterClientId = searchParams.get('clientId')?.trim() || undefined;
@@ -85,9 +85,10 @@ function AccountsInvoicesPageInner() {
               <FileText className="w-7 h-7 text-primary-700" />
               Invoices
             </h1>
+            <EntityContextBanner />
             <p className="text-neutral-600 text-sm mt-1">
-              Open an invoice for the full view, PDF, and payment details. VAT: round(sum of line ex-VAT × rate, 2
-              dp).
+              Open an invoice for the full view, PDF, and payment details. {entityConfig.tax.vatLabel}: round(sum of
+              line ex-VAT × rate, 2 dp). {entityConfig.tax.whtLabel}: {entityConfig.tax.whtRates}.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
@@ -193,7 +194,7 @@ function AccountsInvoicesPageInner() {
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Issue</th>
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Due</th>
                   <th className="text-right px-4 py-3 font-semibold text-neutral-700">Ex-VAT</th>
-                  <th className="text-right px-4 py-3 font-semibold text-neutral-700">VAT 16%</th>
+                  <th className="text-right px-4 py-3 font-semibold text-neutral-700">{entityConfig.tax.vatLabel}</th>
                   <th className="text-right px-4 py-3 font-semibold text-neutral-700">Total</th>
                   <th className="text-left px-4 py-3 font-semibold text-neutral-700">Status</th>
                 </tr>
@@ -222,13 +223,13 @@ function AccountsInvoicesPageInner() {
                     <td className="px-4 py-3 text-neutral-600 tabular-nums">{inv.issueDate}</td>
                     <td className="px-4 py-3 text-neutral-600 tabular-nums">{inv.dueDate ?? '—'}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-neutral-800">
-                      {money(inv.subtotalExVat, inv.currency)}
+                      {displayMoney(inv.subtotalExVat, inv.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-neutral-700">
-                      {money(inv.vatAmount, inv.currency)}
+                      {displayMoney(inv.vatAmount, inv.currency)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary-900">
-                      {money(inv.totalIncVat, inv.currency)}
+                      {displayMoney(inv.totalIncVat, inv.currency)}
                     </td>
                     <td className="px-4 py-3">
                       <span

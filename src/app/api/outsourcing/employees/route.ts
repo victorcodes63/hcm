@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/lib/prisma';
-import { getOrCreateHospitalClient } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import {
   allocateNextEmployeeNumber,
   deriveEmployeePrefixFromName,
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
     }
     const { searchParams } = new URL(request.url);
     const requestedClientId = searchParams.get('clientId') || undefined;
-    const hospitalClient = await getOrCreateHospitalClient(prisma);
-    const clientId = requestedClientId || hospitalClient.id;
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const departmentId = searchParams.get('departmentId') || undefined;
     const jobTitle = searchParams.get('jobTitle') || undefined;
 
@@ -108,8 +107,7 @@ export async function POST(request: NextRequest) {
     const firstName = strField(body, 'firstName') ?? '';
     const lastName = strField(body, 'lastName') ?? '';
     const emailRaw = strField(body, 'email');
-    const hospitalClient = await getOrCreateHospitalClient(prisma);
-    const clientId = requestedClientId || hospitalClient.id;
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     if (!firstName || !lastName) {
       return NextResponse.json({ error: 'firstName and lastName are required.' }, { status: 400 });
     }

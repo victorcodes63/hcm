@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, CalendarDays, Clock3, Home, Receipt, User, X } from 'lucide-react';
+import { Bell, CalendarDays, Clock3, Home, Receipt, Shield, User, X } from 'lucide-react';
 
 type EssMe = {
   id: string;
@@ -88,6 +88,7 @@ export default function EssAppLayout({ children }: { children: React.ReactNode }
   const navItems = [
     { href: '/ess', label: 'Overview', icon: Home },
     { href: '/ess/leave', label: 'Leave', icon: CalendarDays },
+    { href: '/ess/disciplinary', label: 'Discipline', icon: Shield },
     { href: '/ess/grievances', label: 'Grievances', icon: Bell },
     { href: '/ess/payslips', label: 'Payslips', icon: Receipt },
     { href: '/ess/attendance', label: 'Attendance', icon: Clock3 },
@@ -195,13 +196,20 @@ export default function EssAppLayout({ children }: { children: React.ReactNode }
         {children}
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-6">
+        <div className="mx-auto flex max-w-6xl justify-between gap-0 overflow-x-auto px-1">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.href === '/ess'
+                ? pathname === '/ess' || pathname === '/ess/'
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
-              <Link key={item.href} href={item.href} className={`flex min-h-12 flex-col items-center justify-center gap-1 text-xs ${active ? 'text-[#00a2c9]' : 'text-neutral-500'}`}>
-                <item.icon className="h-5 w-5" strokeWidth={1.75} />
-                {item.label}
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex min-h-12 min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-0.5 px-1 text-[10px] leading-tight sm:text-xs ${active ? 'text-primary-600' : 'text-neutral-500'}`}
+              >
+                <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                <span className="text-center">{item.label}</span>
               </Link>
             );
           })}

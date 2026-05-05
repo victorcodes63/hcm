@@ -5,7 +5,7 @@ const STAFF_SESSION_COOKIE = 'staff_session';
 function getCookieDomain(requestUrl: string): string | undefined {
   if (process.env.NODE_ENV !== 'production') return undefined;
   const host = new URL(requestUrl).hostname.toLowerCase();
-  if (host === 'eaglehr.co.ke' || host === 'www.eaglehr.co.ke') return '.eaglehr.co.ke';
+  if (host === 'example.com' || host === 'www.example.com') return '.example.com';
   return undefined;
 }
 

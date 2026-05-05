@@ -477,7 +477,7 @@ const EmployerDashboard = ({ employerId }: EmployerDashboardProps) => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'overview' | 'jobs' | 'applications' | 'analytics')}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors duration-300 ${
                     activeTab === tab.id
                       ? 'bg-primary-100 text-primary-900'

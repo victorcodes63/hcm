@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { UserCog, Plus, X, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { STAFF_USER_TYPE_LABELS } from '@/lib/staff-permissions';
 import type {
@@ -79,13 +78,17 @@ export default function DashboardStaffPage() {
     setLoading(true);
     setError(null);
     fetch('/api/users')
-      .then((r) => {
+      .then(async (r) => {
+        const payload = await r.json().catch(() => ({}));
         if (r.status === 403) {
           setForbidden(true);
           throw new Error('forbidden');
         }
-        if (!r.ok) throw new Error('Failed to load');
-        return r.json();
+        if (!r.ok) {
+          const msg = typeof payload?.error === 'string' ? payload.error : 'Failed to load';
+          throw new Error(msg);
+        }
+        return payload;
       })
       .then((data) => {
         if (!cancelled) setUsers(Array.isArray(data) ? data : []);
@@ -95,7 +98,9 @@ export default function DashboardStaffPage() {
           setError(
             err instanceof Error && err.message === 'forbidden'
               ? 'Only admins can manage staff and user roles.'
-              : 'Failed to load staff.',
+              : err instanceof Error && err.message
+                ? err.message
+                : 'Failed to load staff.',
           );
         }
       })
@@ -318,8 +323,7 @@ export default function DashboardStaffPage() {
         </select>
         <p className="text-xs text-neutral-500 mt-1">
           <strong>Business manager</strong> can approve staff leave. <strong>Director</strong> is reserved for a
-          future read-only executive dashboard. Employer contacts are managed under{' '}
-          <strong>Users → Recruitment client logins</strong>.
+          future read-only executive dashboard.
         </p>
       </div>
     );
@@ -329,16 +333,9 @@ export default function DashboardStaffPage() {
     <div className="w-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
-          <p className="text-xs text-neutral-500 mb-1">
-            <Link href="/dashboard/users/recruitment-clients" className="text-primary-600 hover:underline font-medium">
-              Recruitment client logins
-            </Link>
-            <span className="mx-1.5 text-neutral-300">/</span>
-            <span className="text-neutral-700 font-medium">Staff</span>
-          </p>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">Staff</h1>
           <p className="text-neutral-600 text-sm sm:text-base">
-            Internal Eagle HR accounts — roles, user types, and Accounts permissions. Employer portal users are
+            Internal staff accounts for this HRIS demo — roles, user types, and Accounts permissions. Employer portal users are
             separate.
           </p>
         </div>
@@ -504,7 +501,7 @@ export default function DashboardStaffPage() {
                     onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
                     className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                     required
-                    placeholder="name@eaglehr.co.ke"
+                    placeholder="name@example.com"
                   />
                 </div>
                 <div>

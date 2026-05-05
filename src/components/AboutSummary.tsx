@@ -55,7 +55,7 @@ const AboutSummary = () => {
           >
             <ScrollImageCarousel 
               images={aboutImages} 
-              alt="Eagle HR team and office" 
+              alt="HRIS Demo team and office" 
             />
           </motion.div>
 
@@ -76,7 +76,7 @@ const AboutSummary = () => {
               >
                 <div className="inline-flex items-center px-4 py-2 bg-primary-100 text-primary-900 rounded-full text-sm font-medium mb-4">
                   <Users className="w-4 h-4 mr-2 text-secondary-500" />
-                  About Eagle HR
+                  About HRIS Demo
                 </div>
                 
                 <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary-900 mb-6">
@@ -85,7 +85,7 @@ const AboutSummary = () => {
                 </h2>
                 
                 <p className="text-lg text-neutral-700 leading-relaxed mb-8">
-                  Since our inception in 2017, Eagle HR Consultants has been at the forefront of 
+                  Since our inception in 2017, HRIS Demo has been at the forefront of 
                   human resource innovation in Kenya. We combine deep local expertise with 
                   global best practices to deliver solutions that drive measurable results.
                 </p>

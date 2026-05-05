@@ -48,7 +48,16 @@ export default function EssGrievancesPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-primary-900">My grievances</h1>
+      <div>
+        <h1 className="text-xl font-semibold text-primary-900">My grievances</h1>
+        <p className="mt-1 text-sm text-neutral-600">
+          Use this form for workplace concerns (safety, harassment, workload, management, and similar). Your case is logged and reviewed under the employer’s grievance procedure and applicable labour law. This is not the same as a{' '}
+          <a className="font-medium text-primary-700 underline" href="/ess/disciplinary">
+            disciplinary case
+          </a>{' '}
+          against you.
+        </p>
+      </div>
       <div className="rounded-xl border border-neutral-200 bg-white p-4">
         <p className="text-sm font-semibold">Submit grievance</p>
         <div className="mt-2 space-y-2">

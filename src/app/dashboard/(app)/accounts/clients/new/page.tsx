@@ -34,13 +34,16 @@ export default function NewAccountsClientPage() {
   const loadOptions = useCallback(async () => {
     setLoadingOpts(true);
     try {
-      const [acRes, rcRes, ocRes] = await Promise.all([
+      const [acRes, settingsRes, ocRes] = await Promise.all([
         fetch('/api/accounts/clients'),
-        fetch('/api/clients'),
+        fetch('/api/recruitment-settings'),
         fetch('/api/outsourcing/clients'),
       ]);
       const acJson = await acRes.json().catch(() => ({}));
-      const rcJson = await rcRes.json().catch(() => []);
+      const settingsJson = (await settingsRes.json().catch(() => null)) as {
+        linkedClientId?: string | null;
+        employerName?: string;
+      } | null;
       const ocJson = await ocRes.json().catch(() => []);
 
       const linkedRec = new Set(
@@ -54,11 +57,15 @@ export default function NewAccountsClientPage() {
           .filter(Boolean) as string[],
       );
 
-      const recList = Array.isArray(rcJson) ? rcJson : [];
+      const linkId = settingsJson?.linkedClientId?.trim() || '';
+      const recList =
+        linkId
+          ? [{ id: linkId, name: settingsJson?.employerName?.trim() || 'Recruitment organization' }]
+          : [];
       setRecOptions(
         recList
-          .filter((c: { id: string }) => !linkedRec.has(c.id))
-          .map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
+          .filter((c) => !linkedRec.has(c.id))
+          .map((c) => ({ id: c.id, name: c.name })),
       );
 
       const outList = Array.isArray(ocJson) ? ocJson : [];
@@ -298,7 +305,7 @@ export default function NewAccountsClientPage() {
             {type === 'recruitment' && (
               <div className="mt-4">
                 <label htmlFor="rec" className="block text-sm font-medium text-neutral-800 mb-1.5">
-                  Recruitment client
+                  Recruitment organization
                 </label>
                 <select
                   id="rec"
@@ -316,7 +323,8 @@ export default function NewAccountsClientPage() {
                 </select>
                 {recOptions.length === 0 && (
                   <p className="text-xs text-amber-700 mt-1">
-                    No unlinked recruitment clients. All employers may already have a billing profile.
+                    Open <Link href="/dashboard/recruitment/profile" className="underline">Recruitment / Careers profile</Link>{' '}
+                    to create the single employer link, or sync billing from Accounts overview.
                   </p>
                 )}
               </div>

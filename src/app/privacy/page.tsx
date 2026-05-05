@@ -70,7 +70,7 @@ export default function PrivacyPolicyPage() {
               <SectionTitle
                 label="Overview"
                 title="Our privacy commitment."
-                subtitle="At Eagle HR Consultants, we understand the importance of privacy and are committed to protecting your personal information. This Privacy Policy outlines our practices regarding the collection, use, and protection of your data."
+                subtitle="At HRIS Demo, we understand the importance of privacy and are committed to protecting your personal information. This Privacy Policy outlines our practices regarding the collection, use, and protection of your data."
                 variant="section"
                 className="text-left mb-6"
               />
@@ -170,11 +170,11 @@ export default function PrivacyPolicyPage() {
               />
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
                 <a
-                  href="mailto:info@eaglehr.co.ke"
+                  href="mailto:info@example.com"
                   className="inline-flex items-center px-6 py-3 bg-primary-900 text-white rounded-lg font-semibold hover:bg-primary-800 transition-colors duration-300"
                 >
                   <FileText className="w-5 h-5 mr-2" />
-                  info@eaglehr.co.ke
+                  info@example.com
                 </a>
                 <a
                   href="/contact"

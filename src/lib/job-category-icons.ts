@@ -38,7 +38,7 @@ const CATEGORY_ICON_MAP: Array<{ keywords: string[]; icon: CategoryIcon }> = [
   { keywords: ['sales', 'business development', 'revenue', 'account manager'], icon: IconTrendingUp },
   { keywords: ['operation', 'logistics', 'supply chain', 'warehouse', 'distribution'], icon: IconTruck },
   { keywords: ['procurement', 'purchasing', 'buying', 'sourcing', 'vendor', 'supply'], icon: IconShoppingCart },
-  { keywords: ['health', 'medical', 'clinical', 'nurse', 'doctor', 'pharma', 'hospital'], icon: IconHeartRateMonitor },
+  { keywords: ['health', 'medical', 'clinical', 'nurse', 'doctor', 'pharma', 'clinic'], icon: IconHeartRateMonitor },
   { keywords: ['legal', 'compliance', 'law', 'counsel', 'regulatory', 'paralegal'], icon: IconScale },
   { keywords: ['education', 'training', 'teaching', 'academic', 'learning', 'instructor'], icon: IconSchool },
   { keywords: ['engineering', 'mechanical', 'electrical', 'civil', 'structural'], icon: IconTools },

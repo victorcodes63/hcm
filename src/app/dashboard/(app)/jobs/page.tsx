@@ -20,7 +20,6 @@ export default function DashboardJobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCompany, setFilterCompany] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
@@ -65,11 +64,6 @@ export default function DashboardJobsPage() {
     });
   };
 
-  const companies = useMemo(() => {
-    const set = new Set(jobs.map((j) => j.company).filter(Boolean));
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [jobs]);
-
   const isJobExpired = (job: JobListing) =>
     !!job.applicationDeadline && new Date(job.applicationDeadline) < new Date();
   const getJobEffectiveStatus = (job: JobListing): 'active' | 'expired' | 'closed' => {
@@ -83,17 +77,16 @@ export default function DashboardJobsPage() {
       const q = searchQuery.trim().toLowerCase();
       if (q && !job.title.toLowerCase().includes(q) && !(job.referenceId ?? '').toLowerCase().includes(q))
         return false;
-      if (filterCompany && job.company !== filterCompany) return false;
       const status = getJobEffectiveStatus(job);
       if (filterStatus === 'active' && status !== 'active') return false;
       if (filterStatus === 'inactive' && status === 'active') return false;
       return true;
     });
-  }, [jobs, searchQuery, filterCompany, filterStatus]);
+  }, [jobs, searchQuery, filterStatus]);
 
   const totalApplications = jobs.reduce((sum, j) => sum + (j.applicationCount ?? 0), 0);
   const activeCount = jobs.filter((j) => getJobEffectiveStatus(j) === 'active').length;
-  const hasActiveFilters = !!(searchQuery.trim() || filterCompany || filterStatus !== 'all');
+  const hasActiveFilters = !!(searchQuery.trim() || filterStatus !== 'all');
 
   const toggleJobStatus = async (job: JobListing) => {
     setTogglingId(job.id);
@@ -181,19 +174,6 @@ export default function DashboardJobsPage() {
                   Filter
                 </span>
                 <select
-                  value={filterCompany}
-                  onChange={(e) => setFilterCompany(e.target.value)}
-                  className="px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white text-neutral-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 min-w-[140px] max-w-[200px]"
-                  title="Filter by company"
-                >
-                  <option value="">All companies</option>
-                  {companies.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
                   className="px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white text-neutral-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300"
@@ -257,7 +237,6 @@ export default function DashboardJobsPage() {
             type="button"
             onClick={() => {
               setSearchQuery('');
-              setFilterCompany('');
               setFilterStatus('all');
             }}
             className="inline-flex items-center gap-2 px-4 py-2.5 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
@@ -278,9 +257,6 @@ export default function DashboardJobsPage() {
                     Role
                   </th>
                   <th className="text-left text-[11px] font-bold uppercase tracking-widest text-neutral-500 px-4 sm:px-5 py-3.5 min-w-[8rem]">
-                    Company
-                  </th>
-                  <th className="text-left text-[11px] font-bold uppercase tracking-widest text-neutral-500 px-4 sm:px-5 py-3.5 whitespace-nowrap">
                     Posted
                   </th>
                   <th className="text-left text-[11px] font-bold uppercase tracking-widest text-neutral-500 px-4 sm:px-5 py-3.5 whitespace-nowrap">
@@ -317,9 +293,6 @@ export default function DashboardJobsPage() {
                       >
                         {job.title}
                       </Link>
-                    </td>
-                    <td className="px-4 sm:px-5 py-3.5 text-neutral-600 align-middle">
-                      <span className="line-clamp-2">{job.company}</span>
                     </td>
                     <td className="px-4 sm:px-5 py-3.5 text-neutral-500 tabular-nums whitespace-nowrap align-middle text-xs sm:text-sm">
                       {formatDate(job.postedDate)}

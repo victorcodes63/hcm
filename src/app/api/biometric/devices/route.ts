@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isFeatureEnabled } from '@/lib/feature-flags';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 export async function GET(request: NextRequest) {
   try {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
     }
-    const clientId = request.nextUrl.searchParams.get('clientId') || undefined;
+    const requestedClientId = request.nextUrl.searchParams.get('clientId') || undefined;
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const devices = await prisma.biometricDevice.findMany({
-      where: clientId ? { outsourcingClientId: clientId } : undefined,
+      where: { outsourcingClientId: clientId },
       include: {
         client: { select: { id: true, name: true } },
         _count: { select: { punches: true } },

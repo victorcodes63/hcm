@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { reportApiError } from '@/lib/monitoring';
+import { whereExcludeSeedStaffNotifications } from '@/lib/staff-notification-seed-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const [notifications, unreadCount] = await Promise.all([
       prisma.staffNotification.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, ...whereExcludeSeedStaffNotifications() },
         orderBy: { createdAt: 'desc' },
         take: limit,
         select: {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.staffNotification.count({
-        where: { userId: user.id, readAt: null },
+        where: { userId: user.id, readAt: null, ...whereExcludeSeedStaffNotifications() },
       }),
     ]);
 
@@ -75,7 +76,7 @@ export async function PATCH(request: NextRequest) {
   try {
     if (body.markAllRead) {
       await prisma.staffNotification.updateMany({
-        where: { userId: user.id, readAt: null },
+        where: { userId: user.id, readAt: null, ...whereExcludeSeedStaffNotifications() },
         data: { readAt: now },
       });
       return NextResponse.json({ ok: true });

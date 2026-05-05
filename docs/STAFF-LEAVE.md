@@ -1,4 +1,4 @@
-# Staff leave module (Eagle HR internal)
+# Staff leave module (internal HRIS demo)
 
 For **dashboard users** (`User` table), not outsourcing employees.
 
@@ -16,14 +16,16 @@ npm run db:seed-staff-leave # default leave types + balances for all active user
 
 ## Features (v1)
 
-| Area | Behaviour |
-|------|-----------|
-| **Leave types** | Annual, Sick, Maternity, Paternity, Compassionate, Unpaid (configurable). Admin edits days/year, active, approval required. |
-| **Balances** | Per user, per type, per year: entitled + carried over − used − pending. |
-| **Requests** | Date range; working days (Mon–Fri) counted. Pending consumes “available” until approved/rejected. |
-| **Approval** | Admins see **Approvals** tab; approve increments `usedDays`, reject leaves balance unchanged. |
-| **Unpaid** | `daysPerYear === 0` → no balance deduction; still goes through approval if enabled. |
-| **Auto-approve** | Type with `requiresApproval: false` → approved immediately and `usedDays` updated. |
+
+| Area             | Behaviour                                                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Leave types**  | Annual, Sick, Maternity, Paternity, Compassionate, Unpaid (configurable). Admin edits days/year, active, approval required. |
+| **Balances**     | Per user, per type, per year: entitled + carried over − used − pending.                                                     |
+| **Requests**     | Date range; working days (Mon–Fri) counted. Pending consumes “available” until approved/rejected.                           |
+| **Approval**     | Admins see **Approvals** tab; approve increments `usedDays`, reject leaves balance unchanged.                               |
+| **Unpaid**       | `daysPerYear === 0` → no balance deduction; still goes through approval if enabled.                                         |
+| **Auto-approve** | Type with `requiresApproval: false` → approved immediately and `usedDays` updated.                                          |
+
 
 ## APIs (cookie auth)
 
@@ -42,3 +44,4 @@ npm run db:seed-staff-leave # default leave types + balances for all active user
 - Email/Slack on submit/approve
 - Manager chain (not only admin)
 - Calendar view & iCal export
+

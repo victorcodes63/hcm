@@ -23,9 +23,26 @@ export async function getAccountsAccess(
     };
   }
 
-  const rows = await prisma.accountsStaffAccess.findMany({
-    where: { userId },
-  });
+  let rows: Awaited<ReturnType<typeof prisma.accountsStaffAccess.findMany>> = [];
+  try {
+    rows = await prisma.accountsStaffAccess.findMany({
+      where: { userId },
+    });
+  } catch (error) {
+    const maybeCode = (error as { code?: string })?.code;
+    // Backward compatibility: if Accounts module tables are not migrated yet,
+    // treat staff users as having no Accounts access instead of failing APIs.
+    if (maybeCode === 'P2021') {
+      return {
+        hasAccountsAccess: false,
+        canManageContracts: false,
+        canManageInvoices: false,
+        canManagePayments: false,
+        canManageVendors: false,
+      };
+    }
+    throw error;
+  }
 
   if (rows.length === 0) {
     return {

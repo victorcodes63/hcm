@@ -4,13 +4,10 @@ import { prisma } from '@/lib/prisma';
 import { getStaffSessionMaxAgeSeconds } from '@/lib/auth-session';
 import { reportApiError } from '@/lib/monitoring';
 import { logAuditEvent } from '@/lib/audit-events';
+import { getStaffAllowedDomains } from '@/lib/staff-allowed-domains';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
 const COOKIE_MAX_AGE = getStaffSessionMaxAgeSeconds();
-const ALLOWED_DOMAINS = (process.env.STAFF_ALLOWED_DOMAIN || 'example.com')
-  .split(',')
-  .map((d) => d.trim().toLowerCase())
-  .filter(Boolean);
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,12 +38,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const domainOk = ALLOWED_DOMAINS.some((domain) => normalizedEmail.endsWith(`@${domain}`));
+    const allowedDomains = getStaffAllowedDomains();
+    const domainOk = allowedDomains.some((domain) => normalizedEmail.endsWith(`@${domain}`));
     if (!domainOk) {
       const domainHint =
-        ALLOWED_DOMAINS.length === 1
-          ? `Use your @${ALLOWED_DOMAINS[0]} email to sign in.`
-          : 'Use an authorized staff email to sign in.';
+        allowedDomains.length === 1
+          ? `Use your @${allowedDomains[0]} email to sign in.`
+          : 'Use an authorized staff email domain to sign in.';
       await logAuditEvent({
         actor: { userId: null, email: normalizedEmail || null, name: null },
         action: 'auth.login.failed',

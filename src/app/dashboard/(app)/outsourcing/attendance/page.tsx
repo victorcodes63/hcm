@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Clock, Plus } from 'lucide-react';
+import { useEntity } from '@/components/EntitySwitcher';
 
-type Client = { id: string; name: string };
+type Client = { id: string; name: string; label?: string };
 type Summary = {
   id: string;
   employeeId: string;
@@ -29,8 +30,11 @@ type Exception = {
 };
 
 export default function OutsourcingAttendancePage() {
+  const { activeEntity } = useEntity();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
+  /** Filter rows by Stabex-style employee numbers: STB-UG-* vs STB-KE-*. */
+  const [region, setRegion] = useState<'all' | 'uganda' | 'kenya'>('all');
   const [from, setFrom] = useState(new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const [employeeId, setEmployeeId] = useState('');
@@ -47,16 +51,27 @@ export default function OutsourcingAttendancePage() {
       setError(null);
       const [clientsRes, attendanceRes] = await Promise.all([
         fetch('/api/outsourcing/clients', { cache: 'no-store' }),
-        fetch(`/api/outsourcing/attendance?clientId=${encodeURIComponent(selectedClientId)}&from=${from}&to=${to}`, {
-          cache: 'no-store',
-        }),
+        fetch(
+          `/api/outsourcing/attendance?clientId=${encodeURIComponent(selectedClientId)}&from=${from}&to=${to}${
+            region === 'all'
+              ? '&combinedEntities=1'
+              : `&region=${encodeURIComponent(region)}`
+          }`,
+          {
+            cache: 'no-store',
+          },
+        ),
       ]);
       const clientsJson = await clientsRes.json();
       const attendanceJson = await attendanceRes.json();
       if (!clientsRes.ok) throw new Error(clientsJson.error || 'Failed to load clients');
       if (!attendanceRes.ok) throw new Error(attendanceJson.error || 'Failed to load attendance');
       setClients(clientsJson);
-      if (!selectedClientId && clientsJson[0]?.id) setSelectedClientId(clientsJson[0].id);
+      if (Array.isArray(clientsJson) && clientsJson.length === 1 && clientsJson[0]?.id) {
+        setSelectedClientId(clientsJson[0].id);
+      } else if (!selectedClientId && clientsJson[0]?.id) {
+        setSelectedClientId(clientsJson[0].id);
+      }
       setSummaries(attendanceJson.summaries ?? []);
       setExceptions(attendanceJson.exceptions ?? []);
     } catch (e) {
@@ -68,7 +83,7 @@ export default function OutsourcingAttendancePage() {
 
   useEffect(() => {
     void load();
-  }, [selectedClientId, from, to]);
+  }, [selectedClientId, from, to, region, activeEntity.id]);
 
   const openExceptions = useMemo(() => exceptions.filter((item) => item.status === 'open').length, [exceptions]);
   const exceptionByEmployeeDate = useMemo(() => {
@@ -113,18 +128,29 @@ export default function OutsourcingAttendancePage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4 mb-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 mb-4">
         <select
           value={selectedClientId}
           onChange={(e) => setSelectedClientId(e.target.value)}
           className="h-10 rounded border border-neutral-300 px-3 text-sm bg-white"
+          aria-label="Workspace / outsourcing client"
         >
-          <option value="">Select facility</option>
+          <option value="">Select workspace</option>
           {clients.map((client) => (
             <option key={client.id} value={client.id}>
-              {client.name}
+              {client.label ?? client.name}
             </option>
           ))}
+        </select>
+        <select
+          value={region}
+          onChange={(e) => setRegion(e.target.value as 'all' | 'uganda' | 'kenya')}
+          className="h-10 rounded border border-neutral-300 px-3 text-sm bg-white"
+          aria-label="Country / operation"
+        >
+          <option value="all">All countries (Uganda & Kenya)</option>
+          <option value="uganda">Uganda operations (STB-UG…)</option>
+          <option value="kenya">Kenya operations (STB-KE…)</option>
         </select>
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-10 rounded border border-neutral-300 px-3 text-sm bg-white" />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-10 rounded border border-neutral-300 px-3 text-sm bg-white" />

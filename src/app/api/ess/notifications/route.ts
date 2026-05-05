@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireEssUser } from '@/lib/ess-api-auth';
+import { whereExcludeSeedStaffNotifications } from '@/lib/staff-notification-seed-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(50, Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '30', 10)));
   const [notifications, unreadCount] = await Promise.all([
     prisma.staffNotification.findMany({
-      where: { essPortalUserId: user.id },
+      where: { essPortalUserId: user.id, ...whereExcludeSeedStaffNotifications() },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       },
     }),
     prisma.staffNotification.count({
-      where: { essPortalUserId: user.id, readAt: null },
+      where: { essPortalUserId: user.id, readAt: null, ...whereExcludeSeedStaffNotifications() },
     }),
   ]);
 
@@ -59,7 +60,7 @@ export async function PATCH(request: NextRequest) {
   const now = new Date();
   if (body.markAllRead) {
     await prisma.staffNotification.updateMany({
-      where: { essPortalUserId: user.id, readAt: null },
+      where: { essPortalUserId: user.id, readAt: null, ...whereExcludeSeedStaffNotifications() },
       data: { readAt: now },
     });
     return NextResponse.json({ ok: true });

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getOrCreatePrimaryWorkspaceClient } from '@/lib/primary-workspace-client';
+import { parseEntityIdFromRequest } from '@/lib/entity-request';
 
 type ClientWithCounts = Awaited<
   ReturnType<typeof prisma.outsourcingClient.findMany>
@@ -78,23 +80,61 @@ function mapClientToJson(c: ClientWithCounts) {
     contractStartDate: c.contractStartDate?.toISOString().slice(0, 10) ?? null,
     contractEndDate: c.contractEndDate?.toISOString().slice(0, 10) ?? null,
     employeeNumberPrefix: c.employeeNumberPrefix ?? null,
+    entityCode: c.entityCode ?? null,
     employeeCount: c._count.employees,
     departmentCount: c._count.departments,
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json([], { status: 200 });
     }
-    const list = await prisma.outsourcingClient.findMany({
+    const entityId = parseEntityIdFromRequest(request);
+    if (entityId) {
+      const scoped = await prisma.outsourcingClient.findFirst({
+        where: { entityCode: entityId },
+        include: { _count: { select: { employees: true, departments: true } } },
+      });
+      if (!scoped) {
+        return NextResponse.json([]);
+      }
+      const row = mapClientToJson(scoped as ClientWithCounts);
+      const label = row.county ? `${row.name} — ${row.county}` : row.name;
+      return NextResponse.json([{ ...row, label }]);
+    }
+    /** Same client as employees/payroll default (`getOrCreatePrimaryWorkspaceClient` = oldest workspace). */
+    const primary = await getOrCreatePrimaryWorkspaceClient(prisma);
+    const primaryFull = await prisma.outsourcingClient.findUnique({
+      where: { id: primary.id },
+      include: { _count: { select: { employees: true, departments: true } } },
+    });
+    if (!primaryFull) {
+      return NextResponse.json([]);
+    }
+    const rest = await prisma.outsourcingClient.findMany({
+      where: { id: { not: primary.id } },
       orderBy: { name: 'asc' },
       include: { _count: { select: { employees: true, departments: true } } },
     });
-    return NextResponse.json(
-      list.map((c) => mapClientToJson(c))
-    );
+    const ordered: ClientWithCounts[] = [primaryFull as ClientWithCounts, ...(rest as ClientWithCounts[])];
+    const mapped = ordered.map((c) => mapClientToJson(c as ClientWithCounts));
+    const nameLowerCounts = mapped.reduce((m, row) => {
+      const k = row.name.trim().toLowerCase();
+      m.set(k, (m.get(k) ?? 0) + 1);
+      return m;
+    }, new Map<string, number>());
+    const withLabels = mapped.map((row) => {
+      const dup = (nameLowerCounts.get(row.name.trim().toLowerCase()) ?? 0) > 1;
+      const label = dup
+        ? `${row.name} (${row.id.slice(0, 8)}…)`
+        : row.county
+          ? `${row.name} — ${row.county}`
+          : row.name;
+      return { ...row, label };
+    });
+    return NextResponse.json(withLabels);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[outsourcing/clients]', e);

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   IconMapPin,
   IconClock,
-  IconBuilding,
   IconSearch,
   IconFilter,
   IconChevronRight,
@@ -23,6 +22,7 @@ import {
 import { JobListing, JobSearchFilters } from '@/types/ats';
 import { useATS } from '@/lib/ats-api';
 import { getCategoryIcon } from '@/lib/job-category-icons';
+import { usePublicBrand } from '@/components/BrandProvider';
 
 interface DynamicJobListingsProps {
   initialFilters?: JobSearchFilters;
@@ -124,6 +124,7 @@ export default function DynamicJobListings({
   const [appliedFilters, setAppliedFilters] = useState<JobSearchFilters>(initialFilters);
 
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
+  const { orgName } = usePublicBrand();
   const { getJobListings } = useATS();
 
   const fetchJobs = useCallback(async () => {
@@ -220,7 +221,7 @@ export default function DynamicJobListings({
               <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4.5 h-4.5 pointer-events-none" stroke={1.7} />
               <input
                 type="text"
-                placeholder="Job title, company, or keywords…"
+                placeholder="Job title, specialty, or keyword"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -275,10 +276,8 @@ export default function DynamicJobListings({
                   >
                     <option value="">All locations</option>
                     <option value="Nairobi">Nairobi</option>
-                    <option value="Mombasa">Mombasa</option>
-                    <option value="Kisumu">Kisumu</option>
-                    <option value="Nakuru">Nakuru</option>
-                    <option value="Remote">Remote</option>
+                    <option value="Parklands">Parklands</option>
+                    <option value="Hybrid">Hybrid</option>
                   </select>
                 </div>
                 <div className="relative">
@@ -459,10 +458,7 @@ export default function DynamicJobListings({
                       <h3 className="text-base font-bold text-primary-900 leading-snug mb-1.5 group-hover:text-primary-700 transition-colors line-clamp-2">
                         {job.title}
                       </h3>
-                      <p className="text-sm text-neutral-500 mb-3 flex items-center gap-1.5">
-                        <IconBuilding className="w-4 h-4 shrink-0" stroke={1.7} />
-                        {job.company}
-                      </p>
+                      <p className="text-sm text-neutral-500 mb-3">{orgName}</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${categoryColor}`}>
@@ -518,10 +514,7 @@ export default function DynamicJobListings({
                         )}
                       </div>
 
-                      <p className="text-sm text-neutral-500 mb-2.5 flex items-center gap-1.5 truncate">
-                        <IconBuilding className="w-4 h-4 shrink-0" stroke={1.7} />
-                        {job.company}
-                      </p>
+                      <p className="text-sm text-neutral-500 mb-2.5 truncate">{orgName}</p>
 
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${categoryColor}`}>

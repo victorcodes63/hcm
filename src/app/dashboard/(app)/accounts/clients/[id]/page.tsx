@@ -243,7 +243,7 @@ export default function AccountsClientDetailPage() {
             <p className="text-neutral-800">
               Recruitment:{' '}
               <Link
-                href={`/dashboard/clients/${data.recruitmentClientId}/edit`}
+                href="/dashboard/recruitment/profile"
                 className="text-primary-700 hover:underline inline-flex items-center gap-1 font-medium"
               >
                 {data.recruitmentClientName ?? 'Open'}

@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Careers & Job Board',
+  title: 'Careers',
   description:
-    "Find your next role in Kenya. Browse current job openings from top employers. Eagle HR's job board connects talented professionals with leading organisations.",
+    'Careers at Stabex International. Learn about open opportunities and how to apply.',
   openGraph: {
-    title: 'Careers & Job Board | Eagle HR Consultants',
-    description:
-      "Find your next role in Kenya. Browse current job openings from top employers.",
+    title: 'Careers • Stabex International',
+    description: 'Join our team — explore open roles and apply online.',
     url: '/careers',
   },
 };

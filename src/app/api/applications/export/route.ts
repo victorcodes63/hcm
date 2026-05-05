@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = '3rd Park HRIS';
+  workbook.creator = 'HRIS Demo';
   workbook.created = new Date();
 
   const dateStr = new Date().toISOString().slice(0, 10);
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
 
   const sheet = workbook.addWorksheet(safeSheetName, {
     views: [{ state: 'frozen', ySplit: 1 }],
-    properties: { tabColor: { argb: 'FF1e40af' } },
+    properties: { tabColor: { argb: 'FF1D2460' } },
   });
 
   const MAX_EDUCATION_COLUMNS = 5;

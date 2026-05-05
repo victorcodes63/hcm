@@ -6,7 +6,10 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
 import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
 import { InvoicePaymentBankSelect } from '@/components/accounts/InvoiceBankPanel';
-import type { InvoicePaymentBankKind } from '@/lib/eagle-hr-bank-accounts';
+import type { InvoicePaymentBankKind } from '@/lib/invoice-bank-accounts';
+import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
+import { getEntityConfig } from '@/lib/entityConfig';
+import { EntityContextBanner } from '@/components/EntityContextBanner';
 
 type ClientRow = {
   id: string;
@@ -72,6 +75,8 @@ function findRoundingAdjustmentExVat(
 }
 
 function NewInvoiceForm() {
+  const entityConfig = useEntityConfig();
+  const displayMoney = useDisplayMoney();
   const router = useRouter();
   const searchParams = useSearchParams();
   const presetClientId = searchParams.get('clientId')?.trim() ?? '';
@@ -227,7 +232,7 @@ function NewInvoiceForm() {
         (body.lines as Array<Record<string, unknown>>).push({
           item: 'Rounding adjustment',
           amountExVat: roundingPreview.adjExVat,
-          description: 'Auto-added to round invoice total (incl. VAT) to whole KES for ETIMS alignment.',
+          description: `Auto-added to round invoice total (incl. VAT) to whole ${entityConfig.currency.code} for ${entityConfig.payroll.taxAuthority} filing alignment.`,
         });
       }
       if (manualTotalOverride != null) {
@@ -283,9 +288,10 @@ function NewInvoiceForm() {
         <FileText className="w-9 h-9 text-primary-700 shrink-0" />
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-primary-900 tracking-tight">New invoice</h1>
+          <EntityContextBanner />
           <p className="text-sm text-neutral-600 mt-1">
             Pick any billing client (including custom / off-system profiles). Invoice numbers are global and
-            sequential across all clients.
+            sequential across all clients. {entityConfig.tax.whtLabel}: {entityConfig.tax.whtRates}.
           </p>
         </div>
       </div>
@@ -399,7 +405,7 @@ function NewInvoiceForm() {
             </div>
             <div>
               <label htmlFor="vat" className="block text-sm font-medium text-neutral-800 mb-1.5">
-                VAT rate
+                {entityConfig.tax.vatLabel} rate
               </label>
               <select
                 id="vat"
@@ -407,7 +413,8 @@ function NewInvoiceForm() {
                 value={vatRateBps}
                 onChange={(e) => setVatRateBps(parseInt(e.target.value, 10))}
               >
-                <option value={1600}>16% (standard)</option>
+                <option value={1600}>{getEntityConfig('ke').tax.vatRate} (standard)</option>
+                <option value={1800}>{getEntityConfig('ug').tax.vatRate} (standard)</option>
                 <option value={0}>0% (zero-rated / exempt)</option>
               </select>
             </div>
@@ -485,28 +492,14 @@ function NewInvoiceForm() {
             <div className="rounded-xl border border-primary-100 bg-primary-50/50 px-4 py-3 text-sm space-y-1">
               <p className="font-semibold text-primary-900">Preview</p>
               <p className="text-neutral-700 tabular-nums">
-                Subtotal ex-VAT:{' '}
-                {totalsPreview.subtotalExVat.toLocaleString('en-KE', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                {selectedClient.currency}
+                Subtotal ex-VAT: {displayMoney(totalsPreview.subtotalExVat, selectedClient.currency)}
               </p>
               <p className="text-neutral-700 tabular-nums">
-                VAT ({vatRateBps / 100}%):{' '}
-                {totalsPreview.vatAmount.toLocaleString('en-KE', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                {selectedClient.currency}
+                {entityConfig.tax.vatLabel} ({vatRateBps / 100}%):{' '}
+                {displayMoney(totalsPreview.vatAmount, selectedClient.currency)}
               </p>
               <p className="font-bold text-primary-900 tabular-nums">
-                Total:{' '}
-                {totalsPreview.totalIncVat.toLocaleString('en-KE', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                {selectedClient.currency}
+                Total: {displayMoney(totalsPreview.totalIncVat, selectedClient.currency)}
               </p>
               <div className="mt-2 pt-2 border-t border-primary-100 space-y-1">
                 <label className="inline-flex items-center gap-2 text-xs text-neutral-700">
@@ -516,33 +509,21 @@ function NewInvoiceForm() {
                     disabled={!roundingPreview}
                     onChange={(e) => setRoundTotalToWholeKes(e.target.checked)}
                   />
-                  Round total up to whole KES (ETIMS-friendly)
+                  Round total up to whole {entityConfig.currency.code} ({entityConfig.payroll.taxAuthority} friendly)
                 </label>
                 {roundingPreview ? (
                   roundTotalToWholeKes ? (
                     <>
                       <p className="text-xs text-neutral-700 tabular-nums">
-                        Rounding adjustment (ex-VAT):{' '}
-                        {roundingPreview.adjExVat.toLocaleString('en-KE', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        {selectedClient.currency}
+                        Rounding adjustment (ex-VAT): {displayMoney(roundingPreview.adjExVat, selectedClient.currency)}
                       </p>
                       <p className="text-xs font-semibold text-primary-900 tabular-nums">
-                        Rounded total: {roundingPreview.achievedTotal.toLocaleString('en-KE', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{' '}
-                        {selectedClient.currency}
+                        Rounded total: {displayMoney(roundingPreview.achievedTotal, selectedClient.currency)}
                       </p>
                       {!roundingPreview.hitsTarget ? (
                         <p className="text-xs text-amber-700">
-                          Exact {roundingPreview.targetTotal.toLocaleString('en-KE', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}{' '}
-                          {selectedClient.currency} is not attainable at this VAT rate with 2dp amounts; using the
+                          Exact {displayMoney(roundingPreview.targetTotal, selectedClient.currency)} is not attainable at
+                          this VAT rate with 2dp amounts; using the
                           closest possible value above it.
                         </p>
                       ) : null}
@@ -574,11 +555,7 @@ function NewInvoiceForm() {
                 </p>
                 {manualTotalOverride != null ? (
                   <p className="text-xs font-semibold text-primary-900 tabular-nums">
-                    Override total: {manualTotalOverride.toLocaleString('en-KE', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    {selectedClient.currency}
+                    Override total: {displayMoney(manualTotalOverride, selectedClient.currency)}
                   </p>
                 ) : null}
               </div>

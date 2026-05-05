@@ -17,7 +17,11 @@ export async function syncLinkedBillingClients(db: PrismaClient): Promise<{
     },
   });
 
-  const recruitmentClients = await db.client.findMany({ orderBy: { name: 'asc' } });
+  const settings = await db.recruitmentSettings.findUnique({ where: { id: 'default' } });
+  const linkedId = settings?.linkedClientId ?? null;
+  const recruitmentClients = linkedId
+    ? await db.client.findMany({ where: { id: linkedId } })
+    : [];
   let recruitmentSynced = 0;
   for (const c of recruitmentClients) {
     const existing = await db.accountsClient.findUnique({

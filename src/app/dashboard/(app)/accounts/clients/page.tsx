@@ -395,7 +395,7 @@ export default function AccountsClientsPage() {
                           <td className="px-4 sm:px-5 py-3 text-neutral-600 text-xs">
                             {c.recruitmentClientId && (
                               <Link
-                                href={`/dashboard/clients/${c.recruitmentClientId}/edit`}
+                                href="/dashboard/recruitment/profile"
                                 className="inline-flex items-center gap-1 text-primary-800 hover:underline font-medium"
                               >
                                 <Briefcase className="w-3.5 h-3.5 opacity-70 shrink-0" />

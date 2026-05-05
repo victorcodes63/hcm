@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Receipts & allocations | Eagle HR Accounts',
+  title: 'Receipts & allocations | HRIS Demo (Accounts)',
   description: 'Record client receipts and allocate to invoices',
 };
 

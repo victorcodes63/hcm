@@ -82,11 +82,7 @@ export default function DashboardInterviewsPage() {
   const [jobsWithShortlisted, setJobsWithShortlisted] = useState<{ id: string; title: string; company?: string; clientId?: string | null; clientName?: string | null; shortlistedCount: number; scheduledCount: number }[]>([]);
   const [jobsWithShortlistedLoading, setJobsWithShortlistedLoading] = useState(true);
   const [jobCardsSearch, setJobCardsSearch] = useState('');
-  const [jobCardsClientFilter, setJobCardsClientFilter] = useState('');
   const [jobCardsJobFilter, setJobCardsJobFilter] = useState('');
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [clientInputValue, setClientInputValue] = useState('');
-  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -121,19 +117,17 @@ export default function DashboardInterviewsPage() {
     [selectedJobView, jobs]
   );
 
-  const scheduleUrlForJob = (jobId: string, clientId?: string | null) => {
+  const scheduleUrlForJob = (jobId: string) => {
     const p = new URLSearchParams();
     p.set('jobId', jobId);
     p.set('preselect', '1');
-    if (clientId) p.set('clientId', clientId);
     return `/dashboard/interviews/schedule?${p.toString()}`;
   };
 
   const scheduleUrlCurrentJob = useMemo(() => {
     if (!selectedJobView || selectedJobView === 'all') return '/dashboard/interviews/schedule';
-    const row = jobsWithShortlisted.find((j) => j.id === selectedJobView);
-    return scheduleUrlForJob(selectedJobView, row?.clientId ?? undefined);
-  }, [selectedJobView, jobsWithShortlisted]);
+    return scheduleUrlForJob(selectedJobView);
+  }, [selectedJobView]);
 
   useEffect(() => {
     if (selectedJobView === '') {
@@ -238,19 +232,6 @@ export default function DashboardInterviewsPage() {
       })
       .catch(() => { if (!cancelled) setJobsWithShortlisted([]); })
       .finally(() => { if (!cancelled) setJobsWithShortlistedLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/clients')
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data)) {
-          setClients(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
-        }
-      })
-      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -504,14 +485,11 @@ export default function DashboardInterviewsPage() {
           (j.clientName ?? '').toLowerCase().includes(q)
       );
     }
-    if (jobCardsClientFilter) {
-      list = list.filter((j) => j.clientId === jobCardsClientFilter);
-    }
     if (jobCardsJobFilter) {
       list = list.filter((j) => j.id === jobCardsJobFilter);
     }
     return list;
-  }, [jobsWithShortlisted, jobCardsSearch, jobCardsClientFilter, jobCardsJobFilter]);
+  }, [jobsWithShortlisted, jobCardsSearch, jobCardsJobFilter]);
 
   const jobFilterOptions = useMemo(() => {
     let list = jobsWithShortlisted;
@@ -524,23 +502,14 @@ export default function DashboardInterviewsPage() {
           (j.clientName ?? '').toLowerCase().includes(q)
       );
     }
-    if (jobCardsClientFilter) {
-      list = list.filter((j) => j.clientId === jobCardsClientFilter);
-    }
     return list;
-  }, [jobsWithShortlisted, jobCardsSearch, jobCardsClientFilter]);
+  }, [jobsWithShortlisted, jobCardsSearch]);
 
   useEffect(() => {
     if (jobCardsJobFilter && !jobFilterOptions.some((j) => j.id === jobCardsJobFilter)) {
       setJobCardsJobFilter('');
     }
   }, [jobCardsJobFilter, jobFilterOptions]);
-
-  const clientSuggestions = useMemo(() => {
-    const v = clientInputValue.trim().toLowerCase();
-    if (!v) return clients.slice(0, 20);
-    return clients.filter((c) => c.name.toLowerCase().includes(v)).slice(0, 20);
-  }, [clients, clientInputValue]);
 
   const exportScheduleUrl = `/api/interviews/export-schedule?date=${exportDate}${selectedJobView && selectedJobView !== 'all' ? `&jobId=${encodeURIComponent(selectedJobView)}` : ''}`;
   const exportSelectedUrl = selectedCount > 0
@@ -663,54 +632,6 @@ export default function DashboardInterviewsPage() {
                   aria-label="Search vacancies"
                 />
               </div>
-              <div className="relative flex-1 min-w-0">
-                <input
-                  type="text"
-                  placeholder="Filter by client..."
-                  value={clientInputValue}
-                  onChange={(e) => {
-                    setClientInputValue(e.target.value);
-                    setJobCardsClientFilter('');
-                    setClientDropdownOpen(true);
-                  }}
-                  onFocus={() => setClientDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setClientDropdownOpen(false), 200)}
-                  className={`w-full px-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm ${jobCardsClientFilter ? 'pr-9' : ''}`}
-                  aria-label="Filter by client"
-                />
-                {clientDropdownOpen && clientSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 py-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                    {clientSuggestions.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setJobCardsClientFilter(c.id);
-                          setClientInputValue(c.name);
-                          setClientDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-100"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {jobCardsClientFilter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setJobCardsClientFilter('');
-                      setClientInputValue('');
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                    aria-label="Clear client filter"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
               <select
                 value={jobCardsJobFilter}
                 onChange={(e) => setJobCardsJobFilter(e.target.value)}
@@ -722,13 +643,11 @@ export default function DashboardInterviewsPage() {
                   <option key={j.id} value={j.id}>{j.title}</option>
                 ))}
               </select>
-              {(jobCardsSearch || jobCardsClientFilter || jobCardsJobFilter) && (
+              {(jobCardsSearch || jobCardsJobFilter) && (
                 <button
                   type="button"
                   onClick={() => {
                     setJobCardsSearch('');
-                    setJobCardsClientFilter('');
-                    setClientInputValue('');
                     setJobCardsJobFilter('');
                   }}
                   className="shrink-0 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors flex items-center gap-1.5"
@@ -799,7 +718,7 @@ export default function DashboardInterviewsPage() {
                   </button>
                   <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
                     <Link
-                      href={scheduleUrlForJob(j.id, j.clientId)}
+                      href={scheduleUrlForJob(j.id)}
                       className="inline-flex items-center justify-center w-full gap-2 px-3 py-2.5 bg-primary-900 text-white rounded-lg hover:bg-primary-800 text-sm font-medium"
                     >
                       <Plus className="w-4 h-4 shrink-0" />

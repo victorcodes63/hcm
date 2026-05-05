@@ -1,4 +1,4 @@
--- Staff leave (Eagle HR internal)
+-- Staff leave (HRIS demo internal)
 CREATE TYPE "StaffLeaveApplicationStatus" AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 
 CREATE TABLE "StaffLeaveType" (

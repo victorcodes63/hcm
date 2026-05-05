@@ -16,35 +16,86 @@ import {
 } from 'lucide-react';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 
+type StatItem = {
+  icon: typeof Clock;
+  value: number;
+  suffix: string;
+  label: string;
+  description: string;
+};
+
+function StatCounterCard({
+  stat,
+  index,
+  isInView,
+  isDesktop,
+}: {
+  stat: StatItem;
+  index: number;
+  isInView: boolean;
+  isDesktop: boolean;
+}) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+
+    let startTime = 0;
+    const duration = 2000;
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeOutQuart * stat.value));
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [isInView, stat.value]);
+
+  const Icon = stat.icon;
+
+  return (
+    <motion.div
+      key={stat.label}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      viewport={{ once: true }}
+      className="text-center group"
+    >
+      <motion.div
+        whileHover={isDesktop ? { scale: 1.1 } : undefined}
+        className="w-20 h-20 bg-secondary-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-secondary-100 shadow-lg group-hover:shadow-xl transition-all duration-300"
+      >
+        <Icon className="w-8 h-8 text-secondary-500" />
+      </motion.div>
+
+      <motion.div
+        initial={isDesktop ? { scale: 0.8 } : {}}
+        whileInView={isDesktop ? { scale: 1 } : {}}
+        transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+        viewport={{ once: true }}
+        className="text-4xl md:text-5xl font-bold text-primary-900 mb-2"
+      >
+        {count}
+        {stat.suffix}
+      </motion.div>
+
+      <h3 className="text-lg font-semibold text-primary-900 mb-2">{stat.label}</h3>
+
+      <p className="text-sm text-neutral-600">{stat.description}</p>
+    </motion.div>
+  );
+}
+
 const ValueProposition = () => {
   const isDesktop = useIsDesktop();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  
-  // Animated counter hook
-  const useCounter = (end: number, duration: number = 2000) => {
-    const [count, setCount] = useState(0);
-    
-    useEffect(() => {
-      if (!isInView) return;
-      
-      let startTime: number;
-      const animate = (currentTime: number) => {
-        if (!startTime) startTime = currentTime;
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        setCount(Math.floor(easeOutQuart * end));
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-      
-      requestAnimationFrame(animate);
-    }, [isInView, end, duration]);
-    
-    return count;
-  };
 
   // Statistics data
   const stats = [
@@ -83,7 +134,7 @@ const ValueProposition = () => {
     {
       year: '2017',
       title: 'Company Founded',
-      description: 'Eagle HR Consultants established with a vision to transform HR in Kenya',
+      description: 'HRIS Demo established with a vision to transform HR in Kenya',
       icon: Target
     },
     {
@@ -199,7 +250,7 @@ const ValueProposition = () => {
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-900 to-secondary-500 text-white rounded-full text-sm font-semibold mb-6 shadow-lg"
           >
             <Award className="w-4 h-4 mr-2" />
-            Why 500+ Companies Choose Eagle HR
+            Why 500+ Companies Choose HRIS Demo
           </motion.div>
           
           <h2 className="text-4xl md:text-5xl font-heading font-bold text-primary-900 mb-6">
@@ -221,46 +272,15 @@ const ValueProposition = () => {
           viewport={{ once: true }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20"
         >
-          {stats.map((stat, index) => {
-            const count = useCounter(stat.value);
-            const Icon = stat.icon;
-            
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center group"
-              >
-                <motion.div
-                  whileHover={isDesktop ? { scale: 1.1 } : undefined}
-                  className="w-20 h-20 bg-secondary-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-secondary-100 shadow-lg group-hover:shadow-xl transition-all duration-300"
-                >
-                  <Icon className="w-8 h-8 text-secondary-500" />
-                </motion.div>
-                
-                <motion.div
-                  initial={isDesktop ? { scale: 0.8 } : {}}
-                  whileInView={isDesktop ? { scale: 1 } : {}}
-                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="text-4xl md:text-5xl font-bold text-primary-900 mb-2"
-                >
-                  {count}{stat.suffix}
-                </motion.div>
-                
-                <h3 className="text-lg font-semibold text-primary-900 mb-2">
-                  {stat.label}
-                </h3>
-                
-                <p className="text-sm text-neutral-600">
-                  {stat.description}
-                </p>
-              </motion.div>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <StatCounterCard
+              key={stat.label}
+              stat={stat}
+              index={index}
+              isInView={isInView}
+              isDesktop={isDesktop}
+            />
+          ))}
         </motion.div>
 
         {/* Interactive Timeline */}

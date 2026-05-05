@@ -61,7 +61,7 @@ function kindStyles(kind: ToastKind): { border: string; icon: ReactNode } {
     case 'warning':
       return { border: 'border-l-amber-600', icon: <AlertCircle className="h-5 w-5 text-amber-600" /> };
     default:
-      return { border: 'border-l-[#00a2c9]', icon: <Info className="h-5 w-5 text-[#00a2c9]" /> };
+      return { border: 'border-l-secondary-500', icon: <Info className="h-5 w-5 text-secondary-500" /> };
   }
 }
 

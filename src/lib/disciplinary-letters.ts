@@ -1,10 +1,13 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
 import type { DisciplinaryActionType } from '@prisma/client';
+import { brand, getLogoFileAbsolutePath } from '@/lib/brand';
+import { getJurisdictionPolicy } from '@/lib/east-africa-hr-policy';
 
-const LOGO_PATH = resolve(process.cwd(), 'public/brand/3rd-park-logo.png');
-const ADDRESS = '3rd Parklands Avenue, Park Medical Centre (PMC), 9th Floor, Parklands, Nairobi, Kenya';
+const LOGO_PATH = getLogoFileAbsolutePath();
+const ADDRESS =
+  brand.contactAddress ||
+  'Configure NEXT_PUBLIC_CONTACT_ADDRESS for letter headers.';
 
 type BaseLetterInput = {
   employeeName: string;
@@ -52,7 +55,7 @@ export async function generateWarningLetterPdf(
   const paragraph =
     `This letter serves as a ${type.replaceAll('_', ' ').toLowerCase()} regarding ${input.incidentDescription} ` +
     `which occurred on ${input.incidentDate}. Failure to improve may result in further disciplinary action up to and ` +
-    `including termination of employment in accordance with the Employment Act, 2007.`;
+    `including termination of employment in accordance with applicable labour law and your contract of employment.`;
   page.drawText(paragraph.slice(0, 180), { x: 60, y, size: 10, font: helvetica });
   y -= 16;
   page.drawText(paragraph.slice(180), { x: 60, y, size: 10, font: helvetica });
@@ -77,7 +80,7 @@ export async function generateWarningLetterPdf(
 }
 
 export async function generateShowCauseLetterPdf(
-  input: BaseLetterInput & { responseDays?: number },
+  input: BaseLetterInput & { responseDays?: number; jurisdictionCode?: string },
 ): Promise<Buffer> {
   const doc = await PDFDocument.create();
   const page = doc.addPage([595, 842]);
@@ -96,9 +99,20 @@ export async function generateShowCauseLetterPdf(
   y -= 28;
   page.drawText(`RE: SHOW CAUSE - ${input.subject}`, { x: 60, y, size: 11, font: bold });
   y -= 24;
+  const policy = getJurisdictionPolicy(input.jurisdictionCode);
+  const days = input.responseDays ?? policy.defaultShowCauseDays;
   page.drawText(
-    `You are hereby required to show cause in writing within ${input.responseDays ?? 7} days from the date of this letter why disciplinary action should not be taken against you regarding ${input.incidentDescription}.`,
+    `You are hereby required to show cause in writing within ${days} days from the date of this letter why disciplinary action should not be taken against you regarding ${input.incidentDescription}.`,
     { x: 60, y, size: 10, font: helvetica },
   );
+  y -= 48;
+  const refLine = `Reference labour framework (${policy.label}): ${policy.primaryActs.slice(0, 2).join('; ')}.`;
+  page.drawText(refLine.length > 120 ? `${refLine.slice(0, 117)}…` : refLine, {
+    x: 60,
+    y,
+    size: 8,
+    font: helvetica,
+    color: rgb(0.35, 0.35, 0.35),
+  });
   return Buffer.from(await doc.save());
 }

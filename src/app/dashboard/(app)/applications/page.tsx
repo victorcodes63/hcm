@@ -36,6 +36,22 @@ import type {
 } from '@/types/dashboard';
 import { sortEmploymentByRecency, yearsBetweenEmploymentDates } from '@/lib/employment-sort';
 
+/** Bundled demo PDF — used when an application has no uploaded CV yet. */
+const STANDARD_DEMO_CV_URL = '/uploads/resumes/amara_njoroge_cv.pdf';
+
+function normalizeResumeUrl(raw: string) {
+  const t = raw.trim();
+  if (!t) return '';
+  if (t.startsWith('http://') || t.startsWith('https://') || t.startsWith('/')) return t;
+  return `/${t.replace(/^\/+/, '')}`;
+}
+
+function resolveResumePreview(candidatePath: string | null | undefined, applicationPath: string | null | undefined) {
+  const url = normalizeResumeUrl(applicationPath || '') || normalizeResumeUrl(candidatePath || '');
+  if (url) return { url, isPlaceholder: false as const };
+  return { url: STANDARD_DEMO_CV_URL, isPlaceholder: true as const };
+}
+
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const styles: Record<ApplicationStatus, string> = {
     pending: 'bg-amber-50 text-amber-700',
@@ -72,10 +88,11 @@ function formatDateRange(start: string, end: string) {
   return `${start} – ${endLabel}`;
 }
 
-type ApplicantDetailTab = 'general' | 'experience' | 'education' | 'certifications';
+type ApplicantDetailTab = 'general' | 'preview' | 'experience' | 'education' | 'certifications';
 
 const APPLICANT_TABS: { id: ApplicantDetailTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'general', label: 'General & CV', icon: User },
+  { id: 'general', label: 'General', icon: User },
+  { id: 'preview', label: 'CV preview', icon: Eye },
   { id: 'experience', label: 'Work experience', icon: Briefcase },
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'certifications', label: 'Certifications', icon: Award },
@@ -181,12 +198,9 @@ function EducationTab({ formData }: { formData: ApplicationFormData | null }) {
 function CertificationsTab({ formData }: { formData: ApplicationFormData | null }) {
   const list = formData?.professionalCertificationsList ?? [];
   const memberships = formData?.professionalMemberships ?? [];
-  const legacyText = formData?.professionalCertifications?.trim();
-  const legacyPath = formData?.professionalCertificationsPath?.trim();
   const hasList = list.length > 0;
   const hasMemberships = memberships.length > 0;
-  const hasLegacy = legacyText || legacyPath;
-  const hasAny = hasList || hasMemberships || hasLegacy;
+  const hasAny = hasList || hasMemberships;
   return (
     <div className="space-y-4">
       {!hasAny ? (
@@ -240,29 +254,6 @@ function CertificationsTab({ formData }: { formData: ApplicationFormData | null 
               </ul>
             </div>
           )}
-          {hasLegacy && (
-            <>
-              {legacyText && (
-                <div className="rounded-lg bg-neutral-50 p-4 border border-neutral-200">
-                  <h3 className="text-sm font-medium text-neutral-700 mb-2">Certifications (legacy)</h3>
-                  <p className="text-sm text-neutral-700 whitespace-pre-wrap">{legacyText}</p>
-                </div>
-              )}
-              {legacyPath && (
-                <div>
-                  <a
-                    href={legacyPath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View proof document
-                  </a>
-                </div>
-              )}
-            </>
-          )}
         </>
       )}
     </div>
@@ -295,7 +286,6 @@ const STATUS_OPTIONS: { value: 'all' | ApplicationStatus; label: string }[] = [
   { value: 'hired', label: 'Hired' },
 ];
 
-type ClientOption = { id: string; name: string };
 type JobOption = {
   id: string;
   title: string;
@@ -305,11 +295,9 @@ type JobOption = {
 };
 
 export default function DashboardApplicationsPage() {
-  const [clients, setClients] = useState<ClientOption[]>([]);
   const [jobs, setJobs] = useState<JobOption[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [jobFilter, setJobFilter] = useState('');
-  const [clientFilter, setClientFilter] = useState('');
   const [nationalityFilter, setNationalityFilter] = useState('');
   const [homeCountyFilter, setHomeCountyFilter] = useState('');
   const [educationLevelFilter, setEducationLevelFilter] = useState('');
@@ -359,25 +347,22 @@ export default function DashboardApplicationsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch('/api/clients').then((r) => r.json()),
-      fetch('/api/jobs').then((r) => r.json()),
-    ]).then(([clientsData, jobsData]) => {
-      if (!cancelled && Array.isArray(clientsData)) {
-        setClients(clientsData.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
-      }
-      if (!cancelled && Array.isArray(jobsData)) {
-        setJobs(
-          jobsData.map((j: { id: string; title: string; company: string; clientId?: string | null; postedDate?: string }) => ({
-            id: j.id,
-            title: j.title,
-            company: j.company,
-            clientId: j.clientId ?? null,
-            postedDate: j.postedDate,
-          }))
-        );
-      }
-    }).catch(() => {});
+    fetch('/api/jobs')
+      .then((r) => r.json())
+      .then((jobsData) => {
+        if (!cancelled && Array.isArray(jobsData)) {
+          setJobs(
+            jobsData.map((j: { id: string; title: string; company: string; clientId?: string | null; postedDate?: string }) => ({
+              id: j.id,
+              title: j.title,
+              company: j.company,
+              clientId: j.clientId ?? null,
+              postedDate: j.postedDate,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -391,7 +376,6 @@ export default function DashboardApplicationsPage() {
     const params = new URLSearchParams();
     if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
     if (jobFilter.trim()) params.set('jobId', jobFilter.trim());
-    if (clientFilter.trim()) params.set('clientId', clientFilter.trim());
     if (nationalityFilter.trim()) params.set('nationality', nationalityFilter.trim());
     if (homeCountyFilter.trim()) params.set('homeCounty', homeCountyFilter.trim());
     if (educationLevelFilter.trim()) params.set('educationLevel', educationLevelFilter.trim());
@@ -433,7 +417,6 @@ export default function DashboardApplicationsPage() {
   }, [
     statusFilter,
     jobFilter,
-    clientFilter,
     nationalityFilter,
     homeCountyFilter,
     educationLevelFilter,
@@ -454,40 +437,12 @@ export default function DashboardApplicationsPage() {
   }, [selectedApp?.id]);
 
   const filteredJobOptions = useMemo(() => {
-    const selectedClientName = clients
-      .find((c) => c.id === clientFilter.trim())
-      ?.name?.trim()
-      .toLowerCase();
-    const list = !clientFilter.trim()
-      ? jobs
-      : jobs.filter((j) => {
-          const strictClientMatch = (j.clientId ?? '') === clientFilter.trim();
-          // Fallback for environments where /api/jobs does not return clientId.
-          const companyNameFallbackMatch =
-            !j.clientId &&
-            !!selectedClientName &&
-            j.company.toLowerCase().includes(selectedClientName);
-          return strictClientMatch || companyNameFallbackMatch;
-        });
-    return [...list].sort((a, b) => {
+    return [...jobs].sort((a, b) => {
       const aTime = a.postedDate ? new Date(a.postedDate).getTime() : 0;
       const bTime = b.postedDate ? new Date(b.postedDate).getTime() : 0;
-      return bTime - aTime; // most recent first
+      return bTime - aTime;
     });
-  }, [jobs, clientFilter, clients]);
-
-  useEffect(() => {
-    // When a client is selected, default to that client's most recent job.
-    if (!clientFilter.trim()) return;
-    if (filteredJobOptions.length === 0) {
-      if (jobFilter) setJobFilter('');
-      return;
-    }
-    const jobStillValid = filteredJobOptions.some((j) => j.id === jobFilter);
-    if (!jobStillValid) {
-      setJobFilter(filteredJobOptions[0].id);
-    }
-  }, [clientFilter, jobFilter, filteredJobOptions]);
+  }, [jobs]);
 
   useEffect(() => {
     setNotesDraft(selectedApp?.notes ?? '');
@@ -516,7 +471,6 @@ export default function DashboardApplicationsPage() {
     }
   };
 
-  const allApplications = applications;
   const filteredApplications = applications;
 
   useEffect(() => {
@@ -524,7 +478,6 @@ export default function DashboardApplicationsPage() {
   }, [
     statusFilter,
     jobFilter,
-    clientFilter,
     nationalityFilter,
     homeCountyFilter,
     educationLevelFilter,
@@ -550,7 +503,6 @@ export default function DashboardApplicationsPage() {
   const hasActiveFilters =
     statusFilter !== 'all' ||
     !!jobFilter.trim() ||
-    !!clientFilter.trim() ||
     !!nationalityFilter.trim() ||
     !!homeCountyFilter.trim() ||
     !!educationLevelFilter.trim() ||
@@ -565,7 +517,6 @@ export default function DashboardApplicationsPage() {
   const clearFilters = () => {
     setStatusFilter('all');
     setJobFilter('');
-    setClientFilter('');
     setNationalityFilter('');
     setHomeCountyFilter('');
     setEducationLevelFilter('');
@@ -583,7 +534,6 @@ export default function DashboardApplicationsPage() {
       new URLSearchParams({
         ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
         ...(jobFilter.trim() && { jobId: jobFilter.trim() }),
-        ...(clientFilter.trim() && { clientId: clientFilter.trim() }),
         ...(nationalityFilter.trim() && { nationality: nationalityFilter.trim() }),
         ...(homeCountyFilter.trim() && { homeCounty: homeCountyFilter.trim() }),
         ...(educationLevelFilter.trim() && { educationLevel: educationLevelFilter.trim() }),
@@ -598,7 +548,6 @@ export default function DashboardApplicationsPage() {
     [
       statusFilter,
       jobFilter,
-      clientFilter,
       nationalityFilter,
       homeCountyFilter,
       educationLevelFilter,
@@ -814,7 +763,7 @@ export default function DashboardApplicationsPage() {
               <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-0.5">
                 Search &amp; application
               </p>
-              <p className="text-xs text-neutral-500">Find rows and narrow by status, client, and job.</p>
+              <p className="text-xs text-neutral-500">Find rows and narrow by status and job.</p>
             </div>
             <a
               href={exportParams ? `/api/applications/export?${exportParams}` : '/api/applications/export'}
@@ -851,28 +800,12 @@ export default function DashboardApplicationsPage() {
               ))}
             </select>
             <select
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className={`${filterInputClass} lg:col-span-2`}
-              aria-label="Client"
-            >
-              <option value="">All clients</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
               value={jobFilter}
               onChange={(e) => setJobFilter(e.target.value)}
-              className={`${filterInputClass} lg:col-span-3 truncate min-w-0`}
+              className={`${filterInputClass} lg:col-span-5 truncate min-w-0`}
               aria-label="Job"
             >
-              {!clientFilter && <option value="">All jobs</option>}
-              {clientFilter && filteredJobOptions.length === 0 && (
-                <option value="">No jobs for selected client</option>
-              )}
+              <option value="">All jobs</option>
               {filteredJobOptions.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title} · {j.company}
@@ -1104,9 +1037,6 @@ export default function DashboardApplicationsPage() {
                     Job
                   </th>
                   <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
-                    Client
-                  </th>
-                  <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
                     Applied
                   </th>
                   <th className="text-left text-xs font-semibold uppercase tracking-wider text-neutral-500 px-5 py-3">
@@ -1172,9 +1102,6 @@ export default function DashboardApplicationsPage() {
                         {app.job.company} · {app.job.location}
                       </p>
                     </div>
-                  </td>
-                  <td className={`px-5 py-3 text-sm ${isUnread ? 'text-neutral-700 font-medium' : 'text-neutral-400'}`}>
-                    {app.job.clientName ?? '—'}
                   </td>
                   <td className={`px-5 py-3 text-sm tabular-nums ${isUnread ? 'text-neutral-700 font-medium' : 'text-neutral-400'}`}>
                     {formatDate(app.appliedDate)}
@@ -1360,9 +1287,9 @@ export default function DashboardApplicationsPage() {
                       if (applicantDetailTab === 'general') await saveNotesIfDirty();
                       setApplicantDetailTab(id);
                     }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs font-medium transition-colors border-b-2 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs font-medium transition-colors border-b-2 min-w-0 ${
                       applicantDetailTab === id
-                        ? 'border-transparent text-neutral-900'
+                        ? 'border-primary-600 text-primary-900'
                         : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
                     }`}
                   >
@@ -1428,88 +1355,6 @@ export default function DashboardApplicationsPage() {
                       )}
                     </div>
                   </div>
-
-                  {(selectedApp.candidate.resumePath || selectedApp.resumePath) && (() => {
-                    const resumeUrl = (selectedApp.resumePath || selectedApp.candidate.resumePath) || '';
-                    const isPdf = /\.pdf($|\?)/i.test(resumeUrl);
-                    return (
-                      <div className="pt-4 border-t border-neutral-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
-                            Resume
-                          </h3>
-                          {isPdf && (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
-                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
-                                title="Zoom out"
-                                aria-label="Zoom out"
-                              >
-                                <ZoomOut className="w-4 h-4" />
-                              </button>
-                              <span className="text-xs text-neutral-500 min-w-[2.5rem] text-center tabular-nums">
-                                {pdfZoom}%
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
-                                className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
-                                title="Zoom in"
-                                aria-label="Zoom in"
-                              >
-                                <ZoomIn className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <div className="rounded-lg border border-neutral-200 bg-neutral-50 overflow-auto min-h-[280px] h-[45vh] max-h-[380px]">
-                          {isPdf ? (
-                            <div
-                              className="origin-top-left"
-                              style={{
-                                transform: `scale(${pdfZoom / 100})`,
-                                width: `${(100 * 100) / pdfZoom}%`,
-                                height: `${(360 * 100) / pdfZoom}px`,
-                                minHeight: `${(280 * 100) / pdfZoom}px`,
-                              }}
-                            >
-                              <iframe
-                                title="Resume preview"
-                                src={resumeUrl}
-                                className="w-full border-0 min-h-[280px] h-[360px]"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center">
-                              <FileText className="w-12 h-12 text-neutral-300 mb-3" />
-                              <p className="text-sm text-neutral-600 mb-1">Preview not available for this file type.</p>
-                              <p className="text-xs text-neutral-500 mb-4">Download the file to view it.</p>
-                              <a
-                                href={resumeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
-                              >
-                                <FileText className="w-4 h-4" />
-                                Download resume
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                        <a
-                          href={resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-primary-600 hover:text-primary-800"
-                        >
-                          <FileText className="w-4 h-4" />
-                          {isPdf ? 'View resume in new tab' : 'Open resume in new tab'}
-                        </a>
-                      </div>
-                    );
-                  })()}
 
                   <div>
                     <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-2">
@@ -1603,6 +1448,115 @@ export default function DashboardApplicationsPage() {
                   </div>
                 </div>
               )}
+
+              {applicantDetailTab === 'preview' && (() => {
+                const { url, isPlaceholder } = resolveResumePreview(
+                  selectedApp.candidate.resumePath,
+                  selectedApp.resumePath,
+                );
+                const isPdf = /\.pdf($|\?|#)/i.test(url);
+                const iframeSrc = isPdf ? `${url.split('#')[0]}#toolbar=0&navpanes=0` : url;
+                return (
+                  <div className="space-y-3">
+                    {isPlaceholder ? (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        No CV file on record for this application. Showing the standard sample PDF for
+                        layout preview (Amara Njoroge CV).
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-500">
+                        Uploaded file:{' '}
+                        <span className="font-medium text-neutral-700 break-all">{url}</span>
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
+                        Document preview
+                      </h3>
+                      {isPdf ? (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setPdfZoom((z) => Math.max(50, z - 25))}
+                            className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                            title="Zoom out"
+                            aria-label="Zoom out"
+                          >
+                            <ZoomOut className="w-4 h-4" />
+                          </button>
+                          <span className="text-xs text-neutral-500 min-w-[2.5rem] text-center tabular-nums">
+                            {pdfZoom}%
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPdfZoom((z) => Math.min(200, z + 25))}
+                            className="p-1.5 rounded-md text-neutral-500 hover:text-primary-600 hover:bg-neutral-100 transition-colors"
+                            title="Zoom in"
+                            aria-label="Zoom in"
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="rounded-lg border border-neutral-200 bg-neutral-100 overflow-auto min-h-[320px] h-[50vh] max-h-[520px]">
+                      {isPdf ? (
+                        <div
+                          className="origin-top-left bg-white"
+                          style={{
+                            transform: `scale(${pdfZoom / 100})`,
+                            width: `${(100 * 100) / pdfZoom}%`,
+                            height: `${(400 * 100) / pdfZoom}px`,
+                            minHeight: `${(320 * 100) / pdfZoom}px`,
+                          }}
+                        >
+                          <iframe
+                            title="CV preview"
+                            src={iframeSrc}
+                            className="w-full border-0 min-h-[320px] h-[400px] bg-white"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[280px] p-6 text-center">
+                          <FileText className="w-12 h-12 text-neutral-300 mb-3" />
+                          <p className="text-sm text-neutral-600 mb-1">Preview is not available for this file type.</p>
+                          <p className="text-xs text-neutral-500 mb-4">Open or download the file to view it.</p>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            Open file
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 font-medium text-primary-600 hover:text-primary-800"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        {isPdf ? 'Open PDF in new tab' : 'Open in new tab'}
+                      </a>
+                      <a
+                        href={url}
+                        download={
+                          isPdf ? (url.split('/').pop()?.split('?')[0] || 'resume.pdf') : undefined
+                        }
+                        className="inline-flex items-center gap-2 font-medium text-primary-600 hover:text-primary-800"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </a>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {applicantDetailTab === 'experience' && (
                 <WorkExperienceTab formData={selectedApp.formData} />

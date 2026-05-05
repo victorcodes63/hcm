@@ -22,17 +22,55 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
   }
 
-  const list = await prisma.staffLeaveApplication.findMany({
-    where,
-    include: {
-      leaveType: { select: { id: true, name: true, color: true } },
-      user: { select: { id: true, name: true, email: true } },
-      reviewedBy: { select: { id: true, name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-  });
-  return NextResponse.json(list);
+  try {
+    const list = await prisma.staffLeaveApplication.findMany({
+      where,
+      include: {
+        leaveType: { select: { id: true, name: true, color: true } },
+        user: { select: { id: true, name: true, email: true } },
+        reviewedBy: { select: { id: true, name: true } },
+        approvalSteps: {
+          orderBy: { stepOrder: 'asc' },
+          select: {
+            id: true,
+            stepOrder: true,
+            status: true,
+            actedAt: true,
+            approver: { select: { id: true, name: true } },
+          },
+        },
+        approvalActions: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: { id: true, action: true, note: true, createdAt: true, actor: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return NextResponse.json(list);
+  } catch (error) {
+    // Compatibility fallback: older generated Prisma clients can miss new relations.
+    const message = error instanceof Error ? error.message : '';
+    if (!message.includes('Unknown field `approvalSteps`')) throw error;
+    const baseList = await prisma.staffLeaveApplication.findMany({
+      where,
+      include: {
+        leaveType: { select: { id: true, name: true, color: true } },
+        user: { select: { id: true, name: true, email: true } },
+        reviewedBy: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return NextResponse.json(
+      baseList.map((row) => ({
+        ...row,
+        approvalSteps: [],
+        approvalActions: [],
+      }))
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -104,6 +142,8 @@ export async function POST(request: NextRequest) {
           reviewedById: user.id,
           reviewedAt: new Date(),
           reviewNote: 'Auto-approved (no approval required)',
+          approvalState: 'approved',
+          currentStepOrder: 1,
         },
         include: { leaveType: true, user: { select: { name: true, email: true } } },
       });
@@ -125,8 +165,36 @@ export async function POST(request: NextRequest) {
       totalDays,
       reason: body.reason ? String(body.reason).trim() || null : null,
       status: 'pending',
+      approvalState: 'pending',
+      currentStepOrder: 1,
     },
     include: { leaveType: true, user: { select: { name: true, email: true } } },
+  });
+  const defaultApprover = await prisma.user.findFirst({
+    where: {
+      isActive: true,
+      id: { not: user.id },
+      OR: [{ role: 'admin' }, { staffUserType: 'business_manager' }],
+    },
+    orderBy: [{ role: 'desc' }, { createdAt: 'asc' }],
+    select: { id: true },
+  });
+  if (defaultApprover) {
+    await prisma.leaveApprovalStep.create({
+      data: {
+        staffLeaveApplicationId: app.id,
+        stepOrder: 1,
+        approverUserId: defaultApprover.id,
+      },
+    });
+  }
+  await prisma.leaveApprovalAction.create({
+    data: {
+      staffLeaveApplicationId: app.id,
+      actorUserId: user.id,
+      action: 'submitted',
+      note: body.reason ? String(body.reason).trim() : null,
+    },
   });
   return NextResponse.json(app);
 }

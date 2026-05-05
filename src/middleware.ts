@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
+const ESS_SESSION_COOKIE = 'ess_session';
 const LOGIN_PATH = '/dashboard/login';
 const FORGOT_PASSWORD_PATH = '/dashboard/forgot-password';
+const ESS_LOGIN_PATH = '/ess/login';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,9 +32,19 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  const isEssAuthPage = pathname.startsWith(ESS_LOGIN_PATH);
+  if (pathname.startsWith('/ess') && !isEssAuthPage) {
+    const session = request.cookies.get(ESS_SESSION_COOKIE);
+    if (!session?.value) {
+      const loginUrl = new URL(ESS_LOGIN_PATH, request.url);
+      loginUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard', '/dashboard/:path*'],
+  matcher: ['/dashboard', '/dashboard/:path*', '/ess', '/ess/:path*'],
 };

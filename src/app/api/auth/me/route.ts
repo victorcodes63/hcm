@@ -3,21 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { getStaffSessionMaxAgeSeconds, parseStaffSession } from '@/lib/auth-session';
 import { userRowToSummary } from '@/lib/user-summary-api';
 import { reportApiError } from '@/lib/monitoring';
-import { canApproveStaffLeave, canViewSystemAnalytics } from '@/lib/staff-permissions';
-import type { UserSummary } from '@/types/dashboard';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
 const STAFF_SESSION_MAX_AGE = getStaffSessionMaxAgeSeconds();
-
-const LEGACY_ACCOUNTS: Pick<UserSummary, 'hasAccountsAccess' | 'accountsPermissions'> = {
-  hasAccountsAccess: false,
-  accountsPermissions: {
-    canManageContracts: false,
-    canManageInvoices: false,
-    canManagePayments: false,
-    canManageVendors: false,
-  },
-};
 
 export async function GET(request: NextRequest) {
   const rawSession = request.cookies.get(STAFF_SESSION_COOKIE)?.value;
@@ -27,29 +15,7 @@ export async function GET(request: NextRequest) {
 
   const parsed = parseStaffSession(rawSession);
   if (!process.env.DATABASE_URL) {
-    const email = parsed.email || 'staff@eaglehr.co.ke';
-    const legacyRole = (parsed.role || 'staff') as UserSummary['role'];
-    const response = NextResponse.json({
-      id: 'legacy-session',
-      email,
-      name: 'Staff User',
-      role: legacyRole,
-      staffUserType: 'operations',
-      canApproveStaffLeave: canApproveStaffLeave(legacyRole, 'operations'),
-      canViewSystemAnalytics: canViewSystemAnalytics(legacyRole, 'operations'),
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...LEGACY_ACCOUNTS,
-    } satisfies UserSummary);
-    response.cookies.set(STAFF_SESSION_COOKIE, rawSession, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: STAFF_SESSION_MAX_AGE,
-      path: '/',
-    });
-    return response;
+    return NextResponse.json({ error: 'Database not configured.' }, { status: 503 });
   }
 
   try {

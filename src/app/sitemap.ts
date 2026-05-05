@@ -4,7 +4,7 @@ export const revalidate = 3600; // Revalidate sitemap every hour
 
 const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, '') ||
-  'https://www.eaglehr.co.ke';
+  'https://www.example.com';
 
 const staticRoutes: MetadataRoute.Sitemap = [
   { url: baseUrl, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
@@ -21,9 +21,6 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/services/hr-documentation`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
   { url: `${baseUrl}/services/psychometric-testing`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
   { url: `${baseUrl}/resources`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-  { url: `${baseUrl}/resources/gross-calculator`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-  { url: `${baseUrl}/resources/net-calculator`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-  { url: `${baseUrl}/resources/paye-calculator`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/resources/interview-checklist-employers`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/resources/interview-checklist-candidates`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
   { url: `${baseUrl}/resources/interview-checklist-employees`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },

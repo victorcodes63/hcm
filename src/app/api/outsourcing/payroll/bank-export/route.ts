@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveHospitalClientId } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { buildBankExportCsv, formatBankExportPaymentReference } from '@/lib/payroll-bank-export';
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month') ? parseInt(searchParams.get('month')!, 10) : NaN;
     const year = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : NaN;
     const requestedClientId = searchParams.get('clientId') || undefined;
-    const clientId = await resolveHospitalClientId(prisma, requestedClientId);
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const departmentId = searchParams.get('departmentId') || undefined;
 
     if (Number.isNaN(month) || month < 1 || month > 12 || Number.isNaN(year)) {

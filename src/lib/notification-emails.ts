@@ -1,3 +1,5 @@
+import { brand, emailSubjectTag, mailFromName } from '@/lib/brand';
+
 export type NotificationEvent =
   | 'leave_submitted'
   | 'leave_approved'
@@ -28,16 +30,23 @@ export type NotificationEvent =
 
 type TemplateResult = { subject: string; html: string };
 
+function footerBits(): string {
+  const lines: string[] = [];
+  if (brand.contactAddress) lines.push(brand.contactAddress);
+  if (brand.contactPhone) lines.push(brand.contactPhone);
+  lines.push(brand.contactEmail);
+  return lines.join('<br>\n        ');
+}
+
 function wrapInLayout(content: string): string {
   return `
     <div style="max-width:560px;margin:0 auto;font-family:Inter,Arial,sans-serif;color:#0B1F2A;line-height:1.6;">
       <div style="padding:24px 0;border-bottom:2px solid #0F766E;margin-bottom:24px;">
-        <strong style="font-size:16px;color:#0F766E;">3rd Park Hospital HR</strong>
+        <strong style="font-size:16px;color:#0F766E;">${mailFromName}</strong>
       </div>
       ${content}
       <div style="margin-top:32px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#94A3B8;">
-        3rd Parklands Avenue, PMC, 9th Floor, Nairobi<br>
-        +254 730 819 900 · info@3rdparkhospital.com
+        ${footerBits()}
       </div>
     </div>
   `;
@@ -51,7 +60,7 @@ export function buildNotificationEmail(
 
   const templates: Partial<Record<NotificationEvent, (d: Record<string, unknown>) => TemplateResult>> = {
     leave_approved: (d) => ({
-      subject: '[3rd Park HR] Leave approved',
+      subject: `${emailSubjectTag} Leave approved`,
       html: wrapInLayout(`
         <h2>Leave approved</h2>
         <p>Your ${d.leaveType || 'leave'} leave from ${d.startDate || '-'} to ${d.endDate || '-'} has been approved by ${d.approverName || 'your approver'}.</p>
@@ -59,7 +68,7 @@ export function buildNotificationEmail(
       `),
     }),
     leave_rejected: (d) => ({
-      subject: '[3rd Park HR] Leave not approved',
+      subject: `${emailSubjectTag} Leave not approved`,
       html: wrapInLayout(`
         <h2>Leave not approved</h2>
         <p>Your ${d.leaveType || 'leave'} leave from ${d.startDate || '-'} to ${d.endDate || '-'} was not approved.</p>
@@ -68,7 +77,7 @@ export function buildNotificationEmail(
       `),
     }),
     password_changed: (d) => ({
-      subject: '[3rd Park HR] Password changed',
+      subject: `${emailSubjectTag} Password changed`,
       html: wrapInLayout(`
         <h2>Password changed</h2>
         <p>Your password was changed on ${d.timestamp || new Date().toISOString()}.</p>
@@ -76,16 +85,16 @@ export function buildNotificationEmail(
       `),
     }),
     user_invited: (d) => ({
-      subject: 'Welcome to 3rd Park Hospital HR',
+      subject: `Welcome to ${brand.appName}`,
       html: wrapInLayout(`
-        <h2>Welcome to 3rd Park Hospital HR</h2>
+        <h2>Welcome to ${brand.appName}</h2>
         <p>An account has been created for you.</p>
         <p>Email: ${d.email || '-'}</p>
         <p><a href="${d.loginUrl || `${appUrl}/dashboard/login`}">Log in to your account</a></p>
       `),
     }),
     payslip_ready: (d) => ({
-      subject: `[3rd Park HR] Payslip available - ${d.period || 'current period'}`,
+      subject: `${emailSubjectTag} Payslip available - ${d.period || 'current period'}`,
       html: wrapInLayout(`
         <h2>Payslip available</h2>
         <p>Your payslip for ${d.period || 'this period'} is now available in the employee portal.</p>
@@ -97,7 +106,7 @@ export function buildNotificationEmail(
   const builder = templates[event];
   if (!builder) {
     return {
-      subject: '[3rd Park HR] Notification',
+      subject: `${emailSubjectTag} Notification`,
       html: wrapInLayout(`<p>${String(data.body || 'You have a new notification.')}</p>`),
     };
   }

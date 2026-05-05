@@ -1,4 +1,4 @@
-// 3rd Park HRIS - Scalable schema for 16k+ applications/year
+// HRIS Demo — scalable schema (recruitment, payroll, workforce)
 // Use PostgreSQL in production (Vercel Postgres, Neon, Supabase, or self-hosted)
 
 generator client {
@@ -30,7 +30,7 @@ model Client {
   @@index([name])
 }
 
-/// Single row (id = "default"): the organization that owns careers / hiring (3rd Park or your org name).
+/// Single row (id = "default"): the organization that owns careers / hiring.
 model RecruitmentSettings {
   id             String   @id @default("default")
   employerName   String
@@ -87,6 +87,9 @@ model OutsourcingClient {
   serviceFeeType         String?  // fixed | percentage | per_employee
   serviceFeeAmount       Decimal? @db.Decimal(12, 2)
   paymentTerms           String?  // e.g. Net 15, Net 30, due on receipt
+
+  /// Dashboard entity switcher: `ke` | `ug` — scopes workforce, payroll, and linked accounts when set.
+  entityCode             String?  @unique
 
   // Address
   postalAddress          String?
@@ -290,6 +293,12 @@ model DisciplinaryCase {
   resolvedAt   DateTime?
   resolvedById String?
   resolvedBy   User?    @relation("CaseResolver", fields: [resolvedById], references: [id])
+  /// Primary labour-law frame for letters & SLA hints (KE, UG, TZ, RW, BI, SS, EAC).
+  laborJurisdiction String @default("KE")
+  /// Fair process: deadline for written response to show-cause (HR sets when letter issued).
+  showCauseResponseDueAt DateTime?
+  /// Scheduled disciplinary / appeal hearing.
+  hearingAt      DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -813,6 +822,12 @@ enum CredentialCategory {
   regulatory_compliance
   training
   other
+  /// Offshore survival, emergency response, H2S, OPITO safety suite, etc.
+  oil_gas_safety
+  /// IWCF / IADC surface & subsea well control, well intervention pressure control.
+  oil_gas_well_control
+  /// PTW, rigging & lifting, confined space, hot work, CompEx, site inductions.
+  oil_gas_operations
 }
 
 enum CredentialStatus {
@@ -1449,7 +1464,7 @@ model SystemSetting {
   updatedBy User? @relation("SystemSettingUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 }
 
-// --- 3rd Park HRIS internal staff leave (not outsourcing employees) ---
+// --- Internal staff leave (not outsourcing employees) ---
 
 model StaffLeaveType {
   id                 String   @id @default(cuid())
@@ -1712,7 +1727,7 @@ enum AccountsInvoiceStatus {
   paid
 }
 
-/// Which 3rd Park HRIS bank account appears on the invoice PDF.
+/// Which configured bank account appears on the invoice PDF.
 enum AccountsInvoicePaymentBank {
   payroll_only
   consultancy_fees
@@ -1957,7 +1972,7 @@ model Insight {
   title     String   @db.Text
   excerpt   String   @db.Text
   body      String?  @db.Text // optional full article content; shown on /insights/[slug]
-  author    String   // e.g. "3rd Park HRIS" or staff name
+  author    String   // e.g. product name or staff name
   category  String   // e.g. "Uncategorized", "Job Hunting Tips", "HR Outsourcing"
   url       String   @db.Text // external link when no slug; else /insights/[slug]
   image    String   @db.Text // path or URL for featured image (from upload or external)

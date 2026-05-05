@@ -7,7 +7,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 const SECRET =
   process.env.INTERVIEW_CONFIRM_SECRET?.trim() ||
   process.env.DATABASE_URL?.slice(-32) ||
-  'eaglehr-interview-confirm-fallback';
+  'hris-interview-confirm-fallback';
 
 function base64UrlEncode(buf: Buffer): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

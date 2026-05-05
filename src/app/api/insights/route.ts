@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   const title = typeof b.title === 'string' ? b.title.trim() : '';
   const excerpt = typeof b.excerpt === 'string' ? b.excerpt.trim() : '';
   const articleBody = typeof b.body === 'string' ? b.body.trim() || null : null;
-  const author = typeof b.author === 'string' ? b.author.trim() : 'Eagle HR';
+  const author = typeof b.author === 'string' ? b.author.trim() : 'HRIS Demo';
   const category = typeof b.category === 'string' ? b.category.trim() : 'Uncategorized';
   const url = typeof b.url === 'string' ? b.url.trim() : '';
   const image = typeof b.image === 'string' ? b.image.trim() : '';
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         title,
         excerpt,
         body: articleBody ?? undefined,
-        author: author || 'Eagle HR',
+        author: author || 'HRIS Demo',
         category: category || 'Uncategorized',
         url: url?.trim() ? url : internalUrl,
         image: image || '/images/insights/featured-images/placeholder.png',

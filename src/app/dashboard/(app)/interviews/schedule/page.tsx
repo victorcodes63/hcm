@@ -48,11 +48,7 @@ function ScheduleInterviewsPageContent() {
   const [jobs, setJobs] = useState<{ id: string; title: string }[]>([]);
   const [jobsWithShortlisted, setJobsWithShortlisted] = useState<JobWithShortlisted[]>([]);
   const [jobsWithShortlistedLoading, setJobsWithShortlistedLoading] = useState(true);
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [bulkSearch, setBulkSearch] = useState('');
-  const [bulkClientFilter, setBulkClientFilter] = useState('');
-  const [bulkClientInputValue, setBulkClientInputValue] = useState('');
-  const [bulkClientDropdownOpen, setBulkClientDropdownOpen] = useState(false);
   const [shortlistedApps, setShortlistedApps] = useState<ApplicationWithDetails[]>([]);
   const [shortlistedLoading, setShortlistedLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,9 +67,6 @@ function ScheduleInterviewsPageContent() {
 
   const [bulkJobId, setBulkJobId] = useState('');
   const [singleSearch, setSingleSearch] = useState('');
-  const [singleClientFilter, setSingleClientFilter] = useState('');
-  const [singleClientInputValue, setSingleClientInputValue] = useState('');
-  const [singleClientDropdownOpen, setSingleClientDropdownOpen] = useState(false);
   const [singleJobId, setSingleJobId] = useState('');
   const [singleShortlistedApps, setSingleShortlistedApps] = useState<ApplicationWithDetails[]>([]);
   const [singleShortlistedLoading, setSingleShortlistedLoading] = useState(false);
@@ -137,20 +130,7 @@ function ScheduleInterviewsPageContent() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/clients')
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && Array.isArray(data)) {
-          setClients(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
-  /** Deep link: ?jobId=&clientId=&preselect=1 from Interview management job cards */
+  /** Deep link: ?jobId=&preselect=1 from Interview management job cards */
   useEffect(() => {
     if (appliedFromUrlRef.current || jobsWithShortlistedLoading) return;
     const jobId = searchParams.get('jobId')?.trim();
@@ -158,26 +138,9 @@ function ScheduleInterviewsPageContent() {
     const job = jobsWithShortlisted.find((j) => j.id === jobId);
     if (!job) return;
     appliedFromUrlRef.current = true;
-    if (job.clientId) {
-      setBulkClientFilter(job.clientId);
-      setBulkClientInputValue(job.clientName ?? '');
-    }
     setBulkJobId(jobId);
     if (searchParams.get('preselect') === '1') shouldPreselectBulkRef.current = true;
-
-    const clientIdParam = searchParams.get('clientId')?.trim();
-    if (clientIdParam && !job.clientId) {
-      setBulkClientFilter(clientIdParam);
-      const c = clients.find((x) => x.id === clientIdParam);
-      if (c) setBulkClientInputValue(c.name);
-    }
-  }, [jobsWithShortlistedLoading, jobsWithShortlisted, searchParams, clients]);
-
-  const bulkClientSuggestions = useMemo(() => {
-    const v = bulkClientInputValue.trim().toLowerCase();
-    if (!v) return clients.slice(0, 20);
-    return clients.filter((c) => c.name.toLowerCase().includes(v)).slice(0, 20);
-  }, [clients, bulkClientInputValue]);
+  }, [jobsWithShortlistedLoading, jobsWithShortlisted, searchParams]);
 
   const bulkJobFilterOptions = useMemo(() => {
     let list = jobsWithShortlisted;
@@ -190,23 +153,14 @@ function ScheduleInterviewsPageContent() {
           (j.clientName ?? '').toLowerCase().includes(q)
       );
     }
-    if (bulkClientFilter) {
-      list = list.filter((j) => j.clientId === bulkClientFilter);
-    }
     return list;
-  }, [jobsWithShortlisted, bulkSearch, bulkClientFilter]);
+  }, [jobsWithShortlisted, bulkSearch]);
 
   useEffect(() => {
     if (bulkJobId && !bulkJobFilterOptions.some((j) => j.id === bulkJobId)) {
       setBulkJobId('');
     }
   }, [bulkJobId, bulkJobFilterOptions]);
-
-  const singleClientSuggestions = useMemo(() => {
-    const v = singleClientInputValue.trim().toLowerCase();
-    if (!v) return clients.slice(0, 20);
-    return clients.filter((c) => c.name.toLowerCase().includes(v)).slice(0, 20);
-  }, [clients, singleClientInputValue]);
 
   const singleJobFilterOptions = useMemo(() => {
     let list = jobsWithShortlisted;
@@ -219,11 +173,8 @@ function ScheduleInterviewsPageContent() {
           (j.clientName ?? '').toLowerCase().includes(q)
       );
     }
-    if (singleClientFilter) {
-      list = list.filter((j) => j.clientId === singleClientFilter);
-    }
     return list;
-  }, [jobsWithShortlisted, singleSearch, singleClientFilter]);
+  }, [jobsWithShortlisted, singleSearch]);
 
   useEffect(() => {
     if (singleJobId && !singleJobFilterOptions.some((j) => j.id === singleJobId)) {
@@ -664,7 +615,7 @@ function ScheduleInterviewsPageContent() {
             Bulk schedule (max 10)
           </h2>
 
-          {/* Step 1: Filters – Search, Client, Job (only jobs with shortlisted candidates) */}
+          {/* Step 1: Search + job (only jobs with shortlisted candidates) */}
           <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-4 mb-6">
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">1. Select a job</p>
             <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
@@ -679,55 +630,7 @@ function ScheduleInterviewsPageContent() {
                   aria-label="Search jobs"
                 />
               </div>
-              <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                <input
-                  type="text"
-                  placeholder="Filter by client..."
-                  value={bulkClientInputValue}
-                  onChange={(e) => {
-                    setBulkClientInputValue(e.target.value);
-                    setBulkClientFilter('');
-                    setBulkClientDropdownOpen(true);
-                  }}
-                  onFocus={() => setBulkClientDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setBulkClientDropdownOpen(false), 200)}
-                  className={`w-full px-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white ${bulkClientFilter ? 'pr-9' : ''}`}
-                  aria-label="Filter by client"
-                />
-                {bulkClientDropdownOpen && bulkClientSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 py-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                    {bulkClientSuggestions.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setBulkClientFilter(c.id);
-                          setBulkClientInputValue(c.name);
-                          setBulkClientDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-100"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {bulkClientFilter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBulkClientFilter('');
-                      setBulkClientInputValue('');
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                    aria-label="Clear client filter"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <div className="flex-1 min-w-0 sm:min-w-[200px]">
+              <div className="flex-1 min-w-0 sm:min-w-[240px]">
                 <select
                   id="bulk-job"
                   value={bulkJobId}
@@ -747,13 +650,11 @@ function ScheduleInterviewsPageContent() {
                   )}
                 </select>
               </div>
-              {(bulkSearch || bulkClientFilter || bulkJobId) && (
+              {(bulkSearch || bulkJobId) && (
                 <button
                   type="button"
                   onClick={() => {
                     setBulkSearch('');
-                    setBulkClientFilter('');
-                    setBulkClientInputValue('');
                     setBulkJobId('');
                   }}
                   className="shrink-0 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors flex items-center gap-1.5"
@@ -1298,7 +1199,7 @@ function ScheduleInterviewsPageContent() {
             Add single interview
           </h2>
 
-          {/* Step 1: Filters – Search, Client, Job */}
+          {/* Step 1: Search + job */}
           <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-4 mb-6">
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">1. Select a job</p>
             <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
@@ -1313,55 +1214,7 @@ function ScheduleInterviewsPageContent() {
                   aria-label="Search jobs"
                 />
               </div>
-              <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                <input
-                  type="text"
-                  placeholder="Filter by client..."
-                  value={singleClientInputValue}
-                  onChange={(e) => {
-                    setSingleClientInputValue(e.target.value);
-                    setSingleClientFilter('');
-                    setSingleClientDropdownOpen(true);
-                  }}
-                  onFocus={() => setSingleClientDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setSingleClientDropdownOpen(false), 200)}
-                  className={`w-full px-3 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white ${singleClientFilter ? 'pr-9' : ''}`}
-                  aria-label="Filter by client"
-                />
-                {singleClientDropdownOpen && singleClientSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 py-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                    {singleClientSuggestions.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSingleClientFilter(c.id);
-                          setSingleClientInputValue(c.name);
-                          setSingleClientDropdownOpen(false);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-neutral-100"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {singleClientFilter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSingleClientFilter('');
-                      setSingleClientInputValue('');
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                    aria-label="Clear client filter"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <div className="flex-1 min-w-0 sm:min-w-[200px]">
+              <div className="flex-1 min-w-0 sm:min-w-[240px]">
                 <select
                   value={singleJobId}
                   onChange={(e) => setSingleJobId(e.target.value)}
@@ -1380,13 +1233,11 @@ function ScheduleInterviewsPageContent() {
                   )}
                 </select>
               </div>
-              {(singleSearch || singleClientFilter || singleJobId) && (
+              {(singleSearch || singleJobId) && (
                 <button
                   type="button"
                   onClick={() => {
                     setSingleSearch('');
-                    setSingleClientFilter('');
-                    setSingleClientInputValue('');
                     setSingleJobId('');
                   }}
                   className="shrink-0 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors flex items-center gap-1.5"

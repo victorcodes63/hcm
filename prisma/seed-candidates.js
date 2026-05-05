@@ -71,7 +71,7 @@ const EMPLOYMENT_TEMPLATES = [
   { jobTitle: 'Consultant', companyName: 'Freelance', industry: 'Consulting', employmentType: 'Freelance' },
   { jobTitle: 'Project Manager', companyName: 'BuildCo', industry: 'Construction', employmentType: 'Contract' },
   { jobTitle: 'HR Officer', companyName: 'HR Solutions Kenya', industry: 'HR', employmentType: 'Full-time' },
-  { jobTitle: 'Nurse', companyName: 'County Hospital', industry: 'Healthcare', employmentType: 'Full-time' },
+  { jobTitle: 'Nurse', companyName: 'County Health Services', industry: 'Healthcare', employmentType: 'Full-time' },
   { jobTitle: 'Legal Officer', companyName: 'Law Firm LLP', industry: 'Legal', employmentType: 'Contract' },
   { jobTitle: 'Software Developer', companyName: 'DevHub', industry: 'Technology', employmentType: 'Full-time' },
   { jobTitle: 'Finance Manager', companyName: 'Bank Ltd', industry: 'Finance', employmentType: 'Full-time' },

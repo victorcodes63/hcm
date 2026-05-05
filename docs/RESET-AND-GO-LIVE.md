@@ -47,15 +47,18 @@ Use the production `DATABASE_URL` from Vercel (Project → Storage → Postgres 
 
 ## What gets cleared
 
-| Cleared | Kept |
-|--------|------|
-| Interview | User (staff logins) |
-| Application | Insight (blog) |
-| Job | Schema (tables stay) |
-| Candidate | |
-| Client | |
+
+| Cleared     | Kept                 |
+| ----------- | -------------------- |
+| Interview   | User (staff logins)  |
+| Application | Insight (blog)       |
+| Job         | Schema (tables stay) |
+| Candidate   |                      |
+| Client      |                      |
+
 
 ## Safety
 
 - The script only **deletes rows**; it does not drop tables or migrations.
 - Run it only when you intend to wipe the above data (e.g. before go-live or for a one-off cleanup).
+

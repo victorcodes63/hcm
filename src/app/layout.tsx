@@ -1,21 +1,32 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
 import { ToastViewport } from "@/components/ui/toast";
+import { BrandProvider } from "@/components/BrandProvider";
+import { brand, getPublicBrand, getSiteUrl } from "@/lib/brand";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, '') || 'https://3rdparkhospital.com';
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const siteUrl = getSiteUrl();
+const defaultDescription = `${brand.orgName} — ${brand.tagline}`;
+const keywords =
+  "HRIS, HR software, payroll, recruitment, ATS, leave management, workforce, human resources";
 
 export const metadata: Metadata = {
   title: {
-    default: "3rd Park Hospital HR",
-    template: "%s | 3rd Park Hospital HR",
+    default: brand.appName,
+    template: `%s | ${brand.appName}`,
   },
-  description: "3rd Park Hospital — internal HR & payroll. Improving the quality of your life through better health.",
-  keywords: "3rd Park Hospital, HRIS, Nairobi, healthcare, HR, payroll, Kenya",
-  authors: [{ name: "3rd Park Hospital" }],
-  creator: "3rd Park Hospital",
-  publisher: "3rd Park Hospital",
+  description: defaultDescription,
+  keywords,
+  authors: [{ name: brand.orgName }],
+  creator: brand.orgName,
+  publisher: brand.orgName,
   formatDetection: {
     email: false,
     address: false,
@@ -26,26 +37,26 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: "3rd Park Hospital HR",
-    description: "3rd Park Hospital — internal HR & payroll.",
+    title: brand.appName,
+    description: defaultDescription,
     url: '/',
-    siteName: '3rd Park Hospital HR',
+    siteName: brand.appName,
     images: [
       {
-        url: '/og-image.svg',
+        url: brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`,
         width: 1200,
         height: 630,
-        alt: '3rd Park Hospital',
+        alt: brand.orgName,
       },
     ],
-    locale: 'en_KE',
+    locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "3rd Park Hospital HR",
-    description: "3rd Park Hospital — internal HR & payroll.",
-    images: ['/og-image.svg'],
+    title: brand.appName,
+    description: defaultDescription,
+    images: [brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`],
   },
   robots: {
     index: true,
@@ -59,57 +70,55 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google:
-      process.env.GOOGLE_SITE_VERIFICATION?.trim() ||
-      'DUsQ5vrza5zxhMwhGNFVVkzCxPU-Pon8Ybj8fh28uoY',
+    google: process.env.GOOGLE_SITE_VERIFICATION?.trim() || undefined,
   },
   icons: {
     icon: [
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/brand/3rd-park-logo.webp', sizes: 'any', type: 'image/webp' },
+      {
+        url: brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`,
+        sizes: 'any',
+        type: brand.logoSrc.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+      },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    shortcut: brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`,
+    apple: brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`,
   },
-  manifest: '/site.webmanifest',
   other: {
-    'og:image:width': '1200',
-    'og:image:height': '630',
-    'og:image:type': 'image/webp',
-    'twitter:image:alt': '3rd Park Hospital',
+    'twitter:image:alt': brand.orgName,
   },
 };
 
-const jsonLd = (siteUrl: string) => ({
+const jsonLd = (baseUrl: string) => ({
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': `${siteUrl}/#organization`,
-      name: '3rd Park Hospital',
-      url: 'https://3rdparkhospital.com',
-      logo: { '@type': 'ImageObject', url: `${siteUrl}/brand/3rd-park-logo.webp` },
-      contactPoint: {
-        '@type': 'ContactPoint',
-        telephone: '+254-730-819-900',
-        contactType: 'customer service',
-        email: 'info@3rdparkhospital.com',
-        areaServed: 'KE',
-      },
-      sameAs: ['https://3rdparkhospital.com'],
+      '@id': `${baseUrl}/#organization`,
+      name: brand.orgName,
+      url: baseUrl,
+      logo: { '@type': 'ImageObject', url: `${baseUrl}${brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`}` },
+      ...(brand.contactPhone
+        ? {
+            contactPoint: {
+              '@type': 'ContactPoint',
+              telephone: brand.contactPhone,
+              contactType: 'customer service',
+              email: brand.contactEmail,
+            },
+          }
+        : {}),
     },
     {
       '@type': 'WebSite',
-      '@id': `${siteUrl}/#website`,
-      url: siteUrl,
-      name: '3rd Park Hospital HR',
-      description: '3rd Park Hospital — internal HR & payroll system.',
-      publisher: { '@id': `${siteUrl}/#organization` },
-      inLanguage: 'en-KE',
+      '@id': `${baseUrl}/#website`,
+      url: baseUrl,
+      name: brand.appName,
+      description: defaultDescription,
+      publisher: { '@id': `${baseUrl}/#organization` },
+      inLanguage: 'en',
       potentialAction: {
         '@type': 'SearchAction',
-        target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl}/careers?keyword={search_term_string}` },
+        target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/careers?keyword={search_term_string}` },
         'query-input': 'required name=search_term_string',
       },
     },
@@ -122,26 +131,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={manrope.variable}>
       <body className="font-sans antialiased">
-        {/* Google tag (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18037337193"
-          strategy="afterInteractive"
-        />
-        <Script id="google-ads-gtag" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-18037337193');
-          `}
-        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(siteUrl)) }}
         />
-        {children}
+        <BrandProvider value={getPublicBrand()}>{children}</BrandProvider>
         <ToastViewport />
         <CookieConsent />
       </body>

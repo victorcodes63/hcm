@@ -111,12 +111,9 @@ export function EducationTab({ formData }: { formData: ApplicationFormData | nul
 export function CertificationsTab({ formData }: { formData: ApplicationFormData | null }) {
   const list = formData?.professionalCertificationsList ?? [];
   const memberships = formData?.professionalMemberships ?? [];
-  const legacyText = formData?.professionalCertifications?.trim();
-  const legacyPath = formData?.professionalCertificationsPath?.trim();
   const hasList = list.length > 0;
   const hasMemberships = memberships.length > 0;
-  const hasLegacy = legacyText || legacyPath;
-  const hasAny = hasList || hasMemberships || hasLegacy;
+  const hasAny = hasList || hasMemberships;
   return (
     <div className="space-y-4">
       {!hasAny ? (
@@ -169,29 +166,6 @@ export function CertificationsTab({ formData }: { formData: ApplicationFormData 
                 ))}
               </ul>
             </div>
-          )}
-          {hasLegacy && (
-            <>
-              {legacyText && (
-                <div className="rounded-lg bg-neutral-50 p-4 border border-neutral-200">
-                  <h3 className="text-sm font-medium text-neutral-700 mb-2">Certifications (legacy)</h3>
-                  <p className="text-sm text-neutral-700 whitespace-pre-wrap">{legacyText}</p>
-                </div>
-              )}
-              {legacyPath && (
-                <div>
-                  <a
-                    href={legacyPath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    View proof document
-                  </a>
-                </div>
-              )}
-            </>
           )}
         </>
       )}

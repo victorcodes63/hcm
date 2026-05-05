@@ -7,7 +7,7 @@
 
 import { PDFDocument, PDFPage, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont } from 'pdf-lib';
-import { getInvoiceBankDetails, type InvoicePaymentBankKind } from '@/lib/eagle-hr-bank-accounts';
+import { getInvoiceBankDetails, type InvoicePaymentBankKind } from '@/lib/invoice-bank-accounts';
 
 export type AccountsInvoicePdfLine = {
   lineNo: number;

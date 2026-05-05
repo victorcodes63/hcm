@@ -4,7 +4,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { calculateStatutoryForPayroll } from '@/lib/payroll-calc';
 import { isBiweeklyClient } from '@/lib/biweekly-payroll';
 import { mapOutsourcingClientsToAccountsClients } from '@/lib/payroll-accounts-link';
-import { resolveHospitalClientId } from '@/lib/hospital-client';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 import { requireStaffUser } from '@/lib/staff-api-auth';
 import { canAccessPayroll, forbiddenResponse, unauthorizedResponse } from '@/lib/demo-route-access';
 import { ATTENDANCE_SUMMARY_STATUSES_FOR_PAYROLL } from '@/lib/attendance-reconciliation';
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const month = typeof b.month === 'number' ? b.month : parseInt(String(b.month ?? ''), 10);
     const year = typeof b.year === 'number' ? b.year : parseInt(String(b.year ?? ''), 10);
     const requestedClientId = typeof b.clientId === 'string' && b.clientId.trim() ? b.clientId.trim() : null;
-    const clientId = await resolveHospitalClientId(prisma, requestedClientId);
+    const clientId = await resolvePrimaryWorkspaceClientId(prisma, requestedClientId, request);
     const departmentId = typeof b.departmentId === 'string' && b.departmentId.trim() ? b.departmentId.trim() : null;
     const defaultLeavePay =
       typeof b.defaultLeavePay === 'number' && !Number.isNaN(b.defaultLeavePay)
@@ -98,14 +98,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await prisma.$transaction(
-      toCreate.map(async (e) => {
+    /** Use interactive transaction — `.$transaction([ async () => ... ])` is not a supported Prisma batch shape. */
+    await prisma.$transaction(async (tx) => {
+      const periodStart = new Date(Date.UTC(year, month - 1, 1));
+      const periodEnd = new Date(Date.UTC(year, month, 1));
+      for (const e of toCreate) {
         const mode =
           clientId ? leavePayMode : clientModes.get(e.outsourcingClientId) ?? 'none';
         const basic = e.baseSalary != null ? Number(e.baseSalary) : 0;
-        const periodStart = new Date(Date.UTC(year, month - 1, 1));
-        const periodEnd = new Date(Date.UTC(year, month, 1));
-        const attendanceAggregate = await prisma.attendanceDaySummary.aggregate({
+        const attendanceAggregate = await tx.attendanceDaySummary.aggregate({
           where: {
             employeeId: e.id,
             workDate: { gte: periodStart, lt: periodEnd },
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
           const other = basic - half;
           const employmentGross = half + other + overtimeAmount;
           const stat = calculateStatutoryForPayroll(mode, employmentGross, lp, 0);
-          return prisma.payroll.create({
+          await tx.payroll.create({
             data: {
               employeeId: e.id,
               month,
@@ -168,30 +169,31 @@ export async function POST(request: NextRequest) {
               deductions: [],
             },
           });
+        } else {
+          const employmentGross = basic + overtimeAmount;
+          const stat = calculateStatutoryForPayroll(mode, employmentGross, lp, 0);
+          await tx.payroll.create({
+            data: {
+              employeeId: e.id,
+              month,
+              year,
+              accountsClientId: accountsByOutsourcing.get(e.outsourcingClientId) ?? null,
+              basicPay: new Decimal(basic),
+              grossPay: new Decimal(stat.grossPay),
+              leavePay: new Decimal(lp),
+              paye: new Decimal(stat.paye),
+              nssf: new Decimal(stat.nssf),
+              nhif: new Decimal(stat.nhif),
+              ahl: new Decimal(stat.ahl),
+              nita: new Decimal(stat.nita),
+              netPay: new Decimal(stat.netPay),
+              allowances: overtimeAllowance,
+              deductions: [],
+            },
+          });
         }
-        const employmentGross = basic + overtimeAmount;
-        const stat = calculateStatutoryForPayroll(mode, employmentGross, lp, 0);
-        return prisma.payroll.create({
-          data: {
-            employeeId: e.id,
-            month,
-            year,
-            accountsClientId: accountsByOutsourcing.get(e.outsourcingClientId) ?? null,
-            basicPay: new Decimal(basic),
-            grossPay: new Decimal(stat.grossPay),
-            leavePay: new Decimal(lp),
-            paye: new Decimal(stat.paye),
-            nssf: new Decimal(stat.nssf),
-            nhif: new Decimal(stat.nhif),
-            ahl: new Decimal(stat.ahl),
-            nita: new Decimal(stat.nita),
-            netPay: new Decimal(stat.netPay),
-            allowances: overtimeAllowance,
-            deductions: [],
-          },
-        });
-      })
-    );
+      }
+    });
     await logAuditEvent({
       actor: { userId: user.id, email: user.email, name: user.name },
       action: 'payroll.generated',
@@ -230,6 +232,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (e) {
     console.error('[payroll/generate]', e);
-    return NextResponse.json({ error: 'Failed to generate payroll' }, { status: 500 });
+    const detail = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: 'Failed to generate payroll', detail }, { status: 500 });
   }
 }

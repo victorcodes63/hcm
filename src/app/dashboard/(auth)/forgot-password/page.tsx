@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import BrandLogo from '@/components/BrandLogo';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -47,14 +47,7 @@ export default function ForgotPasswordPage() {
         >
           <div className="flex justify-center mb-10">
             <Link href="/" className="inline-block">
-              <Image
-                src="/images/logo/logo_dark_ubxaCll.png"
-                alt="Eagle HR Consultants"
-                width={180}
-                height={48}
-                className="h-10 w-auto object-contain"
-                priority
-              />
+              <BrandLogo variant="header" priority />
             </Link>
           </div>
 
@@ -95,7 +88,7 @@ export default function ForgotPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-                    placeholder="you@eaglehr.co.ke"
+                    placeholder="you@example.com"
                   />
                 </div>
               </div>

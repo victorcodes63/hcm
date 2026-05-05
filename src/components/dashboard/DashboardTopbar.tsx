@@ -17,6 +17,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import CommandPalette from './CommandPalette';
+import { EntitySwitcher } from '@/components/EntitySwitcher';
 import type { UserSummary } from '@/types/dashboard';
 
 type NotificationItem = {
@@ -133,7 +134,7 @@ export default function DashboardTopbar({ currentUser }: DashboardTopbarProps) {
   };
 
   const displayName = currentUser?.name || 'Staff User';
-  const displayEmail = currentUser?.email || 'staff@3rdparkhospital.com';
+  const displayEmail = currentUser?.email || 'staff@example.com';
   const initials = getInitials(displayName);
   const quickActions =
     currentUser?.role === 'admin'
@@ -163,8 +164,9 @@ export default function DashboardTopbar({ currentUser }: DashboardTopbarProps) {
         initialQuery=""
       />
 
-      {/* Right: Quick actions, Help, Notifications, User */}
+      {/* Right: Entity, Quick actions, Help, Notifications, User */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <EntitySwitcher />
         {/* Quick actions */}
         <div className="relative" ref={quickActionsRef}>
           <button

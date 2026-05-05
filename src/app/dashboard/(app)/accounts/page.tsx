@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import AccountsOverviewContent from './AccountsOverviewContent';
 
 export const metadata: Metadata = {
-  title: 'Accounts | Eagle HR Dashboard',
+  title: 'Accounts | HRIS Demo Dashboard',
   description: 'Billing, payroll, contracts, debtors, and creditors',
 };
 

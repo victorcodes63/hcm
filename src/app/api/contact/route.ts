@@ -1,6 +1,6 @@
 /**
  * POST /api/contact
- * Handles contact form submissions. Sends the message to info@eaglehr.co.ke.
+ * Handles contact form submissions. Sends the message to info@example.com.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { sendContactFormEmail } from '@/lib/email';

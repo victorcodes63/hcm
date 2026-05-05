@@ -1,10 +1,10 @@
-/* eslint-disable no-console */
+ 
 
 const BASE_URL = process.env.SMOKE_BASE_URL || 'http://localhost:3000';
 const LOGIN_EMAIL = process.env.SMOKE_LOGIN_EMAIL;
 const LOGIN_PASSWORD = process.env.SMOKE_LOGIN_PASSWORD;
 const APPLICATION_EMAIL =
-  process.env.SMOKE_APPLICATION_EMAIL || `smoke+${Date.now()}@eaglehr.co.ke`;
+  process.env.SMOKE_APPLICATION_EMAIL || `smoke+${Date.now()}@example.com`;
 
 function assert(condition, message) {
   if (!condition) {

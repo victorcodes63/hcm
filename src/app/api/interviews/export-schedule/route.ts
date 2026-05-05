@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { APP_TIMEZONE, dateTimeNairobi } from '@/lib/timezone';
 import { generateInterviewSchedulePdf } from '@/lib/interview-schedule-pdf';
+import { brand } from '@/lib/brand';
 
-const LOGO_PATH = '/images/logo/logo_dark_ubxaCll.png';
+const LOGO_PATH = brand.logoSrc.startsWith('/') ? brand.logoSrc : `/${brand.logoSrc}`;
 
 /**
  * GET /api/interviews/export-schedule?date=YYYY-MM-DD&jobId=xxx
@@ -201,7 +202,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const pageTitle = `Interview Schedule – ${positionTitle} – Eagle HR`;
+    const pageTitle = `Interview Schedule – ${positionTitle} – HRIS Demo`;
     const logoFullUrl = request.nextUrl.origin + LOGO_PATH;
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -367,7 +368,7 @@ export async function GET(request: NextRequest) {
 <body>
   <main class="schedule-document">
   <header class="header">
-    <div class="logo"><img src="${escapeHtml(logoFullUrl)}" alt="Eagle HR" width="152" /></div>
+    <div class="logo"><img src="${escapeHtml(logoFullUrl)}" alt="${escapeHtml(brand.appName)}" width="152" /></div>
     <h1 class="schedule-title">Interview Schedule</h1>
     <p class="position">${escapeHtml(positionTitle)}</p>
   </header>

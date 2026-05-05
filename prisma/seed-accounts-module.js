@@ -1,6 +1,6 @@
 /**
  * Seed Accounts module data for local / QA testing (clients, contracts, invoices,
- * payments, vendors, notifications, staff access).
+ * payments, vendors, staff access).
  *
  * Idempotent per prefix: removes previous rows named like "[SEED_ACCOUNTS] …" then recreates.
  *
@@ -8,7 +8,9 @@
  *   npm run db:seed-accounts
  *
  * Optional env:
- *   ACCOUNTS_SEED_USER_EMAIL — contract manager + notifications + global access (default: vchumo@eaglehr.co.ke)
+ *   ACCOUNTS_SEED_USER_EMAIL — contract manager + demo in-app alerts + global access (default: vchumo@example.com)
+ *
+ * Demo staff notifications mirror production contract-reminder wording and deep-link into the seeded contracts / invoice.
  */
 
 const fs = require('fs');
@@ -53,6 +55,10 @@ function utcDayFromToday(deltaDays) {
   return new Date(t);
 }
 
+function ymd(d) {
+  return d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+}
+
 async function wipe() {
   await prisma.staffNotification.deleteMany({ where: { title: { startsWith: PREFIX } } });
   await prisma.accountsVendor.deleteMany({ where: { name: { startsWith: PREFIX } } });
@@ -70,7 +76,7 @@ async function main() {
     process.exit(1);
   }
 
-  const seedEmail = (process.env.ACCOUNTS_SEED_USER_EMAIL || 'vchumo@eaglehr.co.ke').toLowerCase();
+  const seedEmail = (process.env.ACCOUNTS_SEED_USER_EMAIL || 'vchumo@example.com').toLowerCase();
 
   const user = await prisma.user.findUnique({ where: { email: seedEmail } });
   if (!user) {
@@ -154,7 +160,7 @@ async function main() {
   const contractActive = await prisma.accountsContract.create({
     data: {
       clientId: primary.id,
-      title: `${PREFIX} Active outsourcing retainer`,
+      title: 'Active outsourcing retainer',
       reference: 'CNT-SEED-ACTIVE',
       startDate: startLastYear,
       endDate: utcDayFromToday(90),
@@ -166,7 +172,7 @@ async function main() {
   const contractExpired = await prisma.accountsContract.create({
     data: {
       clientId: primary.id,
-      title: `${PREFIX} Expired (weekly reminder path)`,
+      title: 'Expired staffing agreement',
       reference: 'CNT-SEED-EXPIRED',
       startDate: utcDayFromToday(-400),
       endDate: utcDayFromToday(-20),
@@ -178,7 +184,7 @@ async function main() {
   const contractQuiet = await prisma.accountsContract.create({
     data: {
       clientId: primary.id,
-      title: `${PREFIX} Reminders disabled`,
+      title: 'Renewal pipeline (reminders off)',
       reference: 'CNT-SEED-QUIET',
       startDate: utcDayFromToday(-200),
       endDate: utcDayFromToday(45),
@@ -295,22 +301,49 @@ async function main() {
     },
   });
 
+  const clientName = primary.name;
+  await prisma.staffNotification.deleteMany({
+    where: {
+      userId: user.id,
+      OR: [
+        { title: `Contract reminder — ${clientName}` },
+        { title: `Expired contract — ${clientName}` },
+        { title: 'Invoice awaiting payment' },
+      ],
+    },
+  });
+
   await prisma.staffNotification.createMany({
     data: [
       {
         userId: user.id,
-        title: `${PREFIX} Unread — contract reminder sample`,
-        body: `Open the contract: ${contractActive.title}. (${PREFIX})`,
+        title: `Contract reminder — ${clientName}`,
+        body: `Active outsourcing retainer for ${clientName} — 1 month before expiry (ends ${ymd(contractActive.endDate)}).`,
         href: `/dashboard/people/contracts/${contractActive.id}`,
         contractId: contractActive.id,
+        event: 'contract_expiring',
+        priority: 'info',
       },
       {
         userId: user.id,
-        title: `${PREFIX} Read — expired contract sample`,
-        body: `This row was marked read for seeding. (${PREFIX})`,
+        title: `Expired contract — ${clientName}`,
+        body: `Expired staffing agreement (${clientName}) ended on ${ymd(contractExpired.endDate)}. Follow up with the client or turn off reminders on the contract.`,
         href: `/dashboard/people/contracts/${contractExpired.id}`,
         contractId: contractExpired.id,
+        event: 'contract_expiring',
+        priority: 'info',
         readAt: new Date(),
+      },
+      {
+        userId: user.id,
+        title: 'Invoice awaiting payment',
+        body: `Invoice #${invUnpaid.invoiceNumber} for ${clientName} is still unpaid${
+          invUnpaid.dueDate ? ` (due ${ymd(invUnpaid.dueDate)})` : ''
+        }. Review allocations or contact the client.`,
+        href: `/dashboard/accounts/invoices/${invUnpaid.id}`,
+        contractId: null,
+        event: null,
+        priority: 'action_required',
       },
     ],
   });

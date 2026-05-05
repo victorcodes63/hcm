@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { toCSV } from '@/lib/report-export';
 import { downloadHeaders, jsonOrPdf, parseDateParam, parseFormat, requireReportsUser, startOfDayUtc, ymd } from '@/app/api/reports/_shared';
+import { resolvePrimaryWorkspaceClientId } from '@/lib/primary-workspace-client';
 
 type GroupCount = { [key: string]: number };
 
@@ -35,9 +36,11 @@ export async function GET(request: NextRequest) {
   const asOfDay = startOfDayUtc(asOf);
   const thirtyDaysAgo = new Date(asOfDay.getTime() - 30 * 24 * 60 * 60 * 1000);
   const format = parseFormat(request);
+  const workspaceClientId = await resolvePrimaryWorkspaceClientId(prisma, null, request);
 
   const employees = await prisma.employee.findMany({
     where: {
+      outsourcingClientId: workspaceClientId,
       createdAt: { lte: asOfDay },
     },
     select: {

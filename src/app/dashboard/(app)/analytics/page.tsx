@@ -17,6 +17,36 @@ import type { InterviewWithDetails } from '@/types/dashboard';
 
 type JobItem = { id: string; title: string; company: string; isActive: boolean; applicationCount?: number };
 type Application = ApplicationWithDetails;
+type ReportsOverview = {
+  recruitment: {
+    jobs: JobItem[];
+    applications: Application[];
+    interviews: InterviewWithDetails[];
+  };
+  operations: {
+    employees: number;
+    departments: number;
+    credentials: number;
+    expiringCredentials: number;
+    attendanceRecordsThisMonth: number;
+    payrollRunsThisMonth: number;
+    payrollRunsTotal: number;
+  };
+  leave: {
+    pending: number;
+    approved: number;
+  };
+  finance: {
+    invoicesOutstanding: number;
+    vendors: number;
+    vendorBillsOutstanding: number;
+  };
+  governance: {
+    activeUsers: number;
+    essUsers: number;
+    auditEvents: number;
+  };
+};
 
 function getMonthKey(iso: string) {
   const d = new Date(iso);
@@ -51,6 +81,23 @@ export default function DashboardAnalyticsPage() {
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [interviews, setInterviews] = useState<InterviewWithDetails[]>([]);
+  const [moduleStats, setModuleStats] = useState<ReportsOverview['operations'] & ReportsOverview['leave'] & ReportsOverview['finance'] & ReportsOverview['governance']>({
+    employees: 0,
+    departments: 0,
+    credentials: 0,
+    expiringCredentials: 0,
+    attendanceRecordsThisMonth: 0,
+    payrollRunsThisMonth: 0,
+    payrollRunsTotal: 0,
+    pending: 0,
+    approved: 0,
+    invoicesOutstanding: 0,
+    vendors: 0,
+    vendorBillsOutstanding: 0,
+    activeUsers: 0,
+    essUsers: 0,
+    auditEvents: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,16 +122,36 @@ export default function DashboardAnalyticsPage() {
   useEffect(() => {
     if (access !== 'allowed') return;
     let cancelled = false;
-    Promise.all([
-      fetch('/api/jobs').then((r) => r.json()),
-      fetch('/api/applications').then((r) => r.json()),
-      fetch('/api/interviews').then((r) => r.json()),
-    ])
-      .then(([jobsRes, appsRes, interviewsRes]) => {
+    fetch('/api/reports/overview')
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(data?.error || 'Failed to load analytics data.');
+        }
+        return data as ReportsOverview;
+      })
+      .then((data) => {
         if (cancelled) return;
-        setJobs(Array.isArray(jobsRes) ? jobsRes : []);
-        setApplications(Array.isArray(appsRes) ? appsRes : []);
-        setInterviews(Array.isArray(interviewsRes) ? interviewsRes : []);
+        setJobs(Array.isArray(data.recruitment?.jobs) ? data.recruitment.jobs : []);
+        setApplications(Array.isArray(data.recruitment?.applications) ? data.recruitment.applications : []);
+        setInterviews(Array.isArray(data.recruitment?.interviews) ? data.recruitment.interviews : []);
+        setModuleStats({
+          employees: data.operations?.employees ?? 0,
+          departments: data.operations?.departments ?? 0,
+          credentials: data.operations?.credentials ?? 0,
+          expiringCredentials: data.operations?.expiringCredentials ?? 0,
+          attendanceRecordsThisMonth: data.operations?.attendanceRecordsThisMonth ?? 0,
+          payrollRunsThisMonth: data.operations?.payrollRunsThisMonth ?? 0,
+          payrollRunsTotal: data.operations?.payrollRunsTotal ?? 0,
+          pending: data.leave?.pending ?? 0,
+          approved: data.leave?.approved ?? 0,
+          invoicesOutstanding: data.finance?.invoicesOutstanding ?? 0,
+          vendors: data.finance?.vendors ?? 0,
+          vendorBillsOutstanding: data.finance?.vendorBillsOutstanding ?? 0,
+          activeUsers: data.governance?.activeUsers ?? 0,
+          essUsers: data.governance?.essUsers ?? 0,
+          auditEvents: data.governance?.auditEvents ?? 0,
+        });
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load analytics data.');
@@ -121,7 +188,6 @@ export default function DashboardAnalyticsPage() {
       const key = getMonthKey(a.appliedDate);
       map[key] = (map[key] || 0) + 1;
     });
-    const entries = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
     const now = new Date();
     const last12: string[] = [];
     for (let i = 11; i >= 0; i--) {
@@ -217,9 +283,7 @@ export default function DashboardAnalyticsPage() {
     return (
       <div className="w-full min-w-0">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">
-            Analytics
-          </h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">Reports</h1>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 text-sm">
           {error}
@@ -231,9 +295,7 @@ export default function DashboardAnalyticsPage() {
   return (
     <div className="w-full min-w-0">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">
-          Analytics
-        </h1>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-900 mb-1">Reports</h1>
         <p className="text-neutral-600 text-sm sm:text-base max-w-prose">
           Executive summary: application and hiring metrics across the system.
         </p>
@@ -322,6 +384,36 @@ export default function DashboardAnalyticsPage() {
             <CalendarCheck className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600 opacity-80 shrink-0" />
           </div>
         </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">People & Compliance</p>
+          <p className="text-sm text-neutral-700">Employees: <span className="font-semibold text-primary-900">{moduleStats.employees}</span></p>
+          <p className="text-sm text-neutral-700">Departments: <span className="font-semibold text-primary-900">{moduleStats.departments}</span></p>
+          <p className="text-sm text-neutral-700">Credentials: <span className="font-semibold text-primary-900">{moduleStats.credentials}</span></p>
+          <p className="text-sm text-neutral-700">Expiring (30d): <span className="font-semibold text-amber-700">{moduleStats.expiringCredentials}</span></p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Payroll & Attendance</p>
+          <p className="text-sm text-neutral-700">Payroll runs (month): <span className="font-semibold text-primary-900">{moduleStats.payrollRunsThisMonth}</span></p>
+          <p className="text-sm text-neutral-700">Payroll runs (total): <span className="font-semibold text-primary-900">{moduleStats.payrollRunsTotal}</span></p>
+          <p className="text-sm text-neutral-700">Attendance records (month): <span className="font-semibold text-primary-900">{moduleStats.attendanceRecordsThisMonth}</span></p>
+          <p className="text-sm text-neutral-700">Leave pending: <span className="font-semibold text-amber-700">{moduleStats.pending}</span></p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Finance</p>
+          <p className="text-sm text-neutral-700">Open invoices: <span className="font-semibold text-red-700">{moduleStats.invoicesOutstanding}</span></p>
+          <p className="text-sm text-neutral-700">Vendors: <span className="font-semibold text-primary-900">{moduleStats.vendors}</span></p>
+          <p className="text-sm text-neutral-700">Open vendor bills: <span className="font-semibold text-red-700">{moduleStats.vendorBillsOutstanding}</span></p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Governance</p>
+          <p className="text-sm text-neutral-700">Active staff users: <span className="font-semibold text-primary-900">{moduleStats.activeUsers}</span></p>
+          <p className="text-sm text-neutral-700">ESS users: <span className="font-semibold text-primary-900">{moduleStats.essUsers}</span></p>
+          <p className="text-sm text-neutral-700">Audit events: <span className="font-semibold text-primary-900">{moduleStats.auditEvents}</span></p>
+          <p className="text-sm text-neutral-700">Leave approved: <span className="font-semibold text-emerald-700">{moduleStats.approved}</span></p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">

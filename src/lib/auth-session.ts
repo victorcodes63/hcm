@@ -1,5 +1,5 @@
 export interface ParsedStaffSession {
-  provider: 'local' | 'ms' | 'legacy' | 'unknown';
+  provider: 'local' | 'ms' | 'google' | 'unknown';
   userId?: string;
   role?: string;
   email?: string;
@@ -34,10 +34,12 @@ export function parseStaffSession(value: string): ParsedStaffSession {
     };
   }
 
-  if (provider === 'legacy' && parts.length >= 2) {
+  if (provider === 'google' && parts.length >= 4) {
     return {
-      provider: 'legacy',
-      email: parts.slice(1).join(':'),
+      provider: 'google',
+      userId: parts[1],
+      role: parts[2],
+      email: parts.slice(3).join(':'),
     };
   }
 

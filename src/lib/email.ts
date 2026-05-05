@@ -10,24 +10,31 @@ import { resolve } from 'path';
 import { createInterviewToken } from '@/lib/interview-token';
 import { generatePayslipPdf } from '@/lib/payslip-pdf';
 import { APP_TIMEZONE } from '@/lib/timezone';
+import {
+  brand,
+  getPublicLogoUrl,
+  getLogoFileAbsolutePath,
+  getSiteUrl,
+  mailFromName,
+  accountsMailFromName,
+  emailSubjectTag,
+  getEmailFooterPlain,
+} from '@/lib/brand';
 
-const FROM_NAME = (process.env.SMTP_FROM_NAME && process.env.SMTP_FROM_NAME.trim()) || '3rd Park Hospital HR';
+const FROM_NAME = mailFromName;
 const FROM_EMAIL = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || '';
 
-/** Base URL for logo in email (must be absolute). Set NEXT_PUBLIC_SITE_URL in production. */
-const BASE_URL =
-  (typeof process.env.NEXT_PUBLIC_SITE_URL === 'string' && process.env.NEXT_PUBLIC_SITE_URL.trim()) ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-  'https://app.example.com';
+/** Base URL for absolute links in email. Set NEXT_PUBLIC_SITE_URL in production. */
+const BASE_URL = getSiteUrl();
 /** For confirm/reschedule links: use localhost in dev (so links work when testing locally). */
 const INVITE_LINK_BASE =
   (typeof process.env.INVITE_LINK_BASE === 'string' && process.env.INVITE_LINK_BASE.trim()) ||
   (process.env.NODE_ENV === 'development' && !process.env.VERCEL_URL
     ? 'http://localhost:3000'
     : BASE_URL.replace(/\/$/, ''));
-const LOGO_URL = `${BASE_URL.replace(/\/$/, '')}/brand/3rd-park-logo.webp`;
-const LOGO_CID = '3rd-park-hris-logo';
-const LOGO_FILE_PATH = resolve(process.cwd(), 'public/brand/3rd-park-logo.webp');
+const LOGO_URL = getPublicLogoUrl();
+const LOGO_CID = 'hris-demo-logo';
+const LOGO_FILE_PATH = getLogoFileAbsolutePath();
 
 export type EmailSendResult =
   | { sent: true; messageId?: string }
@@ -65,7 +72,7 @@ function getSmtpLogoAsset(): {
       src: `cid:${LOGO_CID}`,
       attachments: [
         {
-          filename: '3rd-park-logo.webp',
+          filename: 'stabex-logo.png',
           path: LOGO_FILE_PATH,
           cid: LOGO_CID,
         },
@@ -86,8 +93,8 @@ function getGraphLogoAsset(): {
       attachments: [
         {
           '@odata.type': '#microsoft.graph.fileAttachment',
-          name: '3rd-park-logo.webp',
-          contentType: 'image/webp',
+          name: 'stabex-logo.png',
+          contentType: 'image/png',
           contentId: LOGO_CID,
           isInline: true,
           contentBytes,
@@ -346,8 +353,8 @@ export async function sendApplicationReceivedEmail(params: {
   companyName: string;
   applicationId?: string;
 }): Promise<EmailSendResult> {
-  const { to, applicantFirstName, jobTitle } = params;
-  const subject = `[3rd Park HR] Application received - ${jobTitle} at 3rd Park Hospital`;
+  const { to, applicantFirstName, jobTitle, companyName } = params;
+  const subject = `${emailSubjectTag} Application received - ${jobTitle} at ${companyName}`;
   const applicant = applicantFirstName || 'Applicant';
   const smtpLogoAsset = getSmtpLogoAsset();
   const graphLogoAsset = getGraphLogoAsset();
@@ -357,24 +364,24 @@ export async function sendApplicationReceivedEmail(params: {
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px;">
         <tr>
           <td style="padding: 24px 0 32px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-            <img src="${graphLogoAsset.src}" alt="3rd Park Hospital" width="180" style="display: inline-block; max-width: 180px; height: auto;" />
+            <img src="${graphLogoAsset.src}" alt="${brand.orgName}" width="180" style="display: inline-block; max-width: 180px; height: auto;" />
           </td>
         </tr>
         <tr>
           <td style="padding: 32px 0 24px;">
             <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">Dear ${applicant},</p>
-            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">We acknowledge receipt of your application for the position of <strong>${jobTitle}</strong> at 3rd Park Hospital.</p>
+            <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">We acknowledge receipt of your application for the position of <strong>${jobTitle}</strong> at ${companyName}.</p>
             <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6;">Thank you for showing interest in joining our team.</p>
             <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6;">Should your profile match our requirements, a member of our recruitment team will get in touch with you.</p>
             <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6;">We appreciate the effort you have put into your application and look forward to working together.</p>
             <p style="margin: 0 0 8px; font-size: 16px; line-height: 1.6;">Sincerely,</p>
             <p style="margin: 0 0 4px; font-size: 16px; line-height: 1.6;"><strong>Recruitment Team</strong></p>
-            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #0B1D39;"><strong>3rd Park Hospital HR</strong></p>
+            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #0B1D39;"><strong>${FROM_NAME}</strong></p>
           </td>
         </tr>
         <tr>
           <td style="padding: 24px 0; border-top: 1px solid #e5e7eb;">
-            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">3rd Park Hospital HR, 3rd Parklands Avenue, Park Medical Centre (PMC), 9th Floor, Parklands, Nairobi, Kenya. +254 730 819 900 | +254 707 333 111 | info@3rdparkhospital.com</p>
+            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280;">${getEmailFooterPlain()}</p>
           </td>
         </tr>
       </table>
@@ -449,7 +456,7 @@ export async function sendApplicationRejectedEmail(params: {
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; background-color: #ffffff;">
         <tr>
           <td style="padding: 32px 24px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
-            <img src="${graphLogoAsset.src}" alt="3rd Park Hospital" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
+            <img src="${graphLogoAsset.src}" alt="${brand.orgName}" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
           </td>
         </tr>
         <tr>
@@ -460,12 +467,12 @@ export async function sendApplicationRejectedEmail(params: {
             <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #374151;">We encourage you to apply for future vacancies that match your skills and experience. We keep all applications on file and will consider you for suitable opportunities as they arise.</p>
             <p style="margin: 0 0 8px; font-size: 16px; line-height: 1.5; color: #1f2937;">Sincerely,</p>
             <p style="margin: 0 0 2px; font-size: 16px; font-weight: 600; color: #0B1D39;">Recruitment Team</p>
-            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">3rd Park Hospital HR</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">${FROM_NAME}</p>
           </td>
         </tr>
         <tr>
           <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
-            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">3rd Park Hospital HR, 3rd Parklands Avenue, Park Medical Centre (PMC), 9th Floor, Parklands, Nairobi, Kenya. +254 730 819 900 | +254 707 333 111 | info@3rdparkhospital.com</p>
+            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">${getEmailFooterPlain()}</p>
           </td>
         </tr>
       </table>
@@ -577,7 +584,7 @@ export async function sendInterviewInviteEmail(params: {
         <!-- Header -->
         <tr>
           <td style="padding: 32px 24px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
-            <img src="${graphLogoAsset.src}" alt="3rd Park Hospital" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
+            <img src="${graphLogoAsset.src}" alt="${brand.orgName}" width="160" style="display: inline-block; max-width: 160px; height: auto;" />
           </td>
         </tr>
         <!-- Content -->
@@ -641,13 +648,13 @@ export async function sendInterviewInviteEmail(params: {
             <!-- Signature -->
             <p style="margin: 0 0 4px; font-size: 16px; line-height: 1.5; color: #1f2937;">Sincerely,</p>
             <p style="margin: 0 0 2px; font-size: 16px; font-weight: 600; color: #0B1D39;">Recruitment Team</p>
-            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">3rd Park Hospital HR</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #0B1D39;">${FROM_NAME}</p>
           </td>
         </tr>
         <!-- Footer -->
         <tr>
           <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
-            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">3rd Park Hospital HR, 3rd Parklands Avenue, Park Medical Centre (PMC), 9th Floor, Parklands, Nairobi, Kenya. +254 730 819 900 | +254 707 333 111 | info@3rdparkhospital.com</p>
+            <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">${getEmailFooterPlain()}</p>
           </td>
         </tr>
       </table>
@@ -744,7 +751,7 @@ export async function sendContactFormEmail(params: {
 }): Promise<EmailSendResult> {
   const { name, email, phone, company, subject, message } = params;
   const subjectLabel = SUBJECT_LABELS[subject] || subject;
-  const to = process.env.CONTACT_FORM_TO?.trim() || 'info@3rdparkhospital.com';
+  const to = process.env.CONTACT_FORM_TO?.trim() || brand.contactEmail;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
@@ -760,11 +767,11 @@ export async function sendContactFormEmail(params: {
         <p style="margin: 0 0 8px; font-weight: 600;">Message</p>
         <p style="margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${escapeHtml(message)}</p>
       </div>
-      <p style="margin: 16px 0 0; font-size: 12px; color: #9ca3af;">Sent via 3rd Park Hospital HR contact form</p>
+      <p style="margin: 16px 0 0; font-size: 12px; color: #9ca3af;">Sent via ${FROM_NAME} contact form</p>
     </div>
   `;
 
-  const emailSubject = `[3rd Park HR] Contact Form - ${subjectLabel} - ${name}`;
+  const emailSubject = `${emailSubjectTag} Contact Form - ${subjectLabel} - ${name}`;
 
   const graphResult = await sendViaMicrosoftGraph({
     to,
@@ -828,7 +835,7 @@ export interface PayslipEmailData {
   biweeklyAttendance?: { period1: string[]; period2: string[] };
 }
 
-const ACCOUNTS_FROM_NAME = (process.env.ACCOUNTS_SMTP_FROM_NAME?.trim()) || '3rd Park Hospital HR (Accounts)';
+const ACCOUNTS_FROM_NAME = accountsMailFromName;
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -873,7 +880,7 @@ function buildPayslipHtml(data: PayslipEmailData, month: number, year: number): 
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
         <tr>
           <td style="padding:24px 0 20px;text-align:center;border-bottom:2px solid #0B1D39;">
-            <img src="${LOGO_URL}" alt="3rd Park Hospital" width="160" style="display:inline-block;max-width:160px;height:auto;" />
+            <img src="${LOGO_URL}" alt="${brand.orgName}" width="160" style="display:inline-block;max-width:160px;height:auto;" />
           </td>
         </tr>
         <tr>
@@ -936,7 +943,7 @@ function buildPayslipHtml(data: PayslipEmailData, month: number, year: number): 
         }
         <tr>
           <td style="padding:16px 0;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-            Computer-generated payslip. For queries, contact 3rd Park Hospital HR.
+            Computer-generated payslip. For queries, contact ${FROM_NAME}.
           </td>
         </tr>
       </table>
@@ -986,7 +993,7 @@ export async function sendPayslipEmail(params: {
   const config = getAccountsSmtpConfig();
   console.log('[sendPayslipEmail] Accounts SMTP config:', JSON.stringify(config, null, 0));
 
-  const subject = `[3rd Park HR] Payslip - ${MONTH_NAMES[(params.month || 1) - 1]} ${params.year}`;
+  const subject = `${emailSubjectTag} Payslip - ${MONTH_NAMES[(params.month || 1) - 1]} ${params.year}`;
   const html = buildPayslipHtml(params.data, params.month, params.year);
   const monthName = MONTH_NAMES[(params.month || 1) - 1];
   const pdfFilename = `Payslip_${params.data.employeeName.replace(/\s+/g, '_')}_${monthName}_${params.year}.pdf`;

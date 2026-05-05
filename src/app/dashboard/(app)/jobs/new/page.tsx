@@ -3,15 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Briefcase, Handshake, EyeOff, Banknote, FileText, Filter } from 'lucide-react';
+import { Briefcase, Banknote, FileText, Filter } from 'lucide-react';
 import { RichTextListEditor } from '@/components/jobs/RichTextListEditor';
 import { toDateTimeLocalNairobi } from '@/lib/timezone';
-
-interface ClientOption {
-  id: string;
-  name: string;
-  isAnonymous: boolean;
-}
 
 const JOB_TYPES = ['Full Time', 'Part Time', 'Contract', 'Remote'] as const;
 const CATEGORIES = [
@@ -27,11 +21,7 @@ export default function PostJobPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [clients, setClients] = useState<ClientOption[]>([]);
-  const [clientId, setClientId] = useState<string>('');
-
   const [title, setTitle] = useState('');
-  const [company, setCompany] = useState('Eagle HR Consultants');
   const [location, setLocation] = useState('Nairobi');
   const [type, setType] = useState<string>('Full Time');
   const [categorySelect, setCategorySelect] = useState<string>(''); // '' | '__other__' | one of categorySuggestions
@@ -56,10 +46,9 @@ export default function PostJobPage() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetch('/api/clients').then((r) => r.json()),
+      fetch('/api/recruitment-settings').then((r) => (r.ok ? r.json() : null)),
       fetch('/api/jobs/categories').then((r) => r.json()),
-    ]).then(([clientsData, categoriesData]) => {
-      if (!cancelled && Array.isArray(clientsData)) setClients(clientsData);
+    ]).then(([, categoriesData]) => {
       if (!cancelled && Array.isArray(categoriesData)) {
         const merged = [...new Set([...CATEGORIES, ...categoriesData])].sort((a, b) => a.localeCompare(b));
         setCategorySuggestions(merged);
@@ -71,14 +60,6 @@ export default function PostJobPage() {
     });
     return () => { cancelled = true; };
   }, []);
-
-  const selectedClient = clientId ? clients.find((c) => c.id === clientId) : null;
-  const companyDisplay = selectedClient
-    ? selectedClient.isAnonymous
-      ? 'Confidential'
-      : selectedClient.name
-    : company;
-  const companyLocked = !!selectedClient;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,14 +87,6 @@ export default function PostJobPage() {
       setSubmitting(false);
       return;
     }
-    const effectiveCompany = clientId && selectedClient
-      ? (selectedClient.isAnonymous ? 'Confidential' : selectedClient.name)
-      : company.trim();
-    if (!effectiveCompany) {
-      setError('Company is required (or select a client).');
-      setSubmitting(false);
-      return;
-    }
     if (!location.trim()) {
       setError('Location is required.');
       setSubmitting(false);
@@ -132,8 +105,6 @@ export default function PostJobPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
-          company: effectiveCompany,
-          clientId: clientId || undefined,
           concealCompany,
           location: location.trim(),
           type,
@@ -170,7 +141,7 @@ export default function PostJobPage() {
 
       router.push('/dashboard/jobs');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again.');
       setSubmitting(false);
     }
@@ -213,41 +184,6 @@ export default function PostJobPage() {
           </h2>
 
           <div>
-            <label htmlFor="client" className="block text-sm font-medium text-primary-900 mb-2">
-              <span className="flex items-center gap-1.5">
-                <Handshake className="w-4 h-4" />
-                Client (optional)
-              </span>
-            </label>
-            <select
-              id="client"
-              value={clientId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setClientId(id);
-                if (id) {
-                  const c = clients.find((x) => x.id === id);
-                  if (c) setCompany(c.isAnonymous ? 'Confidential' : c.name);
-                } else {
-                  setCompany('Eagle HR Consultants');
-                }
-              }}
-              className="w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-base"
-            >
-              <option value="">— No client (enter company below) —</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.isAnonymous ? ' (anonymous on job board)' : ''}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-neutral-500">
-              Select an existing client or leave as &quot;No client&quot; and enter the company name below — it will be added to your Clients list for future jobs.
-            </p>
-          </div>
-
-          <div>
             <label htmlFor="title" className="block text-sm font-medium text-primary-900 mb-2">
               Job title <span className="text-red-600">*</span>
             </label>
@@ -263,32 +199,15 @@ export default function PostJobPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-            <div className="min-w-0">
-              <label htmlFor="company" className="block text-sm font-medium text-primary-900 mb-2">
-                Company <span className="text-red-600">*</span>
-                {companyLocked && (
-                  <span className="ml-1.5 text-xs font-normal text-neutral-500 inline-flex items-center gap-1">
-                    <EyeOff className="w-3.5 h-3.5" />
-                    from client
-                  </span>
-                )}
-              </label>
-              <input
-                id="company"
-                type="text"
-                value={companyDisplay}
-                onChange={(e) => !companyLocked && setCompany(e.target.value)}
-                readOnly={companyLocked}
-                required
-                className={`w-full min-w-0 px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base ${
-                  companyLocked ? 'border-neutral-200 bg-neutral-50 text-neutral-700' : 'border-neutral-300'
-                }`}
-              />
-              {!companyLocked && (
-                <p className="mt-1 text-xs text-neutral-500">
-                  This company will be added to Clients so you can select it from the dropdown next time.
-                </p>
-              )}
+            <div className="min-w-0 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Employer profile</p>
+              <p className="mt-1 text-sm text-neutral-700">
+                Employer display name is managed centrally in{' '}
+                <Link href="/dashboard/recruitment/profile" className="text-primary-700 hover:underline">
+                  Careers profile
+                </Link>
+                .
+              </p>
             </div>
             <div className="min-w-0">
               <label htmlFor="location" className="block text-sm font-medium text-primary-900 mb-2">
@@ -317,7 +236,7 @@ export default function PostJobPage() {
             <label htmlFor="concealCompany" className="text-sm text-neutral-700">
               <span className="font-medium text-primary-900">Conceal company name on job board</span>
               <span className="block mt-0.5 text-neutral-600">
-                When ticked, the public careers page will show &quot;Confidential&quot; instead of the company name for this job.
+                When ticked, the public careers page will show &quot;Confidential&quot; instead of the employer name for this job.
               </span>
             </label>
           </div>
