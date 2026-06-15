@@ -64,11 +64,34 @@ console.log('Setting production env for automatic migrate-on-deploy…');
 addEnv('DIRECT_DATABASE_URL', unpooled, { sensitive: true });
 addEnv('RUN_MIGRATIONS_ON_BUILD', 'true');
 addEnv('PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT', '120000');
+
+// Full-platform sales demo — every module and capability visible to prospects
+addEnv('DEMO_MODE', 'true');
+addEnv('NEXT_PUBLIC_DEMO_MODE', 'true');
 addEnv('MULTI_ENTITY_ENABLED', 'true');
 addEnv('DEMO_MULTI_CONTEXT', 'true');
 addEnv('DEMO_UNIFIED_ADMIN_EMAIL', 'demo@demo.imara.co.ke');
 addEnv('NEXT_PUBLIC_DEMO_ADMIN_EMAIL', 'demo@demo.imara.co.ke');
 addEnv('NEXT_PUBLIC_DEMO_PASSWORD', 'Demo@2026!');
+
+// Best-in-class paths (attendance reconciliation, leave policy engine, biometric ops)
+addEnv('FEATURE_ATTENDANCE_V2', 'true');
+addEnv('FEATURE_LEAVE_POLICY_V2', 'true');
+addEnv('FEATURE_BIOMETRIC_OPS_V2', 'true');
+
+// Clear wedge-only disables — demo mode licenses all modules; explicit true for clarity
+for (const name of [
+  'MODULE_ATS',
+  'MODULE_ACCOUNTS',
+  'MODULE_PERFORMANCE',
+  'MODULE_HSE',
+  'MODULE_ASSETS',
+  'MODULE_COMMUNICATIONS',
+  'MODULE_TRAINING',
+  'MODULE_DOCUMENTS',
+]) {
+  addEnv(name, 'true');
+}
 
 try {
   fs.unlinkSync(envFile);

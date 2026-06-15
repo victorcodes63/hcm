@@ -19,26 +19,42 @@ describe('module-access', () => {
   });
 
   it('blocks ATS paths when MODULE_ATS=false', () => {
-    const prev = process.env.MODULE_ATS;
+    const prev = {
+      MODULE_ATS: process.env.MODULE_ATS,
+      DEMO_MODE: process.env.DEMO_MODE,
+      NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+    };
     process.env.MODULE_ATS = 'false';
+    delete process.env.DEMO_MODE;
+    delete process.env.NEXT_PUBLIC_DEMO_MODE;
     try {
       expect(isPathAllowedByModuleLicense('/dashboard/jobs')).toBe(false);
       expect(getBlockedModuleForPath('/api/jobs')).toBe('ats');
       expect(moduleAccessDeniedPayload('ats').code).toBe('MODULE_DISABLED');
     } finally {
-      if (prev === undefined) delete process.env.MODULE_ATS;
-      else process.env.MODULE_ATS = prev;
+      for (const [k, v] of Object.entries(prev)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
     }
   });
 
   it('blocks payroll API when MODULE_PAYROLL=false', () => {
-    const prev = process.env.MODULE_PAYROLL;
+    const prev = {
+      MODULE_PAYROLL: process.env.MODULE_PAYROLL,
+      DEMO_MODE: process.env.DEMO_MODE,
+      NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+    };
     process.env.MODULE_PAYROLL = 'false';
+    delete process.env.DEMO_MODE;
+    delete process.env.NEXT_PUBLIC_DEMO_MODE;
     try {
       expect(getBlockedModuleForPath('/api/outsourcing/payroll')).toBe('payroll');
     } finally {
-      if (prev === undefined) delete process.env.MODULE_PAYROLL;
-      else process.env.MODULE_PAYROLL = prev;
+      for (const [k, v] of Object.entries(prev)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
     }
   });
 

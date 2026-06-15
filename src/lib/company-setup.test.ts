@@ -5,6 +5,7 @@ import {
   getEffectiveOAuthProviders,
   sanitizeCompanySetup,
 } from '@/lib/company-setup';
+import { defaultModuleAdminFlags } from '@/lib/modules';
 
 describe('company-setup', () => {
   it('sanitizes partial payloads with defaults', () => {
@@ -31,9 +32,10 @@ describe('company-setup', () => {
   });
 
   it('defaults moduleAdminFlags with finance and assets off for fresh setup', () => {
-    expect(DEFAULT_COMPANY_SETUP.moduleAdminFlags.accounts).toBe(false);
-    expect(DEFAULT_COMPANY_SETUP.moduleAdminFlags.assets).toBe(false);
-    expect(DEFAULT_COMPANY_SETUP.moduleAdminFlags.core).toBe(true);
+    const flags = defaultModuleAdminFlags();
+    expect(flags.accounts).toBe(false);
+    expect(flags.assets).toBe(false);
+    expect(flags.core).toBe(true);
   });
 
   it('migrates missing moduleAdminFlags to all enabled', () => {

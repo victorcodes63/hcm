@@ -4,6 +4,7 @@ import {
   sanitizeCompanySetup,
   type CompanySetupSettings,
 } from '../../src/lib/company-setup';
+import { allModulesAdminEnabled } from '../../src/lib/modules';
 import { DEFAULT_BRAND_LOGO_SRC } from '../../src/lib/brand-constants';
 import type { DemoPack } from './types';
 
@@ -38,6 +39,7 @@ export function buildCompanySetupFromPack(pack: DemoPack): CompanySetupSettings 
       cs.publicFooterText ??
       `${orgName} — workforce operations across Kenya and Uganda.`,
     documentFooterText: cs.documentFooterText ?? '',
+    moduleAdminFlags: allModulesAdminEnabled(),
   });
 }
 

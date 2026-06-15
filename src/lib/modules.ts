@@ -1,10 +1,13 @@
 /**
  * Commercial module licensing — each dedicated deployment enables/disables modules via env.
  * Unset or empty env vars default to enabled (full product). Set MODULE_*=false to disable.
+ * Demo/sales deployments (DEMO_MODE) always license every module for the full platform story.
  *
  * Company Setup `moduleAdminFlags` can hide licensed modules without redeploying.
  * Effective visibility = licensed (env) AND enabled (admin).
  */
+
+import { isDemoMode, isPublicDemoMode } from '@/lib/deployment-config';
 
 export type ModuleKey =
   | 'core'
@@ -286,6 +289,7 @@ export function sanitizeModuleAdminFlags(value: unknown): Record<ModuleKey, bool
 export function isModuleLicensed(key: ModuleKey): boolean {
   const def = MODULE_BY_KEY[key];
   if (!def.canDisable) return true;
+  if (isDemoMode() || isPublicDemoMode()) return true;
   return parseBoolean(process.env[def.envVar], true);
 }
 

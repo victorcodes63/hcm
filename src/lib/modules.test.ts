@@ -36,6 +36,26 @@ describe('modules', () => {
     }
   });
 
+  it('licenses all modules in demo mode even when MODULE_*=false', () => {
+    const saved = {
+      DEMO_MODE: process.env.DEMO_MODE,
+      MODULE_ATS: process.env.MODULE_ATS,
+      MODULE_ACCOUNTS: process.env.MODULE_ACCOUNTS,
+    };
+    process.env.DEMO_MODE = 'true';
+    process.env.MODULE_ATS = 'false';
+    process.env.MODULE_ACCOUNTS = 'false';
+    try {
+      expect(isModuleLicensed('ats')).toBe(true);
+      expect(isModuleLicensed('accounts')).toBe(true);
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  });
+
   it('listLicensedModules returns all module keys', () => {
     const modules = listLicensedModules();
     expect(modules.core).toBe(true);
@@ -51,7 +71,13 @@ describe('modules', () => {
   });
 
   it('resolveEffectiveModules requires license and admin toggle', () => {
-    const prev = process.env.MODULE_ACCOUNTS;
+    const prev = {
+      MODULE_ACCOUNTS: process.env.MODULE_ACCOUNTS,
+      DEMO_MODE: process.env.DEMO_MODE,
+      NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+    };
+    delete process.env.DEMO_MODE;
+    delete process.env.NEXT_PUBLIC_DEMO_MODE;
     process.env.MODULE_ACCOUNTS = 'true';
     try {
       const adminOn = allModulesAdminEnabled();
@@ -63,8 +89,10 @@ describe('modules', () => {
       process.env.MODULE_ACCOUNTS = 'false';
       expect(resolveEffectiveModules(adminOn).accounts).toBe(false);
     } finally {
-      if (prev === undefined) delete process.env.MODULE_ACCOUNTS;
-      else process.env.MODULE_ACCOUNTS = prev;
+      for (const [k, v] of Object.entries(prev)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
     }
   });
 

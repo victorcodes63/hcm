@@ -119,7 +119,8 @@ export const DEFAULT_COMPANY_SETUP: CompanySetupSettings = {
   dashboardBannerText: '',
   dashboardBannerTone: 'info',
   dashboardTableZebraStriping: true,
-  moduleAdminFlags: defaultModuleAdminFlags(),
+  moduleAdminFlags:
+    isDemoMode() || isPublicDemoMode() ? allModulesAdminEnabled() : defaultModuleAdminFlags(),
   payslipLegalName: '',
   documentFooterText: '',
   publicFooterText: '',
