@@ -67,6 +67,8 @@ addEnv('PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT', '120000');
 addEnv('MULTI_ENTITY_ENABLED', 'true');
 addEnv('DEMO_MULTI_CONTEXT', 'true');
 addEnv('DEMO_UNIFIED_ADMIN_EMAIL', 'demo@demo.imara.co.ke');
+addEnv('NEXT_PUBLIC_DEMO_ADMIN_EMAIL', 'demo@demo.imara.co.ke');
+addEnv('NEXT_PUBLIC_DEMO_PASSWORD', 'Demo@2026!');
 
 try {
   fs.unlinkSync(envFile);

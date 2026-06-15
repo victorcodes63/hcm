@@ -28,8 +28,10 @@ type StaffLoginContentProps = {
 export function StaffLoginContent({ loginConfig, initialError, welcomeCopy }: StaffLoginContentProps) {
  const { orgName, contactAddress, privacyPolicyUrl, termsUrl, defaultLandingPath } = usePublicBrand();
  const router = useRouter();
- const [email, setEmail] = useState('');
- const [password, setPassword] = useState('');
+ const demoAdminEmail = loginConfig.showDemoHint ? loginConfig.staffDemoRows[0]?.email ?? '' : '';
+ const demoPasswordValue = loginConfig.showDemoHint ? loginConfig.demoPassword : '';
+ const [email, setEmail] = useState(demoAdminEmail);
+ const [password, setPassword] = useState(demoPasswordValue);
  const [showPassword, setShowPassword] = useState(false);
  const [error, setError] = useState(initialError);
  const [loading, setLoading] = useState(false);
@@ -253,6 +255,11 @@ export function StaffLoginContent({ loginConfig, initialError, welcomeCopy }: St
  demoPassword={loginConfig.demoPassword}
  staffDemoRows={loginConfig.staffDemoRows}
  essDemoRow={loginConfig.essDemoRow}
+ onSelectEmail={(selected) => {
+ setEmail(selected);
+ setPassword(loginConfig.demoPassword);
+ setError('');
+ }}
  />
  </LoginCard>
  </LoginPageShell>

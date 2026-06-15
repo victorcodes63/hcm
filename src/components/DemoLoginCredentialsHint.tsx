@@ -12,6 +12,7 @@ type DemoLoginCredentialsHintProps = {
   demoPassword: string;
   staffDemoRows: DemoCredentialRow[];
   essDemoRow: DemoCredentialRow;
+  onSelectEmail?: (email: string) => void;
 };
 
 /**
@@ -24,6 +25,7 @@ export function DemoLoginCredentialsHint({
   demoPassword,
   staffDemoRows,
   essDemoRow,
+  onSelectEmail,
 }: DemoLoginCredentialsHintProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -69,7 +71,19 @@ export function DemoLoginCredentialsHint({
                     {staffDemoRows.map((row) => (
                       <tr key={row.email} className="border-b border-neutral-100 last:border-0">
                         <td className="px-2 py-1.5 font-medium text-neutral-700">{row.role}</td>
-                        <td className="px-2 py-1.5 font-mono text-[11px] text-neutral-900">{row.email}</td>
+                        <td className="px-2 py-1.5 font-mono text-[11px] text-neutral-900">
+                          {onSelectEmail ? (
+                            <button
+                              type="button"
+                              className="text-left underline-offset-2 hover:text-primary-700 hover:underline"
+                              onClick={() => onSelectEmail(row.email)}
+                            >
+                              {row.email}
+                            </button>
+                          ) : (
+                            row.email
+                          )}
+                        </td>
                       </tr>
                     ))}
                     <tr className="border-b border-neutral-100 last:border-0">
