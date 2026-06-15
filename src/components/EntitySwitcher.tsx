@@ -12,6 +12,8 @@ export type Entity = {
   currency: string;
   flag: string;
   color: string;
+  sector?: string;
+  sectorEmoji?: string;
 };
 
 const STORAGE_KEY = 'hris_active_entity';
@@ -213,7 +215,10 @@ export function EntitySwitcher({ variant = 'default' }: { variant?: 'default' | 
             aria-label="Switch entity"
           >
             <div className="px-3 py-2 border-b border-neutral-100">
-              <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">Switch company context</p>
+              <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">
+                Switch company context
+              </p>
+              <p className="mt-0.5 text-[10px] text-neutral-400">Each sector has its own demo data</p>
             </div>
             {entities.map((entity) => (
               <button
@@ -229,7 +234,7 @@ export function EntitySwitcher({ variant = 'default' }: { variant?: 'default' | 
                   activeEntity.id === entity.id ? 'bg-primary-50' : ''
                 }`}
               >
-                <span className="text-2xl shrink-0">{entity.flag}</span>
+                <span className="text-2xl shrink-0">{entity.sectorEmoji ?? entity.flag}</span>
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-sm font-medium truncate ${
@@ -238,8 +243,8 @@ export function EntitySwitcher({ variant = 'default' }: { variant?: 'default' | 
                   >
                     {entity.name}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    {entity.country} · {entity.currency}
+                  <p className="text-xs text-neutral-500 truncate">
+                    {entity.sector ?? entity.country} · {entity.currency}
                   </p>
                 </div>
                 {activeEntity.id === entity.id && (

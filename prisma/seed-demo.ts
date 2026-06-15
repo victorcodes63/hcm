@@ -2317,7 +2317,10 @@ async function main() {
   }
 
   const hashed = await bcrypt.hash(pack.demoPassword, PASSWORD_ROUNDS);
-  const demoAdmin = pack.staffUsers.admin.email;
+  const demoAdmin =
+    process.env.DEMO_MULTI_CONTEXT === 'true' && process.env.DEMO_UNIFIED_ADMIN_EMAIL?.trim()
+      ? process.env.DEMO_UNIFIED_ADMIN_EMAIL.trim()
+      : pack.staffUsers.admin.email;
   await prisma.user.upsert({
     where: { email: demoAdmin },
     update: { name: 'System Administrator', passwordHash: hashed, role: UserRole.admin, staffUserType: StaffUserType.director, isActive: true },

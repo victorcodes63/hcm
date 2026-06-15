@@ -1,8 +1,9 @@
 /**
- * Central branding for the HRIS demo. Override via NEXT_PUBLIC_* env vars per deployment.
+ * Central branding for Imara deployments. Override via NEXT_PUBLIC_* env vars per tenant.
  */
 
 import { resolve } from 'path';
+import { brandConfig } from '@/lib/brand.config';
 
 function trimEnv(key: string): string | undefined {
   const v = process.env[key];
@@ -11,10 +12,9 @@ function trimEnv(key: string): string | undefined {
   return t.length > 0 ? t : undefined;
 }
 
-const DEFAULT_APP = 'HRIS';
+const DEFAULT_APP = brandConfig.productName;
 const DEFAULT_ORG = 'Your Organisation';
-const DEFAULT_TAGLINE =
-  'Workforce, payroll, recruitment, and leave — in one system.';
+const DEFAULT_TAGLINE = brandConfig.tagline;
 
 import { DEFAULT_BRAND_LOGO_SRC, normalizeLogoSrc } from '@/lib/brand-constants';
 export { DEFAULT_BRAND_LOGO_SRC } from '@/lib/brand-constants';
@@ -35,7 +35,7 @@ export const brand = {
   /** PNG for PDFs and email CID embedding (same file as UI if using raster logo). */
   logoPngPath: normalizeLogoSrc(trimEnv('NEXT_PUBLIC_BRAND_LOGO_PNG') ?? DEFAULT_BRAND_LOGO_SRC),
   /** Short line for payslip / letter headers when logo file is missing. */
-  wordmark: trimEnv('NEXT_PUBLIC_BRAND_WORDMARK') ?? 'HRIS',
+  wordmark: trimEnv('NEXT_PUBLIC_BRAND_WORDMARK') ?? brandConfig.productName,
 } as const;
 
 export const mailFromName =

@@ -72,7 +72,7 @@ export const OVERVIEW_NAV_ITEM: DashboardNavItem = {
 const primarySections: DashboardNavSection[] = [
   {
     id: 'people-hr',
-    label: 'People & HR',
+    label: 'People',
     icon: Users,
     items: [
       { href: '/dashboard/employees', label: 'Employees', icon: Users },

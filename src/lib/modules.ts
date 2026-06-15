@@ -23,11 +23,17 @@ export type ModuleKey =
   | 'training'
   | 'documents';
 
+export type ModulePhase = 1 | 2 | 3;
+
 export type ModuleDefinition = {
   key: ModuleKey;
   label: string;
   envVar: string;
   description: string;
+  /** Roadmap phase (Imara Vertical BMS). */
+  phase: ModulePhase;
+  /** Independently billable add-on (platform base includes core). */
+  billable: boolean;
   /** When false, the module cannot be disabled (always on). */
   canDisable: boolean;
 };
@@ -35,16 +41,20 @@ export type ModuleDefinition = {
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   {
     key: 'core',
-    label: 'Core HR',
+    label: 'People (HR Core)',
     envVar: 'MODULE_CORE',
-    description: 'Employee records, departments, onboarding, credentials, contracts.',
+    description: 'Employee directory, org chart, profiles, documents, and ESS — the platform base.',
+    phase: 1,
+    billable: false,
     canDisable: false,
   },
   {
     key: 'leave',
     label: 'Leave',
     envVar: 'MODULE_LEAVE',
-    description: 'Employee and staff leave policies, balances, and approvals.',
+    description: 'Leave policies, balances, approvals, and statutory leave pay.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
@@ -52,20 +62,26 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Time & Attendance',
     envVar: 'MODULE_TIME',
     description: 'Rota, attendance, biometrics, and shift scheduling.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
     key: 'payroll',
     label: 'Payroll',
     envVar: 'MODULE_PAYROLL',
-    description: 'Payroll runs, payslips, statutory returns, and bank export.',
+    description: 'KE/UG statutory payroll, M-Pesa disbursement, payslips, and bank export.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
     key: 'ats',
-    label: 'Recruitment',
+    label: 'Talent & Recruitment',
     envVar: 'MODULE_ATS',
-    description: 'Careers site, job openings, applications, and interviews.',
+    description: 'Careers site, ATS, onboarding, and native psychometric assessments (AssessIQ).',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
   {
@@ -73,6 +89,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Performance',
     envVar: 'MODULE_PERFORMANCE',
     description: 'Goals, review cycles, and performance management.',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
   {
@@ -80,13 +98,17 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'HSE',
     envVar: 'MODULE_HSE',
     description: 'Health, safety, and environment incident tracking.',
+    phase: 3,
+    billable: true,
     canDisable: true,
   },
   {
     key: 'accounts',
     label: 'Finance',
     envVar: 'MODULE_ACCOUNTS',
-    description: 'Billing, invoices, expenses, budgets, petty cash, and financial reports.',
+    description: 'Expenses, approvals, reimbursements, invoicing, and basic GL hooks.',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
   {
@@ -94,6 +116,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Disciplinary & Grievance',
     envVar: 'MODULE_DISCIPLINARY',
     description: 'Disciplinary cases and grievance workflows.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
@@ -101,6 +125,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Reports & Analytics',
     envVar: 'MODULE_REPORTS',
     description: 'Workforce reports and executive analytics.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
@@ -108,6 +134,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Asset Manager',
     envVar: 'MODULE_ASSETS',
     description: 'Company asset registry, assignments, and lifecycle tracking.',
+    phase: 3,
+    billable: true,
     canDisable: true,
   },
   {
@@ -115,6 +143,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Employee Self-Service',
     envVar: 'MODULE_ESS',
     description: 'Employee portal for leave, payslips, attendance, and cases.',
+    phase: 1,
+    billable: true,
     canDisable: true,
   },
   {
@@ -122,6 +152,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Communications',
     envVar: 'MODULE_COMMUNICATIONS',
     description: 'Company announcements, notices, and internal communications.',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
   {
@@ -129,6 +161,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Training & Development',
     envVar: 'MODULE_TRAINING',
     description: 'Training programs, enrollments, org chart, and skill development.',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
   {
@@ -136,6 +170,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: 'Document Management',
     envVar: 'MODULE_DOCUMENTS',
     description: 'Company policies, SOPs, handbooks, and shared documents.',
+    phase: 2,
+    billable: true,
     canDisable: true,
   },
 ];
@@ -155,27 +191,27 @@ export type ModuleUiGroup = {
 export const MODULE_UI_GROUPS: ModuleUiGroup[] = [
   {
     id: 'core',
-    label: 'Core HR',
-    description: 'Employee records, departments, contracts, and onboarding.',
+    label: 'Platform base',
+    description: 'Canonical people data — directory, org structure, documents, and ESS.',
     keys: ['core'],
     locked: true,
   },
   {
     id: 'people-ops',
-    label: 'People operations',
-    description: 'Day-to-day HR workflows your team runs in the dashboard.',
+    label: 'Phase 1 — People & operations',
+    description: 'Leave, time, payroll, and day-to-day workforce workflows.',
     keys: ['leave', 'time', 'payroll', 'performance', 'disciplinary', 'ess', 'reports'],
   },
   {
     id: 'workplace',
-    label: 'Workplace & development',
-    description: 'Internal comms, training, and company knowledge management.',
+    label: 'Phase 2 — Workplace',
+    description: 'Communications, training, and company knowledge.',
     keys: ['communications', 'training', 'documents'],
   },
   {
     id: 'extended',
-    label: 'Extended modules',
-    description: 'Recruitment, safety, finance, and assets — hide these for a pure HRIS.',
+    label: 'Phase 2–3 — Expansion modules',
+    description: 'Talent, finance, safety, and assets — attach inside accounts you already own.',
     keys: ['ats', 'hse', 'accounts', 'assets'],
   },
 ];

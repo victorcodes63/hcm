@@ -72,13 +72,13 @@ export function getOverviewRoleLabel(user: UserSummary | null): string {
 export function getOverviewSubtitle(persona: OverviewPersona): string {
   switch (persona) {
     case 'admin':
-      return 'Workforce, compliance, and operations in one place.';
+      return 'People, time, payroll, and compliance — one operating system for your organisation.';
     case 'director':
-      return 'Headcount, leave, payroll, and risk signals at a glance.';
+      return 'Headcount, payroll, leave, and board-ready compliance signals at a glance.';
     case 'finance':
-      return 'Payroll totals, approvals, and billing shortcuts.';
+      return 'Statutory payroll, approvals, and disbursement shortcuts.';
     case 'business_manager':
-      return 'Attendance, leave approvals, and people workflows.';
+      return 'Attendance, leave approvals, and people workflows for your team.';
     case 'viewer':
       return 'Read-only snapshot. Contact an administrator to request access changes.';
     default:

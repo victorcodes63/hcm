@@ -28,6 +28,8 @@ export type OperatingEntitiesSettings = {
   defaultEntityId: string;
 };
 
+import { parseVerticalFromEntitySlug } from '@/lib/demo-vertical-catalog';
+
 export type PublicEntity = {
   id: string;
   name: string;
@@ -36,6 +38,9 @@ export type PublicEntity = {
   currency: string;
   flag: string;
   color: string;
+  /** Industry sector label for multi-vertical demo switcher */
+  sector?: string;
+  sectorEmoji?: string;
 };
 
 export const COUNTRY_PROFILES: Record<
@@ -197,14 +202,17 @@ export function resolveEntitySlugOrDefault(
 
 export function toPublicEntity(entity: OperatingEntity): PublicEntity {
   const profile = COUNTRY_PROFILES[entity.countryCode];
+  const vertical = parseVerticalFromEntitySlug(entity.id);
   return {
     id: entity.id,
     name: entity.legalName,
     country: profile.country,
     countryCode: entity.countryCode,
     currency: entity.currency,
-    flag: profile.flag,
+    flag: vertical?.emoji ?? profile.flag,
     color: profile.color,
+    sector: vertical?.sector,
+    sectorEmoji: vertical?.emoji,
   };
 }
 

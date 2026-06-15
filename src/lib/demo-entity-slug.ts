@@ -1,4 +1,11 @@
-export const DEMO_CONTEXT_IDS = ['generic', 'petroleum-retail'] as const;
+export const DEMO_CONTEXT_IDS = [
+  'generic',
+  'petroleum-retail',
+  'imara-sacco',
+  'cargo-logistics',
+  'hospital-healthcare',
+  'travel-agency',
+] as const;
 export type DemoContextId = (typeof DEMO_CONTEXT_IDS)[number];
 
 const COMPOSITE_SLUG_RE = /^([a-z][a-z0-9-]*)__(ke|ug)$/;

@@ -1,6 +1,6 @@
-/** Default brand theme colors (matches tailwind.config.js). */
-export const DEFAULT_PRIMARY_COLOR = '#0088FF';
-export const DEFAULT_SECONDARY_COLOR = '#1D2460';
+/** Default brand theme colors — Imara palette. */
+export const DEFAULT_PRIMARY_COLOR = '#0D9488';
+export const DEFAULT_SECONDARY_COLOR = '#0F172A';
 
 const HEX = /^#([0-9a-fA-F]{6})$/;
 

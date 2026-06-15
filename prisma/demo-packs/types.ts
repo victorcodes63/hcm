@@ -146,4 +146,21 @@ export type DemoPack = {
   companySetup: DemoCompanySetup;
 };
 
-export type DemoPackId = 'generic' | 'petroleum-retail';
+export type DemoPackId =
+  | 'generic'
+  | 'petroleum-retail'
+  | 'imara-sacco'
+  | 'cargo-logistics'
+  | 'hospital-healthcare'
+  | 'travel-agency';
+
+/** Packs shown in the multi-vertical entity switcher (excludes neutral generic shell). */
+export const VERTICAL_SHOWCASE_PACK_IDS = [
+  'imara-sacco',
+  'petroleum-retail',
+  'cargo-logistics',
+  'hospital-healthcare',
+  'travel-agency',
+] as const satisfies readonly DemoPackId[];
+
+export type VerticalShowcasePackId = (typeof VERTICAL_SHOWCASE_PACK_IDS)[number];

@@ -28,7 +28,7 @@ export default async function DashboardSidebarBrand() {
       <div className="min-w-0">
         <span className="block truncate text-[13px] font-semibold leading-tight text-ink">{brand.orgName}</span>
         <span className="block truncate text-[10px] font-medium uppercase tracking-wide text-neutral-400">
-          HRIS Portal
+          {brand.appName}
         </span>
       </div>
     </Link>

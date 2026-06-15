@@ -12,7 +12,16 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const contexts = ['generic', 'petroleum-retail', 'blank-shell'];
+const contexts = [
+  'generic',
+  'petroleum-retail',
+  'imara-sacco',
+  'cargo-logistics',
+  'hospital-healthcare',
+  'travel-agency',
+  'all-verticals',
+  'blank-shell',
+];
 
 function parseEnvFile(text) {
   const map = new Map();

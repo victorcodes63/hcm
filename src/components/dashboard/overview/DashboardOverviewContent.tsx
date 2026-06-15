@@ -303,11 +303,6 @@ export default function DashboardOverviewContent() {
   const [pinnedHrefs, setPinnedHrefs] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [hasMounted, setHasMounted] = useState(false);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -457,18 +452,19 @@ export default function DashboardOverviewContent() {
     () => (amount: number) => formatMoney(amount, activeEntity.currency),
     [activeEntity.currency],
   );
-  const periodLabel = useMemo(() => {
-    if (!hasMounted) return '';
-    return new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  }, [hasMounted]);
-  const todayLabel = useMemo(() => {
-    if (!hasMounted) return '';
-    return new Date().toLocaleDateString(undefined, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
-  }, [hasMounted]);
+  const periodLabel = useMemo(
+    () => new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+    [],
+  );
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      }),
+    [],
+  );
 
   const navSections = useMemo(
     () =>
@@ -540,7 +536,7 @@ export default function DashboardOverviewContent() {
   );
   const secondaryAction = useMemo(() => getOverviewSecondaryAction(me, persona), [me, persona]);
 
-  const greeting = hasMounted ? getOverviewGreeting(me?.name ?? 'there') : 'Welcome back';
+  const greeting = getOverviewGreeting(me?.name ?? 'there');
   const roleLabel = getOverviewRoleLabel(me);
   const subtitle = getOverviewSubtitle(persona);
 

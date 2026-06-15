@@ -265,9 +265,15 @@ export function companySetupStorageKeyFromRequest(request: Pick<NextRequest, 'co
 export function companySetupContextLabel(entitySlug: string | null | undefined): string | null {
   if (!entitySlug?.includes('__')) return null;
   const { contextId } = parseDemoEntitySlug(entitySlug);
-  if (contextId === 'petroleum-retail') return 'Petroleum retail demo';
-  if (contextId === 'generic') return 'Demo Corporation (generic)';
-  return contextId;
+  const labels: Record<string, string> = {
+    generic: 'Demo Corporation (generic)',
+    'petroleum-retail': 'Stabex International — fuel retail',
+    'imara-sacco': 'Nyati SACCO',
+    'cargo-logistics': 'SwiftFreight — cargo & logistics',
+    'hospital-healthcare': 'Amani Medical Centre',
+    'travel-agency': 'Horizon Travels',
+  };
+  return labels[contextId] ?? contextId;
 }
 
 export async function loadCompanySetupForStorageKey(key: string): Promise<CompanySetupSettings> {
