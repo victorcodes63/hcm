@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
 import { InvoicePaymentAccountSelect } from '@/components/accounts/InvoiceBankPanel';
@@ -285,7 +286,7 @@ function NewInvoiceForm() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -305,7 +306,6 @@ function NewInvoiceForm() {
  </nav>
 
  <DashboardPageHeader
- icon={FileText}
  title="New invoice"
  description={
  <>
@@ -608,7 +608,7 @@ function NewInvoiceForm() {
  </Link>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }
 

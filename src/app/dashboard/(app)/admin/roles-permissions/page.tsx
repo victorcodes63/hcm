@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, Loader2, Save } from 'lucide-react';
 import type { PermissionMatrixRow } from '@/types/dashboard';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 export default function RolesAndPermissionsPage() {
@@ -60,11 +61,11 @@ export default function RolesAndPermissionsPage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  icon={KeyRound}
  title="Roles & permissions"
- description="Configure default access by role for key platform modules."
+ description="Default access by role for platform modules."
  actions={
  <button
  type="button"
@@ -129,6 +130,6 @@ export default function RolesAndPermissionsPage() {
  </div>
  )}
  </div>
- </div>
+ </DashboardPage>
  );
 }

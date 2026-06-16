@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MessageSquareWarning } from 'lucide-react';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { GRIEVANCE_STATUSES, getJurisdictionPolicy } from '@/lib/east-africa-hr-policy';
 
@@ -94,7 +93,6 @@ export default function AdminGrievanceDetailPage() {
  </Link>
  </div>
  <DashboardPageHeader
- icon={MessageSquareWarning}
  title={`${data.grievanceNumber} — ${data.subject}`}
  description={
  <>

@@ -1,10 +1,11 @@
 import { Building2 } from 'lucide-react';
 import { CompanySetupPageClient } from './CompanySetupPageClient';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 export default function CompanySetupPage() {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  icon={Building2}
  title="Company setup"
@@ -12,6 +13,6 @@ export default function CompanySetupPage() {
  />
 
  <CompanySetupPageClient />
- </div>
+ </DashboardPage>
  );
 }

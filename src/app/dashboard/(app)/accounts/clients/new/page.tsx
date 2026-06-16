@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const inputClass =
@@ -54,7 +55,7 @@ export default function NewAccountsClientPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -68,7 +69,6 @@ export default function NewAccountsClientPage() {
  </nav>
 
  <DashboardPageHeader
- icon={Building2}
  title="New billing client"
  description="Add a party your company invoices — a subsidiary, inter-company entity, or external customer."
  />
@@ -187,6 +187,6 @@ export default function NewAccountsClientPage() {
  </Link>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }

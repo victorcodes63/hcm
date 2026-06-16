@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Scale } from 'lucide-react';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { DISCIPLINARY_STATUSES, JURISDICTION_POLICIES, getJurisdictionPolicy } from '@/lib/east-africa-hr-policy';
 
@@ -129,7 +128,6 @@ export default function DisciplinaryCasePage() {
  </Link>
  </div>
  <DashboardPageHeader
- icon={Scale}
  title={`${data.caseNumber} — ${data.subject}`}
  description={`${data.employee.firstName} ${data.employee.lastName} | ${data.type.replaceAll('_', ' ')} | ${data.severity.replaceAll('_', ' ')}`}
  className="mt-2"

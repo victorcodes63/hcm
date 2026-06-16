@@ -24,6 +24,7 @@ import {
  Download,
  Calendar,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type { CandidateListItem } from '@/types/dashboard';
 import type { CandidateWithDetails } from '@/app/api/candidates/[id]/route';
@@ -222,7 +223,7 @@ export default function DashboardCandidatesPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Candidates"
  description="Applicant database: totals below are for everyone stored; the table respects your filters."
@@ -821,6 +822,6 @@ export default function DashboardCandidatesPage() {
  </>
  );
  })()}
- </div>
+ </DashboardPage>
  );
 }

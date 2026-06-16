@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Clock, Plus } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type Client = { id: string; name: string; label?: string };
@@ -117,7 +118,7 @@ export default function OutsourcingAttendancePage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Attendance"
  description="Reconciled day summaries with manual override support."
@@ -249,6 +250,6 @@ export default function OutsourcingAttendancePage() {
  </tbody>
  </table>
  </div>
- </div>
+ </DashboardPage>
  );
 }

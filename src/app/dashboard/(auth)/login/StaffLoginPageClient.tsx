@@ -112,8 +112,8 @@ export function StaffLoginContent({ loginConfig, initialError, welcomeCopy }: St
  <Link href={privacyPolicyUrl || '/privacy'} className="hover:text-[#0a2540]">Privacy</Link>
  <Link href={termsUrl || '/terms'} className="hover:text-[#0a2540]">Terms</Link>
  </nav>
- <p className="mt-1 text-xs text-[#6b7f99]">
- {orgName}
+ <p className="mx-auto mt-2 max-w-xs text-pretty text-xs leading-relaxed text-[#6b7f99]" suppressHydrationWarning>
+ © {new Date().getFullYear()} {orgName}
  {contactAddress ? ` · ${contactAddress}` : ''}
  </p>
  </footer>
@@ -242,16 +242,11 @@ export function StaffLoginContent({ loginConfig, initialError, welcomeCopy }: St
  'Sign in'
  )}
  </button>
- </form>
- ) : null}
 
- <OAuthEmailDivider />
-
- <OAuthProviderButtons onError={setError} onVisibleChange={setShowOAuth} />
-
+ {loginConfig.showDemoHint ? (
  <DemoLoginCredentialsHint
  variant="staff"
- visible={loginConfig.showDemoHint}
+ visible
  demoPassword={loginConfig.demoPassword}
  staffDemoRows={loginConfig.staffDemoRows}
  essDemoRow={loginConfig.essDemoRow}
@@ -261,6 +256,13 @@ export function StaffLoginContent({ loginConfig, initialError, welcomeCopy }: St
  setError('');
  }}
  />
+ ) : null}
+ </form>
+ ) : null}
+
+ <OAuthEmailDivider />
+
+ <OAuthProviderButtons onError={setError} onVisibleChange={setShowOAuth} />
  </LoginCard>
  </LoginPageShell>
  );

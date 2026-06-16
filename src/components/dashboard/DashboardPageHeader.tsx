@@ -1,13 +1,18 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DASHBOARD_PAGE_HEADER_CLASS } from '@/lib/dashboard-layout';
+import { resolveDashboardPageIcon } from '@/lib/dashboard-page-icons';
+import { isMainDashboardPage } from '@/lib/dashboard-route-kind';
 
 function cn(...parts: (string | false | undefined)[]) {
   return parts.filter(Boolean).join(' ');
 }
 
-export type DashboardPageHeaderVariant = 'default' | 'hero';
+export type DashboardPageHeaderVariant = 'default' | 'hero' | 'panel';
 
 export type DashboardPageHeaderBadge = {
   label: ReactNode;
@@ -26,10 +31,10 @@ export type DashboardPageHeaderAction = {
 export type DashboardPageHeaderProps = {
   /** Page title or greeting (always rendered as h1). */
   title: ReactNode;
-  /** Optional Lucide icon beside the title (default variant). */
-  icon?: LucideIcon;
+  /** Optional Lucide icon beside the title — auto-resolved on main list pages only. */
+  icon?: LucideIcon | false;
   iconClassName?: string;
-  /** Supporting copy — keep internal-tool pages free of redundant entity names. */
+  /** Supporting copy — one short sentence; omit if the title is self-explanatory. */
   description?: ReactNode;
   /** Small uppercase label above the title (module area, e.g. "Finance & payroll"). */
   eyebrow?: string;
@@ -39,6 +44,10 @@ export type DashboardPageHeaderProps = {
   badges?: DashboardPageHeaderBadge[];
   /** Custom action nodes, or declarative action links. */
   actions?: ReactNode | DashboardPageHeaderAction[];
+  /** Optional strip below the title row (tabs, filters) — used with `panel` variant. */
+  footer?: ReactNode;
+  /** Override pathname used to resolve the default icon (defaults to current route). */
+  href?: string;
   variant?: DashboardPageHeaderVariant;
   titleSuppressHydrationWarning?: boolean;
   metaSuppressHydrationWarning?: boolean;
@@ -125,23 +134,31 @@ function HeaderBadges({ badges, variant }: { badges: DashboardPageHeaderBadge[];
 
 /**
  * Standard page header for dashboard routes.
- * - `default` — title block on the canvas (most list/detail pages)
+ * - `default` — title block on the canvas (legacy list/detail pages)
+ * - `panel` — enclosed glass card with optional footer strip (recommended for list pages)
  * - `hero` — navy gradient welcome band (Overview and module home pages)
  */
 export function DashboardPageHeader({
   title,
-  icon: TitleIcon,
+  icon,
   iconClassName,
   description,
   eyebrow,
   meta,
   badges = [],
   actions,
-  variant = 'default',
+  footer,
+  href,
+  variant = 'panel',
   titleSuppressHydrationWarning,
   metaSuppressHydrationWarning,
   className,
 }: DashboardPageHeaderProps) {
+  const pathname = usePathname();
+  const routeKey = href ?? pathname ?? '/dashboard';
+  const showIcon = variant === 'hero' || isMainDashboardPage(routeKey);
+  const TitleIcon =
+    showIcon && icon !== false ? icon || resolveDashboardPageIcon(routeKey) : undefined;
   const hasActions = actions != null && (Array.isArray(actions) ? actions.length > 0 : true);
 
   if (variant === 'hero') {
@@ -168,23 +185,67 @@ export function DashboardPageHeader({
             <HeaderBadges badges={badges} variant="hero" />
             <div>
               <h1
-                className="text-2xl font-semibold tracking-tight text-white sm:text-[1.75rem]"
+                className={cn(
+                  'text-2xl font-semibold tracking-tight text-white sm:text-[1.75rem]',
+                  TitleIcon && 'flex items-center gap-2.5',
+                )}
                 suppressHydrationWarning={titleSuppressHydrationWarning}
               >
+                {TitleIcon ? (
+                  <TitleIcon className="h-7 w-7 shrink-0 text-white/90" strokeWidth={1.75} aria-hidden />
+                ) : null}
                 {title}
               </h1>
               {description ? (
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90">{description}</p>
+                <div className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90">{description}</div>
               ) : null}
             </div>
             {meta ? (
-              <p className="text-xs text-white/70" suppressHydrationWarning={metaSuppressHydrationWarning}>
+              <div className="text-xs text-white/70" suppressHydrationWarning={metaSuppressHydrationWarning}>
                 {meta}
-              </p>
+              </div>
             ) : null}
           </div>
           {hasActions && actions ? <HeaderActions actions={actions} variant="hero" /> : null}
         </div>
+      </section>
+    );
+  }
+
+  if (variant === 'panel') {
+    return (
+      <section className={cn('dashboard-surface overflow-hidden shadow-sm', className)}>
+        <header className={cn(DASHBOARD_PAGE_HEADER_CLASS, 'px-5 py-5 sm:px-6')}>
+          <div className="page-header-body min-w-0 space-y-2">
+            {eyebrow ? (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-700">{eyebrow}</p>
+            ) : null}
+            {badges.length > 0 ? <HeaderBadges badges={badges} variant="default" /> : null}
+            <h1
+              className={cn('page-title', TitleIcon && 'flex items-center gap-2')}
+              suppressHydrationWarning={titleSuppressHydrationWarning}
+            >
+              {TitleIcon ? (
+                <TitleIcon
+                  className={iconClassName ?? 'h-7 w-7 shrink-0 text-primary-600'}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+              ) : null}
+              {title}
+            </h1>
+            {description ? <div className="page-description max-w-2xl !mt-0">{description}</div> : null}
+            {meta ? (
+              <div className="text-xs text-neutral-500" suppressHydrationWarning={metaSuppressHydrationWarning}>
+                {meta}
+              </div>
+            ) : null}
+          </div>
+          {hasActions && actions ? <HeaderActions actions={actions} variant="default" /> : null}
+        </header>
+        {footer ? (
+          <div className="border-t border-neutral-200/80 bg-neutral-50/40 px-5 py-3 sm:px-6">{footer}</div>
+        ) : null}
       </section>
     );
   }
@@ -205,11 +266,11 @@ export function DashboardPageHeader({
           ) : null}
           {title}
         </h1>
-        {description ? <p className="page-description max-w-2xl !mt-0">{description}</p> : null}
+        {description ? <div className="page-description max-w-2xl !mt-0">{description}</div> : null}
         {meta ? (
-          <p className="text-xs text-neutral-500" suppressHydrationWarning={metaSuppressHydrationWarning}>
+          <div className="text-xs text-neutral-500" suppressHydrationWarning={metaSuppressHydrationWarning}>
             {meta}
-          </p>
+          </div>
         ) : null}
       </div>
       {hasActions && actions ? <HeaderActions actions={actions} variant="default" /> : null}

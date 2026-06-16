@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
  AlertTriangle,
  Clock3,
@@ -9,6 +8,7 @@ import {
  Check,
  Ban,
  LayoutList,
+ LayoutGrid,
  Loader2,
  Plus,
  Settings,
@@ -17,7 +17,15 @@ import {
  Users,
  X,
 } from 'lucide-react';
+import { DashboardAsyncState, DashboardInlineLoading } from '@/components/dashboard/DashboardAsyncState';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
+import { useDashboardTabParam } from '@/hooks/useDashboardTabParam';
+import {
+ StaffLeaveTeamOverview,
+ type TeamOverviewData,
+} from '@/components/dashboard/staff-leave/StaffLeaveTeamOverview';
 
 type BalanceRow = {
  id: string;
@@ -182,22 +190,37 @@ export default function StaffLeavePage() {
  );
 }
 
+type LeaveTab = 'overview' | 'my' | 'approvals' | 'types';
+
+const LEAVE_TABS = ['overview', 'my', 'approvals', 'types'] as const;
+
+function resolveTabParam(param: string | null): LeaveTab | null {
+ if (param === 'overview' || param === 'team-overview') return 'overview';
+ if (param === 'approvals' || param === 'team') return 'approvals';
+ if (param === 'types') return 'types';
+ if (param === 'my') return 'my';
+ return null;
+}
+
 function StaffLeavePageContent() {
- const searchParams = useSearchParams();
- const initialTab = searchParams.get('tab');
- const [tab, setTab] = useState<'my' | 'team' | 'types'>(
-  initialTab === 'team' || initialTab === 'types' ? initialTab : 'my',
- );
  const [year, setYear] = useState(new Date().getFullYear());
  const [balances, setBalances] = useState<BalanceRow[]>([]);
  const [applications, setApplications] = useState<Application[]>([]);
  const [teamApps, setTeamApps] = useState<Application[]>([]);
+ const [overviewData, setOverviewData] = useState<TeamOverviewData | null>(null);
  const [types, setTypes] = useState<LeaveType[]>([]);
  const [typesAdmin, setTypesAdmin] = useState<LeaveType[]>([]);
- const [loading, setLoading] = useState(true);
+ const [initialLoad, setInitialLoad] = useState(true);
+ const [refreshing, setRefreshing] = useState(false);
  const [error, setError] = useState<string | null>(null);
  const [isAdmin, setIsAdmin] = useState(false);
  const [canApproveLeave, setCanApproveLeave] = useState(false);
+ const [sessionReady, setSessionReady] = useState(false);
+ const { tab, setTab } = useDashboardTabParam('tab', LEAVE_TABS, 'my', {
+  ready: sessionReady,
+  resolveDefault: () => (canApproveLeave ? 'overview' : 'my'),
+  parseTab: resolveTabParam,
+ });
  const [modal, setModal] = useState(false);
  const [submitting, setSubmitting] = useState(false);
  const [form, setForm] = useState({
@@ -208,53 +231,82 @@ function StaffLeavePageContent() {
  });
  const [opsMeta, setOpsMeta] = useState<StaffLeaveOpsMeta>(DEFAULT_STAFF_LEAVE_OPS);
 
- const loadMe = useCallback(async () => {
- const me = await fetch('/api/auth/me').then((r) => r.json());
- const admin = me?.role === 'admin';
- const approver = me?.canApproveStaffLeave === true;
- setIsAdmin(admin);
- setCanApproveLeave(approver);
- const y = year;
- const [b, a, t] = await Promise.all([
- fetch(`/api/staff/leave/balances?year=${y}`).then((r) => r.json()),
- fetch('/api/staff/leave/applications?scope=me').then((r) => r.json()),
- fetch('/api/staff/leave/types').then((r) => r.json()),
- ]);
- if (b.balances) setBalances(b.balances);
- if (Array.isArray(a)) setApplications(a);
- if (Array.isArray(t)) setTypes(t);
- if (approver) {
- const team = await fetch('/api/staff/leave/applications?scope=team&status=pending').then((r) =>
- r.json()
- );
- if (Array.isArray(team)) setTeamApps(team);
- } else {
- setTeamApps([]);
- }
- if (admin) {
- const tall = await fetch('/api/staff/leave/types?all=1').then((r) => r.json());
- if (Array.isArray(tall)) setTypesAdmin(tall);
- }
+ const loadMe = useCallback(async (silent = false) => {
+  if (silent) {
+   setRefreshing(true);
+  }
+  setError(null);
+  try {
+   const me = await fetch('/api/auth/me').then((r) => r.json());
+   const admin = me?.role === 'admin';
+   const approver = me?.canApproveStaffLeave === true;
+   setIsAdmin(admin);
+   setCanApproveLeave(approver);
+   setSessionReady(true);
+
+   const y = year;
+   const tasks: Promise<void>[] = [
+    fetch(`/api/staff/leave/balances?year=${y}`)
+     .then((r) => r.json())
+     .then((b) => {
+      if (b.balances) setBalances(b.balances);
+     }),
+    fetch('/api/staff/leave/applications?scope=me')
+     .then((r) => r.json())
+     .then((a) => {
+      if (Array.isArray(a)) setApplications(a);
+     }),
+    fetch('/api/staff/leave/types')
+     .then((r) => r.json())
+     .then((t) => {
+      if (Array.isArray(t)) setTypes(t);
+     }),
+   ];
+
+   if (approver) {
+    tasks.push(
+     fetch('/api/staff/leave/applications?scope=team&status=pending')
+      .then((r) => r.json())
+      .then((team) => {
+       if (Array.isArray(team)) setTeamApps(team);
+      }),
+     fetch(`/api/staff/leave/overview?year=${y}`)
+      .then((r) => r.json())
+      .then((overview) => {
+       if (overview?.staff) setOverviewData(overview as TeamOverviewData);
+      }),
+    );
+   } else {
+    setTeamApps([]);
+    setOverviewData(null);
+   }
+
+   if (admin) {
+    tasks.push(
+     fetch('/api/staff/leave/types?all=1')
+      .then((r) => r.json())
+      .then((tall) => {
+       if (Array.isArray(tall)) setTypesAdmin(tall);
+      }),
+    );
+   }
+
+   await Promise.all(tasks);
+  } catch {
+   setError(
+    'Could not load leave data. Run npm run db:generate, npx prisma migrate deploy, then npm run db:seed-staff-leave.',
+   );
+  } finally {
+   setInitialLoad(false);
+   setRefreshing(false);
+  }
  }, [year]);
 
+ const loadPassRef = useRef(0);
  useEffect(() => {
- let c = false;
- setLoading(true);
- setError(null);
- loadMe()
- .catch(() => {
- if (!c) {
- setError(
- 'Could not load leave data. Run npm run db:generate, npx prisma migrate deploy, then npm run db:seed-staff-leave.'
- );
- }
- })
- .finally(() => {
- if (!c) setLoading(false);
- });
- return () => {
- c = true;
- };
+  const silent = loadPassRef.current > 0;
+  loadPassRef.current += 1;
+  void loadMe(silent);
  }, [loadMe]);
 
  const refresh = () => loadMe().catch(() => {});
@@ -355,12 +407,12 @@ function StaffLeavePageContent() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
- title="Staff leave command center"
+ title="Staff leave"
  icon={CalendarDays}
  iconClassName="h-7 w-7 text-primary-600"
- description="Safe staffing leave management for clinical and support teams."
+ description="Balances, requests, and approvals."
  actions={
  <>
  <select
@@ -384,48 +436,45 @@ function StaffLeavePageContent() {
  </button>
  </>
  }
+ footer={
+ <DashboardTabs
+ embedded
+ value={tab}
+ onChange={setTab}
+ items={[
+ {
+ value: 'overview',
+ label: 'Team overview',
+ icon: LayoutGrid,
+ hidden: !canApproveLeave,
+ },
+ {
+ value: 'my',
+ label: 'My leave',
+ icon: LayoutList,
+ },
+ {
+ value: 'approvals',
+ label: 'Approvals',
+ icon: Users,
+ hidden: !canApproveLeave,
+ badge:
+ teamApps.length > 0 ? (
+ <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">{teamApps.length}</span>
+ ) : undefined,
+ },
+ {
+ value: 'types',
+ label: 'Types & setup',
+ icon: Settings,
+ hidden: !isAdmin,
+ },
+ ]}
+ />
+ }
  />
 
- <div className="flex flex-wrap gap-2 mb-6 border-b border-neutral-200 pb-2">
- <button
- type="button"
- onClick={() => setTab('my')}
- className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
- tab === 'my' ? 'bg-primary-100 text-primary-900' : 'text-neutral-600 hover:bg-neutral-100'
- }`}
- >
- <LayoutList className="w-4 h-4" />
- My leave
- </button>
- {canApproveLeave && (
- <button
- type="button"
- onClick={() => setTab('team')}
- className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
- tab === 'team' ? 'bg-primary-100 text-primary-900' : 'text-neutral-600 hover:bg-neutral-100'
- }`}
- >
- <Users className="w-4 h-4" />
- Approvals
- {teamApps.length > 0 && (
- <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full">{teamApps.length}</span>
- )}
- </button>
- )}
- {isAdmin && (
- <button
- type="button"
- onClick={() => setTab('types')}
- className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
- tab === 'types' ? 'bg-primary-100 text-primary-900' : 'text-neutral-600 hover:bg-neutral-100'
- }`}
- >
- <Settings className="w-4 h-4" />
- Types & setup
- </button>
- )}
- </div>
-
+ {tab === 'my' && !initialLoad ? (
  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
  <div className="dashboard-stat-card shadow-sm">
  <div className="text-xs uppercase tracking-wide text-neutral-500">Pending requests</div>
@@ -444,17 +493,24 @@ function StaffLeavePageContent() {
  <div className="text-2xl font-bold text-red-700 mt-1">{highRiskApprovals}</div>
  </div>
  </div>
+ ) : null}
 
- {error && (
- <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm">
- {error}
- </div>
- )}
+ <div className="relative min-w-0">
+ {refreshing ? (
+ <p className="mb-2 flex items-center justify-end gap-1.5 text-xs text-neutral-500">
+ <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+ Updating…
+ </p>
+ ) : null}
 
- {loading ? (
- <div className="flex justify-center py-20">
- <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
- </div>
+ <DashboardAsyncState
+ status={initialLoad ? 'loading' : error ? 'error' : 'success'}
+ error={error}
+ onRetry={refresh}
+ loading={<DashboardInlineLoading label="Loading leave data…" />}
+ >
+ {tab === 'overview' && canApproveLeave && overviewData ? (
+ <StaffLeaveTeamOverview data={overviewData} />
  ) : tab === 'my' ? (
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  <div className="lg:col-span-1 space-y-3">
@@ -541,7 +597,7 @@ function StaffLeavePageContent() {
  </div>
  </div>
  </div>
- ) : tab === 'team' && canApproveLeave ? (
+ ) : tab === 'approvals' && canApproveLeave ? (
  <div className="dashboard-surface shadow-sm overflow-hidden">
  <table className="data-table dashboard-data-table w-full text-sm">
  <thead className="bg-neutral-50 text-left">
@@ -561,7 +617,6 @@ function StaffLeavePageContent() {
  <tr key={a.id} className="border-t border-neutral-100">
  <td className="px-4 py-3">
  <div className="font-medium">{a.user.name}</div>
- <div className="text-xs text-neutral-500">{a.user.email}</div>
  </td>
  <td className="px-4 py-3">{a.leaveType.name}</td>
  <td className="px-4 py-3 text-neutral-600">
@@ -680,6 +735,8 @@ function StaffLeavePageContent() {
  </div>
  </div>
  ) : null}
+ </DashboardAsyncState>
+ </div>
 
  {modal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setModal(false)}>
@@ -841,7 +898,7 @@ function StaffLeavePageContent() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }
 

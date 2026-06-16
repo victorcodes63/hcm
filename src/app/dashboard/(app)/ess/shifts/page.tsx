@@ -16,6 +16,7 @@ import {
  Check,
  X,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ShiftPattern = {
@@ -164,7 +165,7 @@ export default function EssShiftsPage() {
  ];
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="ESS & shifts"
  icon={CalendarClock}
@@ -446,6 +447,6 @@ export default function EssShiftsPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

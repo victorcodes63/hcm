@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ClientDetail = {
@@ -111,7 +112,7 @@ export default function AccountsClientDetailPage() {
 
  if (loading) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <div className="dashboard-surface shadow-sm p-8 sm:p-12">
  <div className="animate-pulse space-y-4">
  <div className="h-5 bg-neutral-200 rounded w-40" />
@@ -124,13 +125,13 @@ export default function AccountsClientDetailPage() {
  <div className="h-64 bg-neutral-100 rounded-xl mt-6" />
  </div>
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  if (error || !data) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -150,12 +151,12 @@ export default function AccountsClientDetailPage() {
  <AlertCircle className="w-5 h-5 shrink-0" />
  {error || 'Not found'}
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -175,7 +176,6 @@ export default function AccountsClientDetailPage() {
  </nav>
 
  <DashboardPageHeader
- icon={Building2}
  title={data.name}
  description={
  <>
@@ -308,6 +308,6 @@ export default function AccountsClientDetailPage() {
  </div>
  </form>
  </div>
- </div>
+ </DashboardPage>
  );
 }

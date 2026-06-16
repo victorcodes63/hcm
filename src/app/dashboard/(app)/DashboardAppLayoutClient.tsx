@@ -8,9 +8,10 @@ import { DashboardSetupBanner } from '@/components/dashboard/DashboardSetupBanne
 import { ChevronLeft, LogOut } from 'lucide-react';
 import type { UserSummary } from '@/types/dashboard';
 import { STAFF_USER_TYPE_LABELS } from '@/lib/staff-permissions';
-import { EntityProvider } from '@/components/EntitySwitcher';
+import { EntityProvider, type Entity } from '@/components/EntitySwitcher';
 import type { ModuleKey } from '@/lib/modules';
 import { writeModuleAdminFlagsCookie } from '@/lib/module-cookie';
+import { DashboardSessionProvider } from '@/contexts/dashboard-session';
 import {
  DASHBOARD_MAIN_PADDING_BOTTOM,
  DASHBOARD_MAIN_PADDING_TOP,
@@ -18,9 +19,13 @@ import {
  DASHBOARD_SIDEBAR_WIDTH,
 } from '@/lib/dashboard-layout';
 
-type DeploymentConfig = {
- modules: Record<ModuleKey, boolean>;
+type BootstrapPayload = {
+ me?: UserSummary;
+ modules?: Record<ModuleKey, boolean>;
  moduleAdminFlags?: Record<ModuleKey, boolean>;
+ entities?: Entity[];
+ defaultEntityId?: string;
+ showEntitySwitcher?: boolean;
 };
 
 const ALL_MODULES_ON: Record<ModuleKey, boolean> = {
@@ -45,7 +50,7 @@ const SIDEBAR_WIDTH = DASHBOARD_SIDEBAR_WIDTH;
 
 function getUserRoleLabel(user: UserSummary | null): string {
  if (!user) return 'Staff User';
- if (user.role === 'admin') return 'System Administrator';
+ if (user.role === 'admin') return 'Administrator';
  if (user.role === 'viewer') return 'Viewer';
  return STAFF_USER_TYPE_LABELS[user.staffUserType] ?? 'Staff';
 }
@@ -63,6 +68,7 @@ export default function DashboardAppLayoutClient({
  const pathname = usePathname();
  const [currentUser, setCurrentUser] = useState<UserSummary | null>(null);
  const [enabledModules, setEnabledModules] = useState<Record<ModuleKey, boolean>>(ALL_MODULES_ON);
+ const [entityBootstrap, setEntityBootstrap] = useState<BootstrapPayload | null>(null);
  const [sidebarOpen, setSidebarOpen] = useState(true);
  const [hasMounted, setHasMounted] = useState(false);
  const [isMobileNav, setIsMobileNav] = useState(false);
@@ -83,10 +89,38 @@ export default function DashboardAppLayoutClient({
  useEffect(() => {
  let cancelled = false;
 
- const syncDeploymentModules = () => {
- fetch('/api/config/deployment')
+ const applyBootstrap = (data: BootstrapPayload | null) => {
+ if (!data) return;
+ if (data.me) setCurrentUser(data.me);
+ if (data.modules) setEnabledModules(data.modules);
+ if (data.moduleAdminFlags) writeModuleAdminFlagsCookie(data.moduleAdminFlags);
+ setEntityBootstrap(data);
+ };
+
+ const loadBootstrap = () => {
+ fetch('/api/dashboard/bootstrap', { credentials: 'include' })
+ .then((r) => {
+ if (r.status === 401 || r.status === 403) throw new Error('unauthorized');
+ if (!r.ok) throw new Error('Failed to load dashboard session');
+ return r.json() as Promise<BootstrapPayload>;
+ })
+ .then((data) => {
+ if (!cancelled) applyBootstrap(data);
+ })
+ .catch((error: unknown) => {
+ if (cancelled) return;
+ setCurrentUser(null);
+ if (error instanceof Error && error.message === 'unauthorized') {
+ router.replace('/dashboard/login?error=inactive');
+ }
+ });
+ };
+
+ loadBootstrap();
+ const onModulesUpdated = () => {
+ fetch('/api/config/deployment', { credentials: 'include' })
  .then((r) => (r.ok ? r.json() : null))
- .then((data: DeploymentConfig | null) => {
+ .then((data: BootstrapPayload | null) => {
  if (!cancelled && data?.modules) {
  setEnabledModules(data.modules);
  if (data.moduleAdminFlags) writeModuleAdminFlagsCookie(data.moduleAdminFlags);
@@ -94,14 +128,12 @@ export default function DashboardAppLayoutClient({
  })
  .catch(() => {});
  };
-
- syncDeploymentModules();
- window.addEventListener('hris:modules-updated', syncDeploymentModules);
+ window.addEventListener('hris:modules-updated', onModulesUpdated);
  return () => {
  cancelled = true;
- window.removeEventListener('hris:modules-updated', syncDeploymentModules);
+ window.removeEventListener('hris:modules-updated', onModulesUpdated);
  };
- }, []);
+ }, [router]);
 
  const setSidebar = useCallback((open: boolean) => {
  setSidebarOpen(open);
@@ -111,52 +143,6 @@ export default function DashboardAppLayoutClient({
  const toggleSidebar = useCallback(() => {
  setSidebar(!sidebarOpen);
  }, [setSidebar, sidebarOpen]);
-
- useEffect(() => {
- if (!hasMounted) return;
- if (isMobileNav) setSidebar(false);
- }, [pathname, hasMounted, isMobileNav, setSidebar]);
-
- useEffect(() => {
- if (!sidebarOpen) return;
- const onKey = (e: KeyboardEvent) => {
- if (e.key === 'Escape') setSidebar(false);
- };
- document.addEventListener('keydown', onKey);
- return () => document.removeEventListener('keydown', onKey);
- }, [sidebarOpen, setSidebar]);
-
- useEffect(() => {
- if (!sidebarOpen || !isMobileNav) return;
- const prev = document.body.style.overflow;
- document.body.style.overflow = 'hidden';
- return () => {
- document.body.style.overflow = prev;
- };
- }, [sidebarOpen, isMobileNav]);
-
- useEffect(() => {
- let cancelled = false;
- fetch('/api/auth/me')
- .then((r) => {
- if (r.status === 401 || r.status === 403) throw new Error('unauthorized');
- if (!r.ok) throw new Error('Failed to load current user');
- return r.json();
- })
- .then((data) => {
- if (!cancelled) setCurrentUser(data as UserSummary);
- })
- .catch((error: unknown) => {
- if (cancelled) return;
- setCurrentUser(null);
- if (error instanceof Error && error.message === 'unauthorized') {
- router.replace('/dashboard/login?error=inactive');
- }
- });
- return () => {
- cancelled = true;
- };
- }, [router]);
 
  const displayName = currentUser?.name || 'Staff User';
  const displayEmail = currentUser?.email || 'staff@example.com';
@@ -183,7 +169,17 @@ export default function DashboardAppLayoutClient({
  const showBackdrop = hasMounted && sidebarOpen && isMobileNav;
 
  return (
- <EntityProvider>
+ <EntityProvider
+ initialConfig={
+ entityBootstrap
+ ? {
+ entities: entityBootstrap.entities,
+ defaultEntityId: entityBootstrap.defaultEntityId,
+ showSwitcher: entityBootstrap.showEntitySwitcher,
+ }
+ : null
+ }
+ >
  <div className="dashboard-canvas h-screen overflow-hidden">
  {showBackdrop ? (
  <button
@@ -271,8 +267,10 @@ export default function DashboardAppLayoutClient({
  <div
  className={`w-full min-w-0 ${DASHBOARD_SHELL_GUTTER} ${DASHBOARD_MAIN_PADDING_TOP} ${DASHBOARD_MAIN_PADDING_BOTTOM}`}
  >
- <DashboardSetupBanner />
- {children}
+          <DashboardSetupBanner />
+          <DashboardSessionProvider user={currentUser} modules={enabledModules}>
+          {children}
+          </DashboardSessionProvider>
  </div>
  </main>
  </div>

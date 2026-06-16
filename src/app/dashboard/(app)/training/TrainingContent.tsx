@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { GraduationCap, Loader2, AlertCircle, Plus, Users, Clock, CheckCircle, Globe, MapPin, Calendar } from 'lucide-react';
-import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { motion } from 'framer-motion';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
+import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardStatCard, DashboardStatGrid } from '@/components/dashboard/DashboardStatGrid';
 
 type ProgramRow = {
  id: string;
@@ -87,19 +88,11 @@ export default function TrainingContent() {
  } : null;
 
  return (
- <div className="page-shell">
- <nav className="mb-3" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li><Link href="/dashboard" className="hover:text-primary-700 transition-colors">Dashboard</Link></li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">Training & Development</li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  title="Training & Development"
  icon={GraduationCap}
- iconClassName="h-7 w-7 shrink-0 text-primary-700"
- description="Manage training programs, enrollments, and skill development."
+ description="Manage training programs and enrollments."
  actions={
  <button
  type="button"
@@ -109,26 +102,16 @@ export default function TrainingContent() {
  <Plus className="h-4 w-4" /> New program
  </button>
  }
- className="mb-6"
  />
 
- {stats && (
- <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
- {[
- { label: 'Total programs', value: stats.total, icon: GraduationCap, color: 'text-primary-900' },
- { label: 'Active', value: stats.active, icon: Clock, color: 'text-blue-700' },
- { label: 'Enrolled', value: stats.totalEnrolled, icon: Users, color: 'text-indigo-700' },
- { label: 'Completed', value: stats.totalCompleted, icon: CheckCircle, color: 'text-emerald-700' },
- ].map((s, i) => (
- <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
- className="dashboard-stat-card">
- <div className="inline-flex rounded-lg p-2 mb-2 bg-primary-50 text-primary-700"><s.icon className="w-4 h-4" /></div>
- <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 mb-0.5">{s.label}</p>
- <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
- </motion.div>
- ))}
- </div>
- )}
+ {stats ? (
+ <DashboardStatGrid>
+ <DashboardStatCard label="Total programs" value={stats.total} tone="primary" />
+ <DashboardStatCard label="Active" value={stats.active} tone="sky" />
+ <DashboardStatCard label="Enrolled" value={stats.totalEnrolled} tone="violet" />
+ <DashboardStatCard label="Completed" value={stats.totalCompleted} tone="success" />
+ </DashboardStatGrid>
+ ) : null}
 
  {showForm && (
  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
@@ -220,6 +203,6 @@ export default function TrainingContent() {
  ))}
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

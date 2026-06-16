@@ -5,7 +5,7 @@ import { normalizeLogoSrc } from '@/lib/brand-constants';
 
 type BrandLogoProps = {
   className?: string;
-  variant?: 'mark' | 'markSm' | 'markLg' | 'header' | 'sidebarExpanded' | 'sidebarCollapsed' | 'compact' | 'auth';
+  variant?: 'mark' | 'markSm' | 'markLg' | 'header' | 'sidebarExpanded' | 'sidebarCollapsed' | 'compact' | 'auth' | 'authPanel';
   priority?: boolean;
   alt?: string;
   /** Override URL — use when parent already has brand snapshot */
@@ -21,7 +21,8 @@ const variantClass: Record<NonNullable<BrandLogoProps['variant']>, string> = {
   sidebarExpanded: 'h-9 w-9 object-contain',
   sidebarCollapsed: 'h-9 w-9 object-contain',
   compact: 'h-8 w-8 object-contain',
-  auth: 'h-14 w-14 object-contain',
+  auth: 'h-11 w-11 object-contain',
+  authPanel: 'h-11 w-auto max-w-[11rem] object-contain object-left',
 };
 
 const variantSize: Record<NonNullable<BrandLogoProps['variant']>, number> = {
@@ -32,7 +33,8 @@ const variantSize: Record<NonNullable<BrandLogoProps['variant']>, number> = {
   sidebarExpanded: 36,
   sidebarCollapsed: 36,
   compact: 32,
-  auth: 56,
+  auth: 44,
+  authPanel: 44,
 };
 
 /**

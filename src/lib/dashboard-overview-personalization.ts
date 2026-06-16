@@ -54,8 +54,20 @@ export function resolveOverviewPersona(user: UserSummary | null): OverviewPerson
   return 'operations';
 }
 
+const GENERIC_NAME_PARTS = new Set(['system', 'admin', 'administrator']);
+
+/** First name for greetings — skips generic placeholder tokens like "System". */
+export function greetingFirstName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'there';
+  const personal = parts.filter((part) => !GENERIC_NAME_PARTS.has(part.toLowerCase()));
+  if (personal.length > 0) return personal[0]!;
+  if (parts.length > 1) return parts[parts.length - 1]!;
+  return 'there';
+}
+
 export function getOverviewGreeting(name: string): string {
-  const first = name.trim().split(/\s+/)[0] || 'there';
+  const first = greetingFirstName(name);
   const hour = new Date().getHours();
   if (hour < 12) return `Good morning, ${first}`;
   if (hour < 17) return `Good afternoon, ${first}`;
@@ -64,7 +76,7 @@ export function getOverviewGreeting(name: string): string {
 
 export function getOverviewRoleLabel(user: UserSummary | null): string {
   if (!user) return 'Staff';
-  if (user.role === 'admin') return 'System Administrator';
+  if (user.role === 'admin') return 'Administrator';
   if (user.role === 'viewer') return 'Viewer';
   return STAFF_USER_TYPE_LABELS[user.staffUserType] ?? 'Staff';
 }
@@ -203,7 +215,7 @@ export function buildAttentionItems(input: {
       id: 'leave',
       label: 'Leave approvals',
       detail: `${input.pendingLeave} request${input.pendingLeave === 1 ? '' : 's'} awaiting action`,
-      href: '/dashboard/outsourcing/leave?status=pending',
+      href: '/dashboard/staff-leave?tab=approvals',
       tone: 'amber',
     });
   }

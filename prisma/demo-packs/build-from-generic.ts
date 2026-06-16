@@ -19,7 +19,7 @@ export type VerticalPackConfig = {
   unifiedDemoPassword?: string;
 };
 
-const UNIFIED_DEMO_EMAIL = 'demo@demo.imara.co.ke';
+const UNIFIED_ADMIN_EMAIL = 'admin@imara.co.ke';
 
 export function buildVerticalPackFromGeneric(config: VerticalPackConfig): DemoPack {
   const {
@@ -35,7 +35,7 @@ export function buildVerticalPackFromGeneric(config: VerticalPackConfig): DemoPa
     productName = 'Imara',
     county = 'Nairobi',
     postalAddress = `${county}, Kenya`,
-    unifiedDemoEmail = UNIFIED_DEMO_EMAIL,
+    unifiedDemoEmail = UNIFIED_ADMIN_EMAIL,
     unifiedDemoPassword = genericPack.demoPassword,
   } = config;
 
@@ -120,9 +120,9 @@ export function buildVerticalPackFromGeneric(config: VerticalPackConfig): DemoPa
     slugToken: prefix.toLowerCase(),
     demoPassword: unifiedDemoPassword,
     staffUsers: {
-      admin: { email: unifiedDemoEmail, name: 'System Administrator' },
-      hr: { email: `hr.demo@${emailDomain}`, name: u.hr.name },
-      finance: { email: `finance.demo@${emailDomain}`, name: u.finance.name },
+      admin: { email: unifiedDemoEmail, name: 'Amina Njeri' },
+      hr: { email: `hr@${emailDomain}`, name: u.hr.name },
+      finance: { email: `finance@${emailDomain}`, name: u.finance.name },
       ess: { email: mapEmail(u.ess.email), name: u.ess.name },
       roleEmails,
     },
@@ -152,4 +152,6 @@ export function buildVerticalPackFromGeneric(config: VerticalPackConfig): DemoPa
   };
 }
 
-export { UNIFIED_DEMO_EMAIL };
+export { UNIFIED_ADMIN_EMAIL };
+/** @deprecated use UNIFIED_ADMIN_EMAIL */
+export const UNIFIED_DEMO_EMAIL = UNIFIED_ADMIN_EMAIL;

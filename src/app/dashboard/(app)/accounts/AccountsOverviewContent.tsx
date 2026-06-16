@@ -216,17 +216,6 @@ export default function AccountsOverviewContent() {
  if (error) {
  return (
  <div className="w-full min-w-0 space-y-4">
- <nav className="mb-2" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard" className="hover:text-primary-700 transition-colors">
- Dashboard
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium">Accounts</li>
- </ol>
- </nav>
       <DashboardPageHeader
         variant="hero"
         eyebrow="Finance & payroll"
@@ -242,20 +231,6 @@ export default function AccountsOverviewContent() {
 
  return (
  <div className="w-full min-w-0 space-y-8 sm:space-y-10">
- <nav className="mb-2 sm:mb-0" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard" className="hover:text-primary-700 transition-colors">
- Dashboard
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Accounts
- </li>
- </ol>
- </nav>
-
       <DashboardPageHeader
         variant="hero"
         eyebrow="Finance & payroll"

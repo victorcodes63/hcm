@@ -1,7 +1,19 @@
 import type { Metadata } from 'next';
-import { GeistMono } from 'geist/font/mono';
-import { GeistSans } from 'geist/font/sans';
+import { Figtree, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+
+const figtree = Figtree({
+  subsets: ['latin'],
+  variable: '--font-figtree',
+  display: 'swap',
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+});
 import '@/styles/public-theme.css';
 import { ToastViewport } from '@/components/ui/toast';
 import { BrandProvider } from '@/components/BrandProvider';
@@ -137,14 +149,14 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${figtree.variable} ${ibmPlexMono.variable}`}
       style={themeStyle}
       data-table-zebra={publicBrand.dashboardTableZebraStriping ? 'true' : 'false'}
     >
       <head>
         <link rel="icon" href={favicon.startsWith('/') ? favicon : `/${favicon}`} />
       </head>
-      <body className={`${GeistSans.className} antialiased`}>
+      <body className={`${figtree.className} antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

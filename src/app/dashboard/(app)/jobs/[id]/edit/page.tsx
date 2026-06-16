@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Briefcase, Banknote, FileText, Filter } from 'lucide-react';
 import { RichTextListEditor } from '@/components/jobs/RichTextListEditor';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { toHtmlString } from '@/lib/job-list-html';
 import { toDateTimeLocalNairobi } from '@/lib/timezone';
@@ -220,18 +221,18 @@ export default function EditJobPage() {
  if (!id) return null;
  if (loading) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <div className="animate-pulse space-y-4">
  <div className="h-6 bg-neutral-200 rounded w-1/3" />
  <div className="h-10 bg-neutral-100 rounded w-full" />
  <div className="h-10 bg-neutral-100 rounded w-5/6" />
  </div>
- </div>
+ </DashboardPage>
  );
  }
  if (error && !title) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
  <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -245,7 +246,7 @@ export default function EditJobPage() {
  <Link href="/dashboard/jobs" className="mt-4 inline-block text-primary-600 hover:text-primary-800 font-medium">
  Back to Job openings
  </Link>
- </div>
+ </DashboardPage>
  );
  }
 
@@ -266,7 +267,6 @@ export default function EditJobPage() {
  </nav>
 
  <DashboardPageHeader
- icon={Briefcase}
  title="Edit job"
  description="Update the job details below. Changes will appear on the careers page."
  className="mb-6 sm:mb-8"

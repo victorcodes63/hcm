@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import useEntityConfig, { useCurrencyFormatter } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ItemStatus = 'pending' | 'prepared' | 'submitted' | 'paid' | 'overdue';
@@ -222,7 +223,7 @@ export default function PayrollStatutoryPage() {
  const progressPct = data ? (filedCount / data.obligations.length) * 100 : 0;
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title={`Statutory · ${entityConfig.payroll.runLabel}`}
  icon={Landmark}
@@ -506,6 +507,6 @@ export default function PayrollStatutoryPage() {
  </div>
  </>
  )}
- </div>
+ </DashboardPage>
  );
 }

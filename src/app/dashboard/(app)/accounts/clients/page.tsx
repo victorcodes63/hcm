@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Building2, AlertCircle, Plus, Search, Pencil, FileText } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ClientRow = {
@@ -73,20 +74,7 @@ export default function AccountsClientsPage() {
  }, [clients, searchQuery]);
 
  return (
- <div className="page-shell">
- <nav className="mb-3 sm:mb-4" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">
- Accounts
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Billing clients
- </li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={Building2}
  title="Billing clients"
@@ -241,6 +229,6 @@ export default function AccountsClientsPage() {
  )}
  </>
  )}
- </div>
+ </DashboardPage>
  );
 }

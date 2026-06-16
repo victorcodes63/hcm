@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Scale, Loader2, AlertCircle, Building2, Wallet, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type StatementEntry = {
@@ -175,14 +175,7 @@ export default function AccountsStatementsPage() {
  : (vendorStatements ?? []).reduce((s, v) => s + v.summary.closingBalance, 0);
 
  return (
- <div className="page-shell">
- <nav className="mb-3" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li><Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">Accounts</Link></li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">Statements</li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={Scale}
  title="Statements"
@@ -303,6 +296,6 @@ export default function AccountsStatementsPage() {
  )}
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

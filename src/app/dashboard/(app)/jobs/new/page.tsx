@@ -164,7 +164,6 @@ export default function PostJobPage() {
  </nav>
 
  <DashboardPageHeader
- icon={Briefcase}
  title="Post a job"
  description="Add a new role to the careers page. Title, description, requirements, and key responsibilities are required."
  className="mb-6 sm:mb-8"

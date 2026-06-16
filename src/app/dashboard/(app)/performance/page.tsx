@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowUp, Search, TrendingUp } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import {
  DashboardTableActionButton,
@@ -291,12 +292,13 @@ export default function PerformanceManagementPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Performance Management"
  description="Track KPIs, appraisals and team scores by site"
- meta={<EntityContextBanner />}
  />
+
+ <EntityContextBanner />
 
  {/* Summary KPIs — single visual band */}
  <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -657,6 +659,6 @@ export default function PerformanceManagementPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

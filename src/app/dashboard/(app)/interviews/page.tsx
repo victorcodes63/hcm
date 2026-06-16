@@ -12,6 +12,7 @@ import type {
  InterviewScheduleBreak,
 } from '@/types/dashboard';
 import { formatInNairobi, parseDateTimeAsNairobi, toDateTimeLocalNairobi } from '@/lib/timezone';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type { UserSummary } from '@/types/dashboard';
 
@@ -557,33 +558,7 @@ export default function DashboardInterviewsPage() {
  };
 
  return (
- <div className="page-shell">
- <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
- <ol className="flex items-center gap-1.5 text-sm text-neutral-500 flex-wrap">
- <li>
- {selectedJobTitle ? (
- <button
- type="button"
- onClick={() => setSelectedJobView('')}
- className="hover:text-primary-700 transition-colors text-left"
- >
- Interview management
- </button>
- ) : (
- <span className="text-primary-900 font-medium">Interview management</span>
- )}
- </li>
- {selectedJobTitle && (
- <>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- {selectedJobTitle}
- </li>
- </>
- )}
- </ol>
- </nav>
-
+ <DashboardPage>
  <DashboardPageHeader
  title={selectedJobTitle ? selectedJobTitle : 'Interview management'}
  description={
@@ -1527,6 +1502,6 @@ export default function DashboardInterviewsPage() {
  </motion.div>
  )}
  </AnimatePresence>
- </div>
+ </DashboardPage>
  );
 }

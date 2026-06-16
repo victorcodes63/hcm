@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStaffSessionMaxAgeSeconds } from '@/lib/auth-session';
 import { reportApiError } from '@/lib/monitoring';
-import { getStaffAllowedDomains } from '@/lib/staff-allowed-domains';
+import { getStaffAllowedDomains, isStaffEmailDomainAllowed } from '@/lib/staff-allowed-domains';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
 const STAFF_SESSION_MAX_AGE = getStaffSessionMaxAgeSeconds();
@@ -35,8 +35,7 @@ function normalizeEmailDomain(email: string) {
 }
 
 function isAllowedEmail(email: string) {
-  const normalized = normalizeEmailDomain(email);
-  return getStaffAllowedDomains().some((domain) => normalized.endsWith(`@${domain}`));
+  return isStaffEmailDomainAllowed(email);
 }
 
 function logOAuthDebug(step: string, details: Record<string, unknown>) {

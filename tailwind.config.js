@@ -66,10 +66,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        pub: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+        sans: ['var(--font-figtree)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-figtree)', 'system-ui', 'sans-serif'],
+        pub: ['var(--font-figtree)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-ibm-plex-mono)', 'ui-monospace', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

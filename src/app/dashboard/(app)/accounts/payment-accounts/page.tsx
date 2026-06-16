@@ -1,8 +1,8 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { AlertCircle, Banknote, Loader2, Plus, Star } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type { PaymentAccountRow } from '@/lib/payment-accounts';
 
@@ -134,20 +134,7 @@ function PaymentAccountsPageInner() {
  };
 
  return (
- <div className="page-shell">
- <nav className="mb-3 sm:mb-4" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">
- Accounts
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Payment accounts
- </li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={Banknote}
  title="Payment accounts"
@@ -373,7 +360,7 @@ function PaymentAccountsPageInner() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }
 
@@ -381,9 +368,9 @@ export default function PaymentAccountsPage() {
  return (
  <Suspense
  fallback={
- <div className="page-shell flex justify-center py-16">
+ <DashboardPage className="flex justify-center py-16">
  <Loader2 className="w-8 h-8 animate-spin text-primary-700" />
- </div>
+ </DashboardPage>
  }
  >
  <PaymentAccountsPageInner />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser, isAdmin } from '@/lib/staff-api-auth';
+import { syncStaffLeaveUsedDaysForUserYear } from '@/lib/staff-leave-balance';
 
 /** GET ?year=2026 — my balances. Admin: ?userId= & year= */
 export async function GET(request: NextRequest) {
@@ -9,6 +10,8 @@ export async function GET(request: NextRequest) {
   const year = parseInt(request.nextUrl.searchParams.get('year') || String(new Date().getFullYear()), 10);
   const targetUserId = request.nextUrl.searchParams.get('userId')?.trim();
   const uid = isAdmin(user) && targetUserId ? targetUserId : user.id;
+
+  await syncStaffLeaveUsedDaysForUserYear(prisma, uid, year);
 
   const balances = await prisma.staffLeaveBalance.findMany({
     where: { userId: uid, year },

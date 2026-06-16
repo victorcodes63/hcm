@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getStaffSessionMaxAgeSeconds } from '@/lib/auth-session';
 import { reportApiError } from '@/lib/monitoring';
 import { logAuditEvent } from '@/lib/audit-events';
-import { getStaffAllowedDomains } from '@/lib/staff-allowed-domains';
+import { getStaffAllowedDomains, isStaffEmailDomainAllowed } from '@/lib/staff-allowed-domains';
 import { createAuthChallengeToken } from '@/lib/auth-challenge';
 
 const STAFF_SESSION_COOKIE = 'staff_session';
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const allowedDomains = getStaffAllowedDomains();
-    const domainOk = allowedDomains.some((domain) => normalizedEmail.endsWith(`@${domain}`));
+    const domainOk = isStaffEmailDomainAllowed(normalizedEmail, allowedDomains);
     if (!domainOk) {
       const domainHint =
         allowedDomains.length === 1

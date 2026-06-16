@@ -11,6 +11,7 @@ import {
  Trash2,
  Building2,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ClientRow = { id: string; name: string; currency: string };
@@ -274,21 +275,7 @@ function ReceiptsPageInner() {
  }
 
  return (
- <div className="page-shell max-w-5xl">
- <nav className="mb-4" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">
- Accounts
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Receipts &amp; allocations
- </li>
- </ol>
- </nav>
-
+ <DashboardPage className="max-w-5xl">
  <DashboardPageHeader
  icon={Wallet}
  title="Receipts & allocations"
@@ -600,7 +587,7 @@ function ReceiptsPageInner() {
  </div>
  )}
  </section>
- </div>
+ </DashboardPage>
  );
 }
 

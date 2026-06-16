@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertCircle, FileMinus2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
 import { InvoicePaymentAccountSelect } from '@/components/accounts/InvoiceBankPanel';
@@ -235,7 +236,7 @@ export default function NewCreditNotePage() {
  }
 
  return (
- <div className="page-shell max-w-3xl">
+ <DashboardPage className="max-w-3xl">
  <nav className="mb-4 text-sm text-neutral-500">
  <Link href="/dashboard/accounts/invoices" className="hover:text-primary-700">
  Invoices
@@ -249,7 +250,6 @@ export default function NewCreditNotePage() {
  </nav>
 
  <DashboardPageHeader
- icon={FileMinus2}
  title="Credit note"
  description={
  <>
@@ -395,6 +395,6 @@ export default function NewCreditNotePage() {
  </Link>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }

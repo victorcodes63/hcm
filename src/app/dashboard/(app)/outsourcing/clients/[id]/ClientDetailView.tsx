@@ -126,7 +126,6 @@ export default function ClientDetailView({ clientId }: ClientDetailViewProps) {
  </Link>
  </div>
  <DashboardPageHeader
- icon={Building2}
  title={client.name}
  description="Departments are managed on a separate page. Then add or import employees here."
  className="!mb-0"

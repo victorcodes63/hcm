@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Save, Settings } from 'lucide-react';
 import type { SystemSettingsPayload } from '@/types/dashboard';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const DEFAULTS: SystemSettingsPayload = {
@@ -67,11 +68,11 @@ export default function SettingsPage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  icon={Settings}
  title="Settings"
- description="Configure global HRIS defaults and administrative policies for this deployment."
+ description="Global HRIS defaults and administrative policies."
  />
 
  <aside className="rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-3 text-sm text-neutral-600 sm:px-5">
@@ -136,6 +137,6 @@ export default function SettingsPage() {
  </>
  )}
  </form>
- </div>
+ </DashboardPage>
  );
 }

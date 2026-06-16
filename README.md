@@ -23,6 +23,18 @@ Open [http://localhost:3000](http://localhost:3000). Staff dashboard: `/dashboar
 
 **Generic logins** (password `Demo@2026!`): `demo@demo.example.com` (admin), `hr.demo@demo.example.com`, `employee@demo.example.com`.
 
+## Eagle HR internal leave demo
+
+Focused demo for **internal staff leave** (not outsourcing / ESS). See **[`docs/DEMO.md`](./docs/DEMO.md)** for credentials, env vars, and a 5-minute walkthrough.
+
+```bash
+npm run db:seed-demo
+# Logins: admin@eaglehr.co.ke, wanjiku.mwangi@eaglehr.co.ke, james.otieno@eaglehr.co.ke
+# Password: Demo2026!
+```
+
+Route: `/dashboard/staff-leave`
+
 ## Demo contexts
 
 Switch branding and database content for different sales leads. For **live switching in one database** (entity switcher lists all contexts), use `demo:reseed:all-contexts` instead.

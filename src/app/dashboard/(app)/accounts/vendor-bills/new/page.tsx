@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, FileStack, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { computeInvoiceVatFromLines } from '@/lib/accounts-invoice-totals';
 import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
@@ -178,7 +179,7 @@ function NewVendorBillForm() {
  }
 
  return (
- <div className="page-shell max-w-4xl">
+ <DashboardPage className="max-w-4xl">
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -198,7 +199,6 @@ function NewVendorBillForm() {
  </nav>
 
  <DashboardPageHeader
- icon={FileStack}
  title="New vendor bill"
  description={
  <>
@@ -420,7 +420,7 @@ function NewVendorBillForm() {
  </Link>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }
 

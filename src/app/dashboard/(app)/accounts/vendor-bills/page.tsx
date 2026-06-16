@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FileStack, Loader2, AlertCircle, Plus } from 'lucide-react';
 import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type BillRow = {
@@ -65,20 +66,7 @@ function VendorBillsListInner() {
  const openBill = (id: string) => router.push(`/dashboard/accounts/vendor-bills/${id}`);
 
  return (
- <div className="page-shell">
- <nav className="mb-3 sm:mb-4" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">
- Accounts
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Vendor bills
- </li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={FileStack}
  title="Vendor bills"
@@ -214,7 +202,7 @@ function VendorBillsListInner() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }
 

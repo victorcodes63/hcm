@@ -14,6 +14,7 @@ import {
  MoreHorizontal,
  FileQuestion,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type RequestStatus = 'pending' | 'processing' | 'completed' | 'rejected';
@@ -137,12 +138,11 @@ export default function DocumentRequestsPage() {
  const selectedRequest = selectedId ? requests.find((r) => r.id === selectedId) : null;
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Document requests"
  icon={FileQuestion}
- description="Review and process document requests from employees via the self-service portal."
- className="mb-6"
+ description="Review and process employee document requests from ESS."
  />
 
  <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -386,6 +386,6 @@ export default function DocumentRequestsPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { FileSignature } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type ContractDetail = {
@@ -180,29 +180,22 @@ export default function PeopleContractDetailPage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard" className="hover:text-primary-700 transition-colors">
- Dashboard
- </Link>
- </li>
- <li aria-hidden="true">/</li>
  <li>
  <Link href="/dashboard/people/contracts" className="hover:text-primary-700 transition-colors">
  Contracts
  </Link>
  </li>
  <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium">Contract detail</li>
+ <li className="text-primary-900 font-medium" aria-current="page">Contract detail</li>
  </ol>
  </nav>
 
  <div className="dashboard-surface p-5">
  <div className="flex flex-wrap items-start justify-between gap-3">
  <DashboardPageHeader
- icon={FileSignature}
  title={contract.title || 'Contract'}
  description={`${contract.contractType === 'consultant' ? 'Consultant doctor contract' : 'Employee contract'} · Ref: ${contract.reference || '—'}`}
  className="min-w-0 flex-1 !mb-0"
@@ -335,7 +328,7 @@ export default function PeopleContractDetailPage() {
  </button>
  </div>
  </div>
- </div>
+ </DashboardPage>
  );
 }
 

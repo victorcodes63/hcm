@@ -13,6 +13,7 @@ import {
  MoreHorizontal,
  Shield,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type PortalRole = 'employee' | 'manager' | 'hr';
@@ -195,11 +196,11 @@ export default function PortalAccountsPage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Portal accounts"
  icon={Smartphone}
- description="Provision and manage employee self-service portal access for your staff."
+ description="Provision and manage employee self-service portal access."
  actions={
  <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
  <button
@@ -221,7 +222,6 @@ export default function PortalAccountsPage() {
  </button>
  </div>
  }
- className="mb-6"
  />
 
  {error && (
@@ -477,6 +477,6 @@ export default function PortalAccountsPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

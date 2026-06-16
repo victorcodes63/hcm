@@ -4,7 +4,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { Shield } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardAsyncState } from '@/components/dashboard/DashboardAsyncState';
+import {
+  DashboardTable,
+  DashboardTableCard,
+  DashboardTableEmpty,
+  DashboardTableToolbar,
+  DashboardTableViewport,
+  dashboardTableSelectClass,
+} from '@/components/dashboard/DashboardDataTable';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardStatCard, DashboardStatGrid } from '@/components/dashboard/DashboardStatGrid';
 import { stationBelongsToEntity, type EntityId } from '@/lib/entityConfig';
 import { toast } from '@/components/ui/toast';
 
@@ -132,6 +143,16 @@ const PHANTOM_SITE = {
  ke: 'Kisumu Regional Hub',
 } as const;
 
+const INCIDENT_TYPES: IncidentType[] = [
+ 'Hazardous Material',
+ 'Fire/Explosion Risk',
+ 'Personal Injury',
+ 'Near Miss',
+ 'Equipment Failure',
+];
+
+const SEVERITY_LEVELS: Severity[] = ['Critical', 'High', 'Medium', 'Low'];
+
 export default function HseIncidentsPage() {
  const { activeEntity } = useEntity();
  const entityId = activeEntity.id as EntityId;
@@ -217,12 +238,16 @@ export default function HseIncidentsPage() {
  setLogOpen(true);
  };
 
+ const listStatus = useMemo(() => {
+ if (filtered.length === 0) return 'empty' as const;
+ return 'success' as const;
+ }, [filtered.length]);
+
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="HSE & Incident Management"
- description="Log, track and resolve safety incidents across all sites"
- meta={<EntityContextBanner />}
+ description="Log, track, and resolve safety incidents across sites."
  actions={
  <button
  type="button"
@@ -234,6 +259,8 @@ export default function HseIncidentsPage() {
  }
  />
 
+ <EntityContextBanner />
+
  <div className="rounded-lg border border-amber-300 bg-amber-100 px-4 py-3 text-sm text-neutral-900 shadow-sm">
  <span className="font-medium">
  {followUpCount} incident{followUpCount === 1 ? '' : 's'} require follow-up action
@@ -244,27 +271,16 @@ export default function HseIncidentsPage() {
  </a>
  </div>
 
- <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
- <article className="dashboard-stat-card shadow-sm">
- <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">Open Incidents</p>
- <p className="text-2xl font-semibold text-red-700 tabular-nums">{openIncidents}</p>
- </article>
- <article className="dashboard-stat-card shadow-sm">
- <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">Resolved This Month</p>
- <p className="text-2xl font-semibold text-green-700 tabular-nums">{resolvedThisMonth}</p>
- </article>
- <article className="dashboard-stat-card shadow-sm">
- <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">Near Misses Logged</p>
- <p className="text-2xl font-semibold text-amber-700 tabular-nums">{nearMisses}</p>
- </article>
- <article className="dashboard-stat-card shadow-sm">
- <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">Days Since Last Incident</p>
- <p className="text-[34px] font-semibold leading-none text-ink tabular-nums">{daysSince}</p>
- </article>
- </section>
+ <DashboardStatGrid>
+ <DashboardStatCard label="Open incidents" value={openIncidents} tone="warning" warn={openIncidents > 0} />
+ <DashboardStatCard label="Resolved this month" value={resolvedThisMonth} tone="success" />
+ <DashboardStatCard label="Near misses logged" value={nearMisses} tone="violet" />
+ <DashboardStatCard label="Days since last incident" value={daysSince} tone="primary" />
+ </DashboardStatGrid>
 
  <div id="incidents-table" className="scroll-mt-6">
- <div className="filter-bar mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50">
+ <DashboardTableCard>
+ <DashboardTableToolbar label={null}>
  <div>
  <label htmlFor="hse-station-filter" className="mr-2 text-sm text-neutral-600">
  Site
@@ -273,9 +289,11 @@ export default function HseIncidentsPage() {
  id="hse-station-filter"
  value={stationFilter}
  onChange={(e) => setStationFilter(e.target.value)}
- className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500/30"
+ className={dashboardTableSelectClass}
  >
- <option value="">All sites</option>
+ <option key="all" value="">
+  All sites
+ </option>
  {stationFilterOptions.map((s) => (
  <option key={s} value={s}>
  {s}
@@ -283,21 +301,20 @@ export default function HseIncidentsPage() {
  ))}
  </select>
  </div>
- </div>
+ </DashboardTableToolbar>
 
- <div className="data-table-wrap">
- <div className="border-b border-neutral-200 px-4 py-3">
- <h2 className="text-base font-medium text-ink">Incident register</h2>
- </div>
- {filtered.length === 0 ? (
- <div className="table-empty-state">
- <Shield className="h-12 w-12 text-neutral-400" aria-hidden />
- <p className="text-base font-semibold text-neutral-900">No incidents found</p>
- <p className="text-sm text-neutral-500">All clear for this period</p>
- </div>
- ) : (
- <div className="overflow-x-auto">
- <table className="data-table dashboard-data-table min-w-[1000px]">
+ <DashboardAsyncState
+ status={listStatus}
+ empty={
+ <DashboardTableEmpty
+ icon={<Shield className="h-8 w-8 text-neutral-300" aria-hidden />}
+ title="No incidents found"
+ description="All clear for this period."
+ />
+ }
+ >
+ <DashboardTableViewport minWidth={1000}>
+ <DashboardTable>
  <thead>
  <tr>
  <th>Ref #</th>
@@ -332,10 +349,10 @@ export default function HseIncidentsPage() {
  </tr>
  ))}
  </tbody>
- </table>
- </div>
- )}
- </div>
+ </DashboardTable>
+ </DashboardTableViewport>
+ </DashboardAsyncState>
+ </DashboardTableCard>
  </div>
 
  {logOpen && (
@@ -377,11 +394,11 @@ export default function HseIncidentsPage() {
  onChange={(e) => setLogForm((f) => ({ ...f, type: e.target.value as IncidentType }))}
  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
  >
- <option>Hazardous Material</option>
- <option>Fire/Explosion Risk</option>
- <option>Personal Injury</option>
- <option>Near Miss</option>
- <option>Equipment Failure</option>
+ {INCIDENT_TYPES.map((type) => (
+ <option key={type} value={type}>
+ {type}
+ </option>
+ ))}
  </select>
  </div>
  <div>
@@ -392,10 +409,11 @@ export default function HseIncidentsPage() {
  onChange={(e) => setLogForm((f) => ({ ...f, severity: e.target.value as Severity }))}
  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
  >
- <option>Critical</option>
- <option>High</option>
- <option>Medium</option>
- <option>Low</option>
+ {SEVERITY_LEVELS.map((level) => (
+ <option key={level} value={level}>
+ {level}
+ </option>
+ ))}
  </select>
  </div>
  <div>
@@ -499,6 +517,6 @@ export default function HseIncidentsPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

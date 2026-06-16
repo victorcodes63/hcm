@@ -486,7 +486,7 @@ export const genericPack: DemoPack = {
   slugToken: 'dmo',
   demoPassword: 'Demo@2026!',
   staffUsers: {
-    admin: { email: `demo@${EMAIL_DOMAIN}`, name: 'System Administrator' },
+    admin: { email: `demo@${EMAIL_DOMAIN}`, name: 'Amina Njeri' },
     hr: { email: `hr.demo@${EMAIL_DOMAIN}`, name: 'Diana Namutebi' },
     finance: { email: `finance.demo@${EMAIL_DOMAIN}`, name: 'David Ochieng' },
     ess: { email: `employee@${EMAIL_DOMAIN}`, name: 'Alex Otieno' },

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser, canAccessTeamLeaveScope } from '@/lib/staff-api-auth';
 import { workingDaysBetween } from '@/lib/staff-leave-days';
+import { getTeamLeaveMemberIds } from '@/lib/staff-leave-team';
+import { syncStaffLeaveUsedDaysForUserYear } from '@/lib/staff-leave-balance';
 
 export async function GET(request: NextRequest) {
   const user = await requireStaffUser(request);
@@ -16,6 +18,8 @@ export async function GET(request: NextRequest) {
 
   const where: Record<string, unknown> = {};
   if (scope === 'team' && canAccessTeamLeaveScope(user)) {
+    const memberIds = await getTeamLeaveMemberIds(user);
+    where.userId = { in: memberIds };
     if (status) where.status = status;
   } else {
     where.userId = user.id;
@@ -147,12 +151,9 @@ export async function POST(request: NextRequest) {
         },
         include: { leaveType: true, user: { select: { name: true, email: true } } },
       });
-      await tx.staffLeaveBalance.update({
-        where: { id: balance!.id },
-        data: { usedDays: { increment: totalDays } },
-      });
       return a;
     });
+    await syncStaffLeaveUsedDaysForUserYear(prisma, user.id, year);
     return NextResponse.json(app);
   }
 
@@ -170,11 +171,21 @@ export async function POST(request: NextRequest) {
     },
     include: { leaveType: true, user: { select: { name: true, email: true } } },
   });
+  const applicantRow = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { leaveApproverId: true },
+  });
+  const approverOr: Array<{ id: string } | { role: 'admin' } | { staffUserType: 'business_manager' }> = [];
+  if (applicantRow?.leaveApproverId) {
+    approverOr.push({ id: applicantRow.leaveApproverId });
+  }
+  approverOr.push({ role: 'admin' }, { staffUserType: 'business_manager' });
+
   const defaultApprover = await prisma.user.findFirst({
     where: {
       isActive: true,
       id: { not: user.id },
-      OR: [{ role: 'admin' }, { staffUserType: 'business_manager' }],
+      OR: approverOr,
     },
     orderBy: [{ role: 'desc' }, { createdAt: 'asc' }],
     select: { id: true },

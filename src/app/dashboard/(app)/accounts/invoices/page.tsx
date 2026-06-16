@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FileText, FileSpreadsheet, Loader2, AlertCircle, Plus } from 'lucide-react';
 import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type InvoiceRow = {
@@ -65,20 +66,7 @@ function AccountsInvoicesPageInner() {
  };
 
  return (
- <div className="page-shell">
- <nav className="mb-3 sm:mb-4" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">
- Accounts
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Invoices
- </li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={FileText}
  title="Invoices"
@@ -248,7 +236,7 @@ function AccountsInvoicesPageInner() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }
 

@@ -33,7 +33,7 @@
   --pub-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   --pub-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-  --pub-font-display: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pub-font-display: var(--font-figtree), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --pub-text-base: 16px;
   --pub-line-base: 1.5;
 
@@ -315,8 +315,134 @@
 /* --- Auth split login (staff / ESS / forgot password) --- */
 
 .public-app .auth-split-brand {
-  background: linear-gradient(160deg, #0a2540 0%, #0d2f4f 45%, #13395c 100%);
+  background: #0a2540;
   color: rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.public-app .auth-split-shader {
+  overflow: hidden;
+}
+
+/* Stripe-style flowing gradient ribbon */
+.public-app .auth-split-ribbon {
+  position: absolute;
+  inset: -10% -20% -5%;
+  overflow: hidden;
+}
+
+.public-app .auth-split-ribbon-sweep {
+  position: absolute;
+  border-radius: 42% 58% 48% 52% / 46% 44% 56% 54%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.public-app .auth-split-ribbon-sweep--primary {
+  width: 165%;
+  height: 72%;
+  left: -38%;
+  top: -8%;
+  transform: rotate(-34deg);
+  background: linear-gradient(
+    102deg,
+    rgba(255, 97, 24, 0.98) 0%,
+    rgba(255, 130, 95, 0.95) 14%,
+    rgba(255, 105, 180, 0.92) 34%,
+    rgba(186, 104, 255, 0.9) 56%,
+    rgba(99, 91, 255, 0.88) 74%,
+    rgba(0, 136, 255, 0.85) 100%
+  );
+  filter: blur(52px) saturate(1.2);
+  opacity: 0.78;
+  animation: auth-ribbon-drift-a 24s ease-in-out infinite alternate;
+}
+
+.public-app .auth-split-ribbon-sweep--secondary {
+  width: 140%;
+  height: 58%;
+  left: -22%;
+  top: 34%;
+  transform: rotate(-20deg);
+  background: linear-gradient(
+    96deg,
+    rgba(255, 170, 90, 0.75) 0%,
+    rgba(244, 114, 182, 0.7) 38%,
+    rgba(139, 92, 246, 0.68) 72%,
+    rgba(59, 130, 246, 0.62) 100%
+  );
+  filter: blur(64px) saturate(1.1);
+  opacity: 0.5;
+  animation: auth-ribbon-drift-b 20s ease-in-out infinite alternate;
+}
+
+.public-app .auth-split-ribbon-sweep--accent {
+  width: 95%;
+  height: 42%;
+  right: -28%;
+  top: 8%;
+  transform: rotate(12deg);
+  background: linear-gradient(
+    118deg,
+    rgba(255, 220, 160, 0.55) 0%,
+    rgba(255, 120, 200, 0.5) 50%,
+    rgba(99, 91, 255, 0.45) 100%
+  );
+  filter: blur(72px);
+  opacity: 0.38;
+  animation: auth-ribbon-drift-c 28s ease-in-out infinite alternate;
+}
+
+.public-app .auth-split-brand-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    185deg,
+    rgba(10, 37, 64, 0.12) 0%,
+    rgba(10, 37, 64, 0.42) 42%,
+    rgba(10, 37, 64, 0.88) 78%,
+    rgba(7, 26, 46, 0.96) 100%
+  );
+}
+
+.public-app .auth-split-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, transparent 0%, rgba(7, 26, 46, 0.35) 100%);
+  pointer-events: none;
+}
+
+@keyframes auth-ribbon-drift-a {
+  0% {
+    transform: rotate(-34deg) translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: rotate(-30deg) translate3d(3%, 2%, 0) scale(1.06);
+  }
+}
+
+@keyframes auth-ribbon-drift-b {
+  0% {
+    transform: rotate(-20deg) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: rotate(-16deg) translate3d(-2%, 3%, 0);
+  }
+}
+
+@keyframes auth-ribbon-drift-c {
+  0% {
+    transform: rotate(12deg) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: rotate(16deg) translate3d(-3%, 2%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-app .auth-split-ribbon-sweep {
+    animation: none;
+  }
 }
 
 .public-app .auth-split-brand h1,
@@ -342,59 +468,44 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-.public-app .auth-split-glow {
+.public-app .auth-split-form {
+  background: linear-gradient(168deg, #fafbfc 0%, #f4f7fb 38%, #eef2f8 100%);
+}
+
+.public-app .auth-split-form-bg {
   overflow: hidden;
 }
 
-.public-app .auth-split-glow-purple,
-.public-app .auth-split-glow-teal,
-.public-app .auth-split-glow-orange {
+/* Soft echo of the brand ribbon — keeps form side airy, not flat */
+.public-app .auth-split-form-mesh {
   position: absolute;
-  border-radius: 9999px;
-  pointer-events: none;
+  inset: -15% -10%;
+  background:
+    radial-gradient(ellipse 65% 50% at 92% 6%, rgba(99, 91, 255, 0.11) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 45% at 8% 88%, rgba(0, 136, 255, 0.09) 0%, transparent 52%),
+    radial-gradient(ellipse 50% 40% at 48% 42%, rgba(255, 97, 24, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 75% 72%, rgba(244, 114, 182, 0.06) 0%, transparent 50%);
 }
 
-.public-app .auth-split-glow-purple {
-  right: -5rem;
-  top: -5rem;
-  height: 31.25rem;
-  width: 31.25rem;
-  opacity: 0.3;
-  filter: blur(120px);
-  background: radial-gradient(circle, #0088ff 0%, transparent 70%);
-}
-
-.public-app .auth-split-glow-teal {
-  bottom: -8rem;
-  left: -5rem;
-  height: 25rem;
-  width: 25rem;
-  opacity: 0.2;
-  filter: blur(100px);
-  background: radial-gradient(circle, #00d4aa 0%, transparent 70%);
-}
-
-.public-app .auth-split-glow-orange {
-  right: 2.5rem;
-  top: 50%;
-  height: 18.75rem;
-  width: 18.75rem;
-  transform: translateY(-50%);
-  opacity: 0.15;
-  filter: blur(100px);
-  background: radial-gradient(circle, #ff6118 0%, transparent 70%);
-}
-
-.public-app .auth-split-form {
-  background: #f7f8fa;
+.public-app .auth-split-form-glow {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(10, 37, 64, 0.045) 1px, transparent 1px);
+  background-size: 1.35rem 1.35rem;
+  mask-image: radial-gradient(ellipse 90% 85% at 50% 45%, black 0%, transparent 72%);
+  opacity: 0.65;
 }
 
 .public-app .auth-login-card {
-  border: 1px solid #e3e8ee;
+  border: 1px solid rgba(227, 232, 238, 0.95);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.02),
-    0 1px 6px -1px rgba(0, 0, 0, 0.03),
-    0 16px 40px -8px rgba(0, 0, 0, 0.06);
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 2px 4px rgba(15, 23, 42, 0.02),
+    0 8px 24px -4px rgba(15, 23, 42, 0.06),
+    0 24px 48px -12px rgba(99, 91, 255, 0.08);
 }
 
 /* --- Nav utilities --- */

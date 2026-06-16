@@ -12,6 +12,7 @@ import {
  Loader2,
  TrendingUp,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type { ApplicationWithDetails, ApplicationStatus, UserSummary } from '@/types/dashboard';
 import type { InterviewWithDetails } from '@/types/dashboard';
@@ -282,17 +283,17 @@ export default function DashboardAnalyticsPage() {
 
  if (error) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader title="Reports" />
  <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 text-sm">
  {error}
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Reports"
  description="Executive summary: application and hiring metrics across the system."
@@ -564,6 +565,6 @@ export default function DashboardAnalyticsPage() {
  )}
  </motion.div>
  </div>
- </div>
+ </DashboardPage>
  );
 }

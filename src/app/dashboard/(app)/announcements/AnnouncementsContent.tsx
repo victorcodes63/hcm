@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Megaphone, Loader2, AlertCircle, Plus, Pin, Clock, Send, Archive } from 'lucide-react';
-import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { motion } from 'framer-motion';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
+import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type AnnouncementRow = {
  id: string;
@@ -73,19 +73,11 @@ export default function AnnouncementsContent() {
  };
 
  return (
- <div className="page-shell">
- <nav className="mb-3" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li><Link href="/dashboard" className="hover:text-primary-700 transition-colors">Dashboard</Link></li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">Announcements</li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  title="Announcements"
  icon={Megaphone}
- iconClassName="h-7 w-7 shrink-0 text-primary-700"
- description="Company-wide notices, updates, and internal communications."
+ description="Company-wide notices and updates."
  actions={
  <button
  type="button"
@@ -95,7 +87,6 @@ export default function AnnouncementsContent() {
  <Plus className="h-4 w-4" /> New announcement
  </button>
  }
- className="mb-6"
  />
 
  {showForm && (
@@ -186,6 +177,6 @@ export default function AnnouncementsContent() {
  ))}
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

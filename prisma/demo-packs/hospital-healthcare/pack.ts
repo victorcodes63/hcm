@@ -4,7 +4,7 @@ export const hospitalHealthcarePack = buildVerticalPackFromGeneric({
   id: 'hospital-healthcare',
   label: 'Hospital & healthcare demo',
   orgName: 'Amani Medical Centre',
-  emailDomain: 'amani.demo.imara.co.ke',
+  emailDomain: 'amani.imara.co.ke',
   prefix: 'AMC',
   tagline: 'Clinical rota, credentials, and payroll for hospitals and healthcare providers.',
   publicFooterText:

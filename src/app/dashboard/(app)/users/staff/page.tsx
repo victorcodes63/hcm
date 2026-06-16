@@ -11,6 +11,7 @@ import type {
  UserRole,
 } from '@/types/dashboard';
 import { STAFF_USER_TYPES } from '@/types/dashboard';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -331,10 +332,10 @@ export default function DashboardStaffPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Staff"
- description="Internal staff accounts for this HRIS demo — roles, user types, and Accounts permissions. Employer portal users are separate."
+ description="Staff accounts, roles, user types, and Accounts permissions."
  actions={
  <button
  type="button"
@@ -681,6 +682,6 @@ export default function DashboardStaffPage() {
  </motion.div>
  )}
  </AnimatePresence>
- </div>
+ </DashboardPage>
  );
 }

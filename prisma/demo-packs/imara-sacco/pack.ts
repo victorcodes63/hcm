@@ -7,7 +7,7 @@ export const imaraSaccoPack = buildVerticalPackFromGeneric({
   id: 'imara-sacco',
   label: 'Imara — SACCO beachhead demo',
   orgName: 'Nyati SACCO Society Ltd',
-  emailDomain: 'nyati.demo.imara.co.ke',
+  emailDomain: 'nyati.imara.co.ke',
   prefix: 'NYT',
   tagline: SACCO_TAGLINE,
   publicFooterText:

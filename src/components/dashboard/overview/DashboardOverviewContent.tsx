@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
+import { useDashboardSession } from '@/contexts/dashboard-session';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import {
   ALL_MODULES_ENABLED,
@@ -54,8 +55,6 @@ type MyTaskRow = {
   status: string;
   workflow: { employee: { firstName: string; lastName: string } };
 };
-
-type CredentialRow = { id: string; employeeId: string; effectiveStatus: string; credentialName: string };
 
 type NotificationRow = {
   id: string;
@@ -282,11 +281,26 @@ function ShortcutTile({ item, pinned = false }: { item: OverviewShortcut; pinned
   );
 }
 
+function OverviewMetricsSkeleton() {
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton h-28 rounded-xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="skeleton h-80 rounded-xl xl:col-span-8" />
+        <div className="skeleton h-80 rounded-xl xl:col-span-4" />
+      </div>
+    </>
+  );
+}
+
 export default function DashboardOverviewContent() {
-  const { activeEntity } = useEntity();
-  const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<UserSummary | null>(null);
-  const [enabledModules, setEnabledModules] = useState<Record<ModuleKey, boolean>>(ALL_MODULES_ON);
+  const { user: sessionUser, modules: sessionModules } = useDashboardSession();
+  const { activeEntity, loading: entityLoading } = useEntity();
+  const [metricsLoading, setMetricsLoading] = useState(true);
   const [totalStaff, setTotalStaff] = useState(0);
   const [onDuty, setOnDuty] = useState(0);
   const [onLeave, setOnLeave] = useState(0);
@@ -305,137 +319,56 @@ export default function DashboardOverviewContent() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
+    if (entityLoading) return;
+
     let cancelled = false;
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    const todayStr = now.toISOString().slice(0, 10);
+    setMetricsLoading(true);
 
     const run = async () => {
       try {
-        const [
-          meRes,
-          employeesRes,
-          attendanceRes,
-          statsRes,
-          payrollRes,
-          tasksRes,
-          credRes,
-          pinsRes,
-          notifRes,
-          deployRes,
-        ] = await Promise.all([
-          fetch('/api/auth/me', { credentials: 'include' }),
-          fetch('/api/outsourcing/employees', { credentials: 'include' }),
-          fetch(`/api/outsourcing/attendance?from=${todayStr}&to=${todayStr}`, { credentials: 'include' }),
-          fetch('/api/outsourcing/overview-stats', { credentials: 'include' }),
-          fetch(`/api/outsourcing/payroll?month=${month}&year=${year}`, { credentials: 'include' }),
-          fetch('/api/onboarding/tasks?mine=true&statuses=PENDING,OVERDUE', { credentials: 'include' }),
-          fetch('/api/credentials', { credentials: 'include' }),
-          fetch('/api/dashboard/nav-preferences', { credentials: 'include' }),
-          fetch('/api/dashboard/notifications?limit=5', { credentials: 'include' }),
-          fetch('/api/config/deployment', { credentials: 'include' }),
-        ]);
-
+        const res = await fetch('/api/dashboard/overview?metricsOnly=1', { credentials: 'include' });
         if (cancelled) return;
+        if (!res.ok) return;
 
-        const meJson = meRes.ok ? ((await meRes.json()) as UserSummary) : null;
-        setMe(meJson);
-
-        if (deployRes.ok) {
-          const deploy = (await deployRes.json()) as { modules?: Record<ModuleKey, boolean> };
-          if (deploy.modules) setEnabledModules({ ...ALL_MODULES_ON, ...deploy.modules });
-        }
-
-        const employeesRaw: unknown = employeesRes.ok ? await employeesRes.json() : [];
-        const employeeList: { id?: string }[] = Array.isArray(employeesRaw)
-          ? (employeesRaw as { id?: string }[])
-          : [];
-        const employeeIds = new Set(
-          employeeList.map((e) => e.id).filter((id): id is string => Boolean(id)),
-        );
-
-        const attendanceJson = attendanceRes.ok ? await attendanceRes.json() : {};
-        const attendanceList = Array.isArray((attendanceJson as { summaries?: unknown }).summaries)
-          ? (attendanceJson as { summaries: AttendanceRow[] }).summaries
-          : [];
-        const exceptions = Array.isArray((attendanceJson as { exceptions?: unknown }).exceptions)
-          ? (attendanceJson as { exceptions: { status?: string }[] }).exceptions
-          : [];
-
-        const leaveStats = statsRes.ok ? await statsRes.json() : {};
-
-        let payrollList: {
-          grossPay?: string;
-          netPay?: string;
-          paye?: string;
-          nssf?: string;
-          nhif?: string;
-          ahl?: string;
-        }[] = [];
-        let denied = false;
-        if (payrollRes.ok) {
-          const p = await payrollRes.json();
-          payrollList = Array.isArray(p) ? p : [];
-        } else if (payrollRes.status === 403) {
-          denied = true;
-        }
-
-        let credExpiring = 0;
-        let credExpired = 0;
-        if (credRes.ok) {
-          const creds = (await credRes.json()) as CredentialRow[];
-          const list = Array.isArray(creds) ? creds : [];
-          const scoped = list.filter((c) => employeeIds.has(c.employeeId));
-          credExpiring = scoped.filter((c) => c.effectiveStatus === 'expiring_soon').length;
-          credExpired = scoped.filter((c) => c.effectiveStatus === 'expired').length;
-        }
-
-        const tasksRaw = tasksRes.ok ? await tasksRes.json() : [];
-        const taskList = Array.isArray(tasksRaw) ? tasksRaw : [];
-
-        if (pinsRes.ok) {
-          const pinsJson = (await pinsRes.json()) as { pinned?: string[] };
-          setPinnedHrefs(Array.isArray(pinsJson.pinned) ? pinsJson.pinned : []);
-        }
-
-        if (notifRes.ok) {
-          const notifJson = (await notifRes.json()) as {
-            notifications?: NotificationRow[];
-            unreadCount?: number;
+        const data = (await res.json()) as {
+          totalStaff?: number;
+          onDuty?: number;
+          onLeave?: number;
+          pendingApprovals?: number;
+          attendanceRows?: AttendanceRow[];
+          openAttendanceExceptions?: number;
+          payroll?: {
+            denied?: boolean;
+            grossTotal?: number;
+            netTotal?: number;
+            deductionsTotal?: number;
           };
-          setNotifications(Array.isArray(notifJson.notifications) ? notifJson.notifications : []);
-          setUnreadNotifications(typeof notifJson.unreadCount === 'number' ? notifJson.unreadCount : 0);
-        }
+          myOnboardingTasks?: MyTaskRow[];
+          credentialsExpiring?: number;
+          credentialsExpired?: number;
+          pinnedHrefs?: string[];
+          notifications?: NotificationRow[];
+          unreadNotifications?: number;
+        };
 
-        setTotalStaff(employeeList.length);
-        setOnDuty(attendanceList.filter((r) => Boolean(r.firstInAt)).length);
-        setOnLeave(
-          typeof (leaveStats as { onLeaveToday?: number }).onLeaveToday === 'number'
-            ? (leaveStats as { onLeaveToday: number }).onLeaveToday
-            : 0,
-        );
-        setPendingApprovals(
-          typeof (leaveStats as { pendingApprovals?: number }).pendingApprovals === 'number'
-            ? (leaveStats as { pendingApprovals: number }).pendingApprovals
-            : 0,
-        );
-        setAttendanceRows(attendanceList.slice(0, 8));
-        setOpenAttendanceExceptions(exceptions.filter((ex) => ex.status === 'open').length);
-        setPayrollDenied(denied);
-        setGrossTotal(payrollList.reduce((sum, r) => sum + Number(r.grossPay ?? 0), 0));
-        setNetTotal(payrollList.reduce((sum, r) => sum + Number(r.netPay ?? 0), 0));
-        setDeductionsTotal(
-          payrollList.reduce(
-            (sum, r) => sum + Number(r.paye ?? 0) + Number(r.nssf ?? 0) + Number(r.nhif ?? 0) + Number(r.ahl ?? 0),
-            0,
-          ),
-        );
-        setMyOnboardingTasks(taskList.slice(0, 5));
-        setCredentialsExpiring(credExpiring);
-        setCredentialsExpired(credExpired);
+        setTotalStaff(data.totalStaff ?? 0);
+        setOnDuty(data.onDuty ?? 0);
+        setOnLeave(data.onLeave ?? 0);
+        setPendingApprovals(data.pendingApprovals ?? 0);
+        setAttendanceRows(Array.isArray(data.attendanceRows) ? data.attendanceRows : []);
+        setOpenAttendanceExceptions(data.openAttendanceExceptions ?? 0);
+        setPayrollDenied(Boolean(data.payroll?.denied));
+        setGrossTotal(data.payroll?.grossTotal ?? 0);
+        setNetTotal(data.payroll?.netTotal ?? 0);
+        setDeductionsTotal(data.payroll?.deductionsTotal ?? 0);
+        setMyOnboardingTasks(Array.isArray(data.myOnboardingTasks) ? data.myOnboardingTasks : []);
+        setCredentialsExpiring(data.credentialsExpiring ?? 0);
+        setCredentialsExpired(data.credentialsExpired ?? 0);
+        setPinnedHrefs(Array.isArray(data.pinnedHrefs) ? data.pinnedHrefs : []);
+        setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        setUnreadNotifications(data.unreadNotifications ?? 0);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setMetricsLoading(false);
       }
     };
 
@@ -443,10 +376,11 @@ export default function DashboardOverviewContent() {
     return () => {
       cancelled = true;
     };
-  }, [activeEntity.id]);
+  }, [activeEntity.id, entityLoading]);
 
+  const me = sessionUser;
+  const modules = sessionModules;
   const persona = useMemo(() => resolveOverviewPersona(me), [me]);
-  const modules = enabledModules;
   const onDutyRate = useMemo(() => (totalStaff ? Math.round((onDuty / totalStaff) * 100) : 0), [onDuty, totalStaff]);
   const fx = useMemo(
     () => (amount: number) => formatMoney(amount, activeEntity.currency),
@@ -564,7 +498,7 @@ export default function DashboardOverviewContent() {
   const showAttendance = modules.time !== false;
   const showLeaveKpis = modules.leave !== false;
 
-  if (loading) return <OverviewSkeleton />;
+  if (!me) return <OverviewSkeleton />;
 
   const kpiCards = [
     {
@@ -590,7 +524,7 @@ export default function DashboardOverviewContent() {
       value: onLeave,
       note: 'Approved leave today',
       icon: CalendarDays,
-      href: '/dashboard/outsourcing/leave?status=pending',
+      href: '/dashboard/staff-leave',
       variant: 'amber' as KpiVariant,
       show: showLeaveKpis,
     },
@@ -599,7 +533,7 @@ export default function DashboardOverviewContent() {
       value: pendingApprovals,
       note: me?.canApproveStaffLeave ? 'Needs your approval' : 'Awaiting approval',
       icon: Inbox,
-      href: '/dashboard/outsourcing/leave?status=pending',
+      href: me?.canApproveStaffLeave ? '/dashboard/staff-leave?tab=approvals' : '/dashboard/staff-leave',
       variant: 'violet' as KpiVariant,
       show: showLeaveKpis && persona !== 'viewer',
     },
@@ -621,6 +555,10 @@ export default function DashboardOverviewContent() {
         metaSuppressHydrationWarning
       />
 
+      {metricsLoading ? (
+        <OverviewMetricsSkeleton />
+      ) : (
+        <>
       {/* KPIs */}
       {kpiCards.length > 0 ? (
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -898,6 +836,8 @@ export default function DashboardOverviewContent() {
           ) : null}
         </aside>
       </section>
+        </>
+      )}
     </div>
   );
 }

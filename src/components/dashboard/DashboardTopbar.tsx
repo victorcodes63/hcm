@@ -126,11 +126,16 @@ export default function DashboardTopbar({
   }, []);
 
   useEffect(() => {
-    void loadNotifications();
+    const timer = window.setTimeout(() => {
+      void loadNotifications();
+    }, 2000);
     const interval = setInterval(() => {
       void loadNotifications();
     }, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [loadNotifications]);
 
   useEffect(() => {

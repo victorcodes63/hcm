@@ -163,24 +163,9 @@ export default function ContractsPageClient() {
 
  return (
  <div className="w-full min-w-0">
- <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard" className="hover:text-primary-700 transition-colors">
- Dashboard
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- Contracts
- </li>
- </ol>
- </nav>
-
  <DashboardPageHeader
  title="Contracts"
  icon={FileSignature}
- iconClassName="h-7 w-7 shrink-0 text-primary-600 hidden sm:block"
  description="Manage both employee contracts and consultant doctor contracts with renewal reminders."
  actions={
  <button

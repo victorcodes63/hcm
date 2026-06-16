@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, RefreshCw, UserCog } from 'lucide-react';
 import type { EssPortalRole, EssPortalUserSummary } from '@/types/dashboard';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const ROLE_OPTIONS: { value: EssPortalRole; label: string }[] = [
@@ -120,11 +121,11 @@ export default function EssPortalUsersPage() {
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  icon={UserCog}
  title="ESS portal users"
- description="Provision and manage employee self-service access accounts."
+ description="Provision and manage employee self-service accounts."
  actions={
  <div className="flex items-center gap-2">
  <button
@@ -270,6 +271,6 @@ export default function EssPortalUsersPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

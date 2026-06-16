@@ -1552,6 +1552,8 @@ model User {
   role         UserRole @default(staff)
   /// Job function preset; drives leave approver queue etc. Admins may ignore visually but column still set.
   staffUserType StaffUserType @default(operations)
+  /// Direct manager for internal leave approvals (reportees appear on approver team overview).
+  leaveApproverId String?
   isActive     Boolean  @default(true)
   mfaEnabled   Boolean  @default(false)
   mfaSecret    String?
@@ -1597,8 +1599,12 @@ model User {
   notificationDeliveries      NotificationDelivery[] @relation("NotificationDeliveryRecipientUser")
   assetsAssigned              CompanyAsset[]         @relation("AssetAssignedByUser")
 
+  leaveApprover   User?  @relation("UserLeaveApprover", fields: [leaveApproverId], references: [id], onDelete: SetNull)
+  leaveReportees  User[] @relation("UserLeaveApprover")
+
   @@index([email])
   @@index([isActive])
+  @@index([leaveApproverId])
 }
 
 model PermissionDefinition {

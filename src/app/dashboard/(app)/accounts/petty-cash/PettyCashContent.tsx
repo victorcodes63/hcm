@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Coins, Loader2, AlertCircle, Plus, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type PettyCashTx = {
@@ -89,14 +89,7 @@ export default function PettyCashContent() {
  };
 
  return (
- <div className="page-shell">
- <nav className="mb-3" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li><Link href="/dashboard/accounts" className="hover:text-primary-700 transition-colors">Accounts</Link></li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">Petty Cash</li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  icon={Coins}
  title="Petty Cash"
@@ -252,6 +245,6 @@ export default function PettyCashContent() {
  })}
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

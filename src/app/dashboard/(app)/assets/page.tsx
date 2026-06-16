@@ -8,16 +8,29 @@ import {
  assetCategoryLabel,
  assetStatusLabel,
 } from '@/lib/asset-categories';
-import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardAsyncState, DashboardInlineLoading } from '@/components/dashboard/DashboardAsyncState';
 import {
- Loader2,
- Package,
- Pencil,
- Plus,
- RotateCcw,
- Search,
- Trash2,
- UserPlus,
+  DashboardTable,
+  DashboardTableCard,
+  DashboardTableEmpty,
+  DashboardTableSearchInput,
+  DashboardTableToolbar,
+  DashboardTableViewport,
+  dashboardTableSelectClass,
+} from '@/components/dashboard/DashboardDataTable';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
+import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardStatCard, DashboardStatGrid } from '@/components/dashboard/DashboardStatGrid';
+import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
+import {
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  UserPlus,
 } from 'lucide-react';
 
 type AssetRecord = {
@@ -149,6 +162,13 @@ function AssetsPageContent() {
  return { total, assigned, available, maintenance };
  }, [assets]);
 
+ const listStatus = useMemo(() => {
+ if (loading) return 'loading' as const;
+ if (error && assets.length === 0) return 'error' as const;
+ if (assets.length === 0) return 'empty' as const;
+ return 'success' as const;
+ }, [assets.length, error, loading]);
+
  const openCreate = () => {
  setEditingId(null);
  setForm(emptyForm);
@@ -258,66 +278,57 @@ function AssetsPageContent() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Asset manager"
  icon={Package}
  iconClassName="h-7 w-7 text-primary-600"
- description="Register company assets, track assignments to employees, and monitor availability and maintenance status."
+ description="Register assets, track assignments, and monitor availability."
  actions={
  <button type="button" onClick={openCreate} className="btn-primary inline-flex items-center gap-2 shrink-0">
  <Plus className="h-4 w-4" />
  Add asset
  </button>
  }
+ footer={
+ <DashboardTabs
+ embedded
+ value={view}
+ onChange={(next) => setView(next as 'all' | 'assigned')}
+ items={[
+ { value: 'all', label: 'All assets' },
+ { value: 'assigned', label: 'Assigned only' },
+ ]}
+ />
+ }
  />
 
- <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
- {[
- { label: 'Total assets', value: stats.total },
- { label: 'Assigned', value: stats.assigned },
- { label: 'Available', value: stats.available },
- { label: 'In maintenance', value: stats.maintenance },
- ].map((tile) => (
- <article key={tile.label} className="dashboard-stat-card shadow-sm">
- <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{tile.label}</p>
- <p className="mt-1 text-2xl font-semibold text-ink tabular-nums">{tile.value}</p>
- </article>
- ))}
- </section>
+ <DashboardStatGrid>
+ <DashboardStatCard label="Total assets" value={stats.total} tone="primary" />
+ <DashboardStatCard label="Assigned" value={stats.assigned} tone="sky" />
+ <DashboardStatCard label="Available" value={stats.available} tone="success" />
+ <DashboardStatCard label="In maintenance" value={stats.maintenance} tone="warning" />
+ </DashboardStatGrid>
 
- <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
- <div className="flex flex-wrap gap-2">
- {(['all', 'assigned'] as const).map((key) => (
- <button
- key={key}
- type="button"
- onClick={() => setView(key)}
- className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
- view === key
- ? 'bg-primary-50 text-primary-800 border border-primary-200'
- : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
- }`}
- >
- {key === 'all' ? 'All assets' : 'Assigned only'}
- </button>
- ))}
- </div>
- <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
- <div className="relative min-w-[220px]">
+ {error ? (
+ <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+ ) : null}
+
+ <DashboardTableCard>
+ <DashboardTableToolbar label={null}>
+ <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+ <div className="relative min-w-[220px] flex-1">
  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
- <input
- type="search"
+ <DashboardTableSearchInput
  value={search}
- onChange={(e) => setSearch(e.target.value)}
+ onChange={setSearch}
  placeholder="Search tag, name, serial…"
- className="h-10 w-full dashboard-surface rounded-lg pl-9 pr-3 text-sm"
  />
  </div>
  <select
  value={categoryFilter}
  onChange={(e) => setCategoryFilter(e.target.value)}
- className="h-10 dashboard-surface rounded-lg px-3 text-sm"
+ className={dashboardTableSelectClass}
  >
  <option value="">All categories</option>
  {ASSET_CATEGORIES.map((c) => (
@@ -329,7 +340,7 @@ function AssetsPageContent() {
  <select
  value={statusFilter}
  onChange={(e) => setStatusFilter(e.target.value)}
- className="h-10 dashboard-surface rounded-lg px-3 text-sm"
+ className={dashboardTableSelectClass}
  >
  <option value="">All statuses</option>
  {ASSET_STATUSES.map((s) => (
@@ -339,25 +350,23 @@ function AssetsPageContent() {
  ))}
  </select>
  </div>
- </div>
+ </DashboardTableToolbar>
 
- {error ? (
- <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
- ) : null}
-
- <div className="overflow-hidden dashboard-surface shadow-sm">
- {loading ? (
- <div className="flex items-center justify-center gap-2 py-16 text-sm text-neutral-500">
- <Loader2 className="h-5 w-5 animate-spin" />
- Loading assets…
- </div>
- ) : assets.length === 0 ? (
- <div className="py-16 text-center text-sm text-neutral-500">
- No assets yet. Add laptops, phones, vehicles, or equipment to start tracking assignments.
- </div>
- ) : (
- <div className="overflow-x-auto">
- <table className="data-table dashboard-data-table min-w-full text-sm">
+ <DashboardAsyncState
+ status={listStatus}
+ error={assets.length === 0 ? error : null}
+ onRetry={() => void load()}
+ loading={<DashboardInlineLoading label="Loading assets…" />}
+ empty={
+ <DashboardTableEmpty
+ icon={<Package className="h-8 w-8 text-neutral-300" aria-hidden />}
+ title="No assets yet"
+ description="Add laptops, phones, vehicles, or equipment to start tracking assignments."
+ />
+ }
+ >
+ <DashboardTableViewport>
+ <DashboardTable className="text-sm">
  <thead className="border-b border-neutral-100 bg-neutral-50/80 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
  <tr>
  <th className="px-4 py-3">Tag</th>
@@ -445,10 +454,10 @@ function AssetsPageContent() {
  </tr>
  ))}
  </tbody>
- </table>
- </div>
- )}
- </div>
+ </DashboardTable>
+ </DashboardTableViewport>
+ </DashboardAsyncState>
+ </DashboardTableCard>
 
  {formOpen ? (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 p-4">
@@ -604,6 +613,6 @@ function AssetsPageContent() {
  </div>
  </div>
  ) : null}
- </div>
+ </DashboardPage>
  );
 }

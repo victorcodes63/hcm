@@ -23,6 +23,12 @@ type EntityConfigResponse = {
   showSwitcher?: boolean;
 };
 
+type EntityProviderProps = {
+  children: ReactNode;
+  /** When set (e.g. from /api/dashboard/bootstrap), skips a separate entities fetch. */
+  initialConfig?: EntityConfigResponse | null;
+};
+
 type EntityContextType = {
   activeEntity: Entity;
   entities: Entity[];
@@ -85,14 +91,34 @@ function pickPreferredEntity(entities: Entity[], defaultEntityId: string): Entit
   return entities.find((e) => e.id === defaultEntityId) ?? entities[0]!;
 }
 
-export function EntityProvider({ children }: { children: ReactNode }) {
+export function EntityProvider({ children, initialConfig = null }: EntityProviderProps) {
   const router = useRouter();
-  const [entities, setEntities] = useState<Entity[]>([FALLBACK_ENTITY]);
-  const [showSwitcher, setShowSwitcher] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [activeEntity, setActiveEntityState] = useState<Entity>(FALLBACK_ENTITY);
+  const [entities, setEntities] = useState<Entity[]>(() => {
+    if (initialConfig?.entities?.length) return initialConfig.entities;
+    return [FALLBACK_ENTITY];
+  });
+  const [showSwitcher, setShowSwitcher] = useState(Boolean(initialConfig?.showSwitcher));
+  const [loading, setLoading] = useState(!initialConfig);
+  const [activeEntity, setActiveEntityState] = useState<Entity>(() => {
+    if (initialConfig?.entities?.length) {
+      return pickPreferredEntity(initialConfig.entities, initialConfig.defaultEntityId ?? initialConfig.entities[0]!.id);
+    }
+    return FALLBACK_ENTITY;
+  });
 
   useEffect(() => {
+    if (initialConfig?.entities?.length) {
+      const list = initialConfig.entities;
+      const defaultId = initialConfig.defaultEntityId ?? list[0]!.id;
+      setEntities(list);
+      setShowSwitcher(Boolean(initialConfig.showSwitcher));
+      const preferred = pickPreferredEntity(list, defaultId);
+      syncEntityCookie(preferred.id);
+      setActiveEntityState(preferred);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     fetch('/api/config/entities')
       .then((r) => (r.ok ? r.json() : null))
@@ -113,7 +139,7 @@ export function EntityProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialConfig]);
 
   useLayoutEffect(() => {
     if (loading || entities.length === 0) return;
@@ -216,7 +242,7 @@ export function EntitySwitcher({ variant = 'default' }: { variant?: 'default' | 
               <p className="text-xs text-neutral-500 font-medium uppercase tracking-wider">
                 Switch company context
               </p>
-              <p className="mt-0.5 text-[10px] text-neutral-400">Each sector has its own demo data</p>
+              <p className="mt-0.5 text-[10px] text-neutral-400">Switch operating entity</p>
             </div>
             {entities.map((entity) => (
               <button

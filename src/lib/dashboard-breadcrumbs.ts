@@ -4,6 +4,9 @@ import {
   type DashboardNavBuildOptions,
   type DashboardNavSection,
 } from '@/lib/dashboard-nav-catalog';
+import { isDeepDashboardPath } from '@/lib/dashboard-route-kind';
+
+export { isDeepDashboardPath, isMainDashboardPage } from '@/lib/dashboard-route-kind';
 
 export type DashboardBreadcrumb = {
   label: string;
@@ -160,46 +163,19 @@ export function resolveDashboardBreadcrumbs(
   options: DashboardNavBuildOptions,
 ): DashboardBreadcrumb[] {
   const path = normalizePath(pathname);
-
-  if (path === '/dashboard') {
-    return [{ label: OVERVIEW_NAV_ITEM.label }];
-  }
-
   const sections = buildDashboardNavSections(options);
-  const extraLabel = EXTRA_ROUTE_LABELS[path];
-  const { section, itemHref, itemLabel } = findBestNavMatch(path, sections);
+  const { itemHref, itemLabel } = findBestNavMatch(path, sections);
 
-  const currentLabel =
-    path === itemHref
-      ? itemLabel ?? extraLabel ?? inferTailLabel(path, itemHref)
-      : extraLabel ?? inferTailLabel(path, itemHref);
-
-  if (section) {
-    const sectionHref = section.items[0]?.href.split('?')[0];
-    return [
-      { label: section.label, href: sectionHref },
-      { label: currentLabel ?? 'Page' },
-    ];
+  if (!isDeepDashboardPath(path, itemHref)) {
+    return [];
   }
 
-  if (extraLabel) {
-    const segments = path.split('/').filter(Boolean);
-    const parentPath = segments.length > 2 ? `/${segments.slice(0, -1).join('/')}` : '/dashboard';
-    return [
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: extraLabel },
-    ];
-  }
+  const parentLabel = itemLabel ?? EXTRA_ROUTE_LABELS[itemHref ?? ''] ?? 'Back';
+  const parentHref = itemHref ?? '/dashboard';
+  const currentLabel = inferTailLabel(path, itemHref);
 
-  const segments = path.split('/').filter(Boolean);
-  if (segments.length >= 2) {
-    const moduleSegment = segments[1]!;
-    const moduleLabel = SEGMENT_LABELS[moduleSegment] ?? titleCase(moduleSegment);
-    return [
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: currentLabel ?? moduleLabel },
-    ];
-  }
-
-  return [{ label: currentLabel ?? 'Page' }];
+  return [
+    { label: parentLabel, href: parentHref },
+    { label: currentLabel },
+  ];
 }

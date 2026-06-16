@@ -2360,7 +2360,7 @@ async function main() {
       : pack.staffUsers.admin.email;
   await prisma.user.upsert({
     where: { email: demoAdmin },
-    update: { name: 'System Administrator', passwordHash: hashed, role: UserRole.admin, staffUserType: StaffUserType.director, isActive: true },
+    update: { name: 'Amina Njeri', passwordHash: hashed, role: UserRole.admin, staffUserType: StaffUserType.director, isActive: true },
     create: { email: demoAdmin, name: pack.staffUsers.admin.name, passwordHash: hashed, role: UserRole.admin, staffUserType: StaffUserType.director, isActive: true },
   });
   await prisma.user.upsert({

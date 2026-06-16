@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import {
  Loader2,
  AlertCircle,
- FileStack,
  CheckCircle2,
  CircleDashed,
  CircleOff,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type Line = {
@@ -197,7 +197,7 @@ export default function VendorBillDetailPage() {
 
  if (error || !data) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -217,12 +217,12 @@ export default function VendorBillDetailPage() {
  <AlertCircle className="w-5 h-5 shrink-0" />
  {error || 'Not found'}
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4 print:hidden" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -245,7 +245,6 @@ export default function VendorBillDetailPage() {
 
  <div className="print:hidden mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
  <DashboardPageHeader
- icon={FileStack}
  title={data.billRef ? `Vendor bill · ${data.billRef}` : 'Vendor bill'}
  description={
  <>
@@ -482,6 +481,6 @@ export default function VendorBillDetailPage() {
  </form>
  </section>
  )}
- </div>
+ </DashboardPage>
  );
 }

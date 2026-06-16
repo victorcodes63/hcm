@@ -677,7 +677,7 @@ export const petroleumRetailPack: DemoPack = {
   slugToken: 'stb',
   demoPassword: 'Demo@2026!',
   staffUsers: {
-    admin: { email: 'demo@stabexintl.com', name: 'System Administrator' },
+    admin: { email: 'demo@stabexintl.com', name: 'Amina Njeri' },
     hr: { email: 'diana.namutebi@stabexintl.com', name: 'Diana Namutebi' },
     finance: { email: 'james.mwangi@stabexintl.com', name: 'James Mwangi' },
     ess: { email: 'moses.okello@stabexintl.com', name: 'Moses Okello' },

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Loader2, Store } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const inputClass =
@@ -54,7 +55,7 @@ export default function NewVendorPage() {
  };
 
  return (
- <div className="page-shell max-w-2xl">
+ <DashboardPage className="max-w-2xl">
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -75,7 +76,6 @@ export default function NewVendorPage() {
  </ol>
  </nav>
  <DashboardPageHeader
- icon={Store}
  title="New vendor"
  description="Add a supplier or an internal creditor profile (e.g. petty cash). Bills and payments are created from the vendor page or the bills list."
  className="mb-6"
@@ -179,6 +179,6 @@ export default function NewVendorPage() {
  </Link>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }

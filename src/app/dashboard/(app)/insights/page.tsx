@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2, Loader2, BookOpen, ExternalLink } from 'lucide-react';
 import { INSIGHTS_EXAMPLES } from '@/data/insights-examples';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type InsightItem = {
@@ -101,7 +102,7 @@ export default function DashboardInsightsPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Insights"
  description="Manage articles shown on the public Insights page. Add, edit, or remove articles."
@@ -226,6 +227,6 @@ export default function DashboardInsightsPage() {
  <p className="mt-6 text-sm text-neutral-500">
  Articles appear on the public <a href="/insights" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">Insights page</a>. Use &quot;Add article&quot; to open the full form with image upload; featured images are stored like applicant CVs and linked in the database.
  </p>
- </div>
+ </DashboardPage>
  );
 }

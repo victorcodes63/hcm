@@ -186,7 +186,6 @@ export default function EditInsightPage() {
  </nav>
 
  <DashboardPageHeader
- icon={BookOpen}
  title="Edit article"
  description="Update the article. Changes will appear on the public Insights page."
  className="mb-6 sm:mb-8"

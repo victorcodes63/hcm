@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type Holiday = {
@@ -135,7 +136,7 @@ export default function AdminHolidaysPage() {
  }
 
  return (
- <div className="page-shell space-y-4">
+ <DashboardPage className="space-y-4">
  <DashboardPageHeader
  title="Public holidays"
  description="System-wide holiday calendar for automatic overtime rates."
@@ -261,6 +262,6 @@ export default function AdminHolidaysPage() {
  </div>
  </div>
  </div>
- </div>
+ </DashboardPage>
  );
 }

@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardStatCard, DashboardStatGrid } from '@/components/dashboard/DashboardStatGrid';
 
 interface Department {
   id: string;
@@ -31,30 +33,6 @@ function deptAvatarClass(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i += 1) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return DEPT_AVATAR_PALETTE[Math.abs(hash) % DEPT_AVATAR_PALETTE.length];
-}
-
-function StatCard({
-  label,
-  value,
-  note,
-  accent,
-  warn,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-  accent: string;
-  warn?: boolean;
-}) {
-  return (
-    <article className={`relative overflow-hidden dashboard-stat-card shadow-sm ${accent}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-neutral-500">{label}</p>
-      <p className={`mt-2 text-[28px] font-semibold leading-none tabular-nums ${warn ? 'text-amber-700' : 'text-ink'}`}>
-        {value}
-      </p>
-      <p className="mt-2 text-sm text-neutral-500">{note}</p>
-    </article>
-  );
 }
 
 function DepartmentsPageInner() {
@@ -177,55 +155,33 @@ function DepartmentsPageInner() {
 
   if (loading) {
     return (
-      <div className="page-shell">
+      <DashboardPage>
         <div className="dashboard-surface h-48 animate-pulse shadow-sm" />
-      </div>
+      </DashboardPage>
     );
   }
 
   return (
-    <div className="page-shell w-full min-w-0">
+    <DashboardPage>
       <DashboardPageHeader
         title="Departments"
-        description={
-          <>
-            Maintain your department structure for employee assignment, payroll allocation, and reporting. Assign staff
-            from the{' '}
-            <Link href="/dashboard/employees" className="font-medium text-primary-700 hover:text-primary-800">
-              Employees
-            </Link>{' '}
-            directory.
-          </>
-        }
+        description="Group employees by department for payroll and reporting."
       />
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Departments"
-          value={totals.deptCount}
-          note={hasSearch ? `${filteredDepartments.length} match search` : 'In your structure'}
-          accent="border-l-[4px] border-l-primary-500"
+      <DashboardStatGrid>
+        <DashboardStatCard label="Departments" value={totals.deptCount} tone="primary"
+          hint={hasSearch ? `${filteredDepartments.length} match search` : undefined}
         />
-        <StatCard
-          label="Staff assigned"
-          value={totals.staffCount}
-          note={totals.staffCount === 0 ? 'No employees linked yet' : 'Across all departments'}
-          accent="border-l-[4px] border-l-emerald-600"
-        />
-        <StatCard
+        <DashboardStatCard label="Staff assigned" value={totals.staffCount} tone="success" />
+        <DashboardStatCard
           label="Empty departments"
           value={totals.emptyDepts}
-          note={totals.emptyDepts > 0 ? 'No employees assigned yet' : 'All departments have staff'}
-          accent="border-l-[4px] border-l-amber-500"
+          tone="warning"
           warn={totals.emptyDepts > 0}
+          hint={totals.emptyDepts > 0 ? 'Assign staff from Employees' : undefined}
         />
-        <StatCard
-          label="Avg per department"
-          value={totals.avgPerDept}
-          note="Headcount distribution"
-          accent="border-l-[4px] border-l-violet-500"
-        />
-      </section>
+        <DashboardStatCard label="Avg per department" value={totals.avgPerDept} tone="violet" />
+      </DashboardStatGrid>
 
       <div className="overflow-hidden dashboard-surface shadow-sm">
         <div className="dashboard-toolbar space-y-4 px-4 py-4 md:px-5">
@@ -370,13 +326,13 @@ function DepartmentsPageInner() {
           </ul>
         )}
       </div>
-    </div>
+    </DashboardPage>
   );
 }
 
 export default function DepartmentsPage() {
   return (
-    <Suspense fallback={<div className="page-shell dashboard-surface h-48 animate-pulse shadow-sm" />}>
+    <Suspense fallback={<DashboardPage><div className="dashboard-surface h-48 animate-pulse shadow-sm" /></DashboardPage>}>
       <DepartmentsPageInner />
     </Suspense>
   );

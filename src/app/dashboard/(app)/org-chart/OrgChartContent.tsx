@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Network, Loader2, AlertCircle, ChevronDown, ChevronRight, User, Users, Building2 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -140,14 +140,7 @@ export default function OrgChartContent() {
  const departments = [...new Set(employees?.map((e) => e.departmentName).filter(Boolean) ?? [])];
 
  return (
- <div className="page-shell">
- <nav className="mb-3" aria-label="Breadcrumb">
- <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
- <li><Link href="/dashboard" className="hover:text-primary-700 transition-colors">Dashboard</Link></li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">Org Chart</li>
- </ol>
- </nav>
+ <DashboardPage>
  <DashboardPageHeader
  title="Organization Chart"
  icon={Network}
@@ -201,6 +194,6 @@ export default function OrgChartContent() {
  ))}
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

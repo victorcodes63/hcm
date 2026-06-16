@@ -18,6 +18,31 @@ export function DashboardPage({ children, className }: { children: ReactNode; cl
   return <div className={cn(DASHBOARD_PAGE_SHELL_CLASS, className)}>{children}</div>;
 }
 
+/** Optional labeled block inside a page — keeps section spacing consistent. */
+export function DashboardPageSection({
+  children,
+  className,
+  title,
+  description,
+}: {
+  children: ReactNode;
+  className?: string;
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <section className={cn('min-w-0 w-full', className)}>
+      {title ? (
+        <header className="mb-3">
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          {description ? <p className="mt-0.5 text-xs text-neutral-500">{description}</p> : null}
+        </header>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
 /** @deprecated Prefer `DashboardPageHeader` with `title` and `description` props. */
 export function DashboardPageTitle({
   children,

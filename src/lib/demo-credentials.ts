@@ -1,9 +1,6 @@
 /**
- * Demo login hints — configure per deployment to match seeded demo accounts.
+ * Demo login hints — configure per deployment to match seeded accounts.
  * Set NEXT_PUBLIC_DEMO_* in env (see .env.example).
- *
- * Use static process.env.NEXT_PUBLIC_* references (not process.env[key]) so
- * Next.js inlines the same values in client and SSR bundles and avoids hydration mismatches.
  */
 
 function trimEnvValue(v: string | undefined): string | undefined {
@@ -16,16 +13,22 @@ const DEMO_PASSWORD =
   trimEnvValue(process.env.NEXT_PUBLIC_DEMO_PASSWORD) ?? 'Demo@2026!';
 
 const DEMO_ADMIN_EMAIL =
-  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL) ?? 'demo@example.com';
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL) ?? 'admin@imara.co.ke';
 
 const DEMO_HR_EMAIL =
-  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_HR_EMAIL) ?? 'hr.demo@example.com';
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_HR_EMAIL) ?? 'hr@nyati.imara.co.ke';
+
+const DEMO_APPROVER_EMAIL =
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_APPROVER_EMAIL) ?? DEMO_HR_EMAIL;
+
+const DEMO_STAFF_EMAIL =
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_STAFF_EMAIL) ?? 'james.otieno@eaglehr.co.ke';
 
 const DEMO_FINANCE_EMAIL =
-  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_FINANCE_EMAIL) ?? 'finance.demo@example.com';
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_FINANCE_EMAIL) ?? 'finance@nyati.imara.co.ke';
 
 const DEMO_ESS_EMAIL =
-  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_ESS_EMAIL) ?? 'employee.demo@example.com';
+  trimEnvValue(process.env.NEXT_PUBLIC_DEMO_ESS_EMAIL) ?? 'employee@nyati.imara.co.ke';
 
 export function getDemoPassword(): string {
   return DEMO_PASSWORD;
@@ -33,17 +36,26 @@ export function getDemoPassword(): string {
 
 export type DemoCredentialRow = { role: string; email: string };
 
+/** Dashboard access levels for the sign-in info panel. */
 export function getStaffDemoCredentialRows(): DemoCredentialRow[] {
-  return [
-    { role: 'Admin', email: DEMO_ADMIN_EMAIL },
-    { role: 'HR', email: DEMO_HR_EMAIL },
+  const rows: DemoCredentialRow[] = [
+    { role: 'Administrator', email: DEMO_ADMIN_EMAIL },
+    { role: 'Leave approver', email: DEMO_APPROVER_EMAIL },
+    { role: 'Staff member', email: DEMO_STAFF_EMAIL },
     { role: 'Finance', email: DEMO_FINANCE_EMAIL },
   ];
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = row.email.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function getEssDemoCredentialRow(): DemoCredentialRow {
   return {
-    role: 'ESS (employee portal)',
+    role: 'Employee portal',
     email: DEMO_ESS_EMAIL,
   };
 }

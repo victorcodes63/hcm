@@ -13,6 +13,7 @@ import {
  Loader2,
  Users,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import { JobListing } from '@/types/ats';
 
@@ -107,7 +108,7 @@ export default function DashboardJobsPage() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Job openings"
  description="Manage postings and publish roles to your careers page."
@@ -379,6 +380,6 @@ export default function DashboardJobsPage() {
  Swipe horizontally to see all columns
  </p>
  )}
- </div>
+ </DashboardPage>
  );
 }

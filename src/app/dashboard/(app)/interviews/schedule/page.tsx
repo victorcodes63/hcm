@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarCheck, Users, Loader2, Search, X, Coffee, Plus } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type { InterviewType, InterviewDurationMinutes } from '@/types/dashboard';
 import { parseDateTimeAsNairobi, dateTimeNairobi, APP_TIMEZONE } from '@/lib/timezone';
@@ -583,7 +584,7 @@ function ScheduleInterviewsPageContent() {
  const inputClass = 'w-full min-w-0 px-4 py-2.5 sm:py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base';
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
  <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -600,7 +601,6 @@ function ScheduleInterviewsPageContent() {
 
  <DashboardPageHeader
  title="Schedule interviews"
- icon={CalendarCheck}
  description="Bulk schedule up to 10 interviews from a shortlisted job. Add optional breaks (lunch, buffers) on the same day—they are saved together with the interviews. Times are auto-spaced for candidates; breaks use the times you set."
  className="mb-6 sm:mb-8"
  />
@@ -1380,7 +1380,7 @@ function ScheduleInterviewsPageContent() {
  </form>
  </div>
  </div>
- </div>
+ </DashboardPage>
  );
 }
 

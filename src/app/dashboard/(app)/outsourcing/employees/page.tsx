@@ -14,7 +14,9 @@ import {
  X,
 } from 'lucide-react';
 import { useEntity } from '@/components/EntitySwitcher';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
+import { DashboardStatCard, DashboardStatGrid } from '@/components/dashboard/DashboardStatGrid';
 import EmployeeDirectoryTable from '@/components/dashboard/EmployeeDirectoryTable';
 
 interface EmployeeRecord {
@@ -58,32 +60,6 @@ function profileScoreForRecord(employee: EmployeeRecord) {
   ];
   const done = fields.filter(Boolean).length;
   return { done, total: fields.length, complete: done === fields.length };
-}
-
-function StatCard({
- label,
- value,
- note,
- accent,
- warn,
-}: {
- label: string;
- value: string | number;
- note: string;
- accent: string;
- warn?: boolean;
-}) {
- return (
- <article
- className={`relative overflow-hidden dashboard-stat-card shadow-sm ${accent}`}
- >
- <p className="text-xs font-semibold uppercase tracking-[0.06em] text-neutral-500">{label}</p>
- <p className={`mt-2 text-[28px] font-semibold leading-none tabular-nums ${warn ? 'text-amber-700' : 'text-ink'}`}>
- {value}
- </p>
- <p className="mt-2 text-sm text-neutral-500">{note}</p>
- </article>
- );
 }
 
 function EmployeesPageInner() {
@@ -419,10 +395,10 @@ function EmployeesPageInner() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Employees"
- description="Search and manage staff records — assign departments, complete profiles, import in bulk, and send payslips."
+ description="Search, manage, and import staff records."
  actions={
  <Link href="/dashboard/employees/new" className="btn-primary inline-flex shrink-0 items-center gap-2">
  <UserPlus className="h-4 w-4" />
@@ -465,35 +441,34 @@ function EmployeesPageInner() {
  </div>
  ) : (
  <>
- <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
- <StatCard
+ <DashboardStatGrid>
+ <DashboardStatCard
  label="In directory"
  value={totals.total}
- note={hasActiveFilters ? 'Matching current filters' : 'All staff records'}
- accent="border-l-[4px] border-l-primary-500"
+ hint={hasActiveFilters ? 'Matching current filters' : undefined}
+ tone="primary"
  />
- <StatCard
+ <DashboardStatCard
  label="Unassigned dept"
  value={totals.unassigned}
- note={totals.unassigned > 0 ? 'Needs department assignment' : 'Everyone has a department'}
- accent="border-l-[4px] border-l-amber-500"
+ hint={totals.unassigned > 0 ? 'Needs department assignment' : undefined}
+ tone="warning"
  warn={totals.unassigned > 0}
  />
- <StatCard
+ <DashboardStatCard
  label="Incomplete profiles"
  value={totals.incompleteProfiles}
- note={totals.incompleteProfiles > 0 ? 'Missing KRA, NSSF, SHIF, bank, or dept' : 'All profiles complete'}
- accent="border-l-[4px] border-l-violet-500"
+ hint={totals.incompleteProfiles > 0 ? 'Missing KRA, NSSF, SHIF, bank, or dept' : undefined}
+ tone="violet"
  warn={totals.incompleteProfiles > 0}
  />
- <StatCard
+ <DashboardStatCard
  label="Departments"
  value={totals.depts}
- note={totals.nonActive > 0 ? `${totals.nonActive} not active in view` : 'Represented in current view'}
- accent="border-l-[4px] border-l-emerald-600"
- warn={totals.nonActive > 0}
+ hint={totals.nonActive > 0 ? `${totals.nonActive} not active in view` : undefined}
+ tone="success"
  />
- </section>
+ </DashboardStatGrid>
 
  <div className="overflow-hidden dashboard-surface shadow-sm">
  <div className="space-y-4 border-b border-neutral-100 p-4 md:p-5">
@@ -760,7 +735,7 @@ function EmployeesPageInner() {
  </div>
  </>
  )}
- </div>
+ </DashboardPage>
  );
 }
 

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Download, Upload, UserPlus } from 'lucide-react';
+import { ChevronLeft, Download, Upload } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const inputClass =
@@ -186,7 +187,7 @@ function NewEmployeeForm() {
  };
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -204,7 +205,6 @@ function NewEmployeeForm() {
  <ChevronLeft className="h-5 w-5" />
  </Link>
  <DashboardPageHeader
- icon={UserPlus}
  title="Add employee"
  description="Add one person below, or import many at once with Excel."
  className="min-w-0 flex-1 !mb-0"
@@ -380,7 +380,7 @@ function NewEmployeeForm() {
  </button>
  </div>
  </form>
- </div>
+ </DashboardPage>
  );
 }
 

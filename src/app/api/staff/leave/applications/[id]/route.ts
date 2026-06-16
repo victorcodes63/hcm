@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireStaffUser, isAdmin, canApproveStaffLeaveRequests } from '@/lib/staff-api-auth';
 import { logAuditEvent } from '@/lib/audit-events';
+import { syncStaffLeaveUsedDaysForUserYear } from '@/lib/staff-leave-balance';
+import { canViewerApproveLeaveForUser } from '@/lib/staff-leave-team';
 
 export async function PATCH(
   request: NextRequest,
@@ -51,12 +53,17 @@ export async function PATCH(
       route: 'PATCH /api/staff/leave/applications/[id]',
       metadata: { action: 'cancel', reviewNote: body.reviewNote?.trim() || null },
     });
+    await syncStaffLeaveUsedDaysForUserYear(prisma, app.userId, app.startDate.getFullYear());
     return NextResponse.json(updated);
   }
 
   if (action === 'approve' || action === 'reject') {
     if (!canApproveStaffLeaveRequests(user)) {
       return NextResponse.json({ error: 'Not allowed to approve leave.' }, { status: 403 });
+    }
+    const mayAct = await canViewerApproveLeaveForUser(user, app.userId);
+    if (!mayAct) {
+      return NextResponse.json({ error: 'Not allowed to act on this request.' }, { status: 403 });
     }
     if (app.status !== 'pending') {
       return NextResponse.json({ error: 'Already decided' }, { status: 400 });
@@ -131,12 +138,6 @@ export async function PATCH(
         },
         include: { leaveType: true, user: { select: { name: true, email: true } } },
       });
-      if (!skipBalance) {
-        await tx.staffLeaveBalance.update({
-          where: { id: balance.id },
-          data: { usedDays: { increment: app.totalDays } },
-        });
-      }
       await tx.leaveApprovalStep.updateMany({
         where: { staffLeaveApplicationId: id, status: 'pending' },
         data: { status: 'approved', actedAt: new Date(), notes: body.reviewNote?.trim() || null },
@@ -151,6 +152,7 @@ export async function PATCH(
       });
       return u;
     });
+    await syncStaffLeaveUsedDaysForUserYear(prisma, app.userId, year);
     await logAuditEvent({
       actor: { userId: user.id, email: user.email, name: user.name },
       action: 'leave.approved',

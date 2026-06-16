@@ -6,13 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import {
  AlertCircle,
  Loader2,
- Store,
  Plus,
  FileText,
  Pencil,
  Check,
  X,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type BillSummary = {
@@ -153,7 +153,7 @@ export default function VendorDetailPage() {
 
  if (error || !data) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -173,12 +173,12 @@ export default function VendorDetailPage() {
  <AlertCircle className="w-5 h-5 shrink-0" />
  {error || 'Not found'}
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -201,7 +201,6 @@ export default function VendorDetailPage() {
 
  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
  <DashboardPageHeader
- icon={Store}
  title={data.name}
  description={
  <>Default currency <span className="font-medium text-neutral-800">{data.currency}</span></>
@@ -433,6 +432,6 @@ export default function VendorDetailPage() {
  </div>
  )}
  </section>
- </div>
+ </DashboardPage>
  );
 }

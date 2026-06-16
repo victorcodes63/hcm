@@ -4,7 +4,7 @@ export const travelAgencyPack = buildVerticalPackFromGeneric({
   id: 'travel-agency',
   label: 'Travel agency demo',
   orgName: 'Horizon Travels Ltd',
-  emailDomain: 'horizon.demo.imara.co.ke',
+  emailDomain: 'horizon.imara.co.ke',
   prefix: 'HZT',
   tagline: 'Commission payroll, leave, and people ops for travel and tour operators.',
   publicFooterText:

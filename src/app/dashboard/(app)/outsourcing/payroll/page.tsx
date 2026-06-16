@@ -7,6 +7,7 @@ import PayrollEditModal from '@/components/payroll/PayrollEditModal';
 import useEntityConfig, { useCurrencyFormatter } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
 import { useEntity } from '@/components/EntitySwitcher';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 interface PayrollRecord {
@@ -395,21 +396,7 @@ export default function OutsourcingPayrollPage() {
  };
 
  return (
- <div className="page-shell">
- <nav aria-label="Breadcrumb">
- <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
- <li>
- <Link href="/dashboard" className="hover:text-primary-700 transition-colors">
- Dashboard
- </Link>
- </li>
- <li aria-hidden="true">/</li>
- <li className="text-primary-900 font-medium" aria-current="page">
- {entityConfig.payroll.runLabel}
- </li>
- </ol>
- </nav>
-
+ <DashboardPage>
  <DashboardPageHeader
  title={entityConfig.payroll.runLabel}
  description="Generate payroll and payslips by month for your workforce."
@@ -805,6 +792,6 @@ export default function OutsourcingPayrollPage() {
  </div>
  </div>
  )}
- </div>
+ </DashboardPage>
  );
 }

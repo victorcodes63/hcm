@@ -26,6 +26,7 @@ import {
  Send,
  Loader2,
 } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import type {
  ApplicationWithDetails,
@@ -689,7 +690,7 @@ export default function DashboardApplicationsPage() {
  'w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300 transition-colors';
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Applications"
  description="Review and manage job applications. Status updates can notify applicants by email."
@@ -1554,6 +1555,6 @@ export default function DashboardApplicationsPage() {
  </>
  );
  })()}
- </div>
+ </DashboardPage>
  );
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEntity } from '@/components/EntitySwitcher';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 import {
  LayoutGrid,
@@ -1136,7 +1137,7 @@ export default function RotaPage() {
  }, [plannerSearchRef, refreshAll, scanConflicts, weekDays]);
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <DashboardPageHeader
  title="Rota planner"
  description="Build shift templates, plan periods, assign staff, scan conflicts, and import from CSV."
@@ -2024,6 +2025,6 @@ export default function RotaPage() {
  <div className="mt-5 text-xs text-neutral-500">
  Rules enforced by API: 8h minimum rest between shifts and 60h maximum net weekly work.
  </div>
- </div>
+ </DashboardPage>
  );
 }

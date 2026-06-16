@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Download, FileText, Pencil, Plus, Shield, Trash2, X } from 'lucide-react';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 const inputClass =
@@ -339,18 +340,18 @@ export default function EditEmployeePage() {
  if (!id) return null;
  if (loading) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <div className="animate-pulse space-y-4 w-full">
  <div className="h-6 bg-neutral-200 rounded w-1/3" />
  <div className="h-10 bg-neutral-100 rounded w-full" />
  <div className="h-10 bg-neutral-100 rounded w-full" />
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4 sm:mb-5" aria-label="Breadcrumb">
  <ol className="flex items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -365,7 +366,6 @@ export default function EditEmployeePage() {
  </ol>
  </nav>
  <DashboardPageHeader
- icon={Pencil}
  title="Edit employee"
  description={`Update ${form.firstName} ${form.lastName}${clientName ? ` at ${clientName}` : ''}.`}
  className="mb-6 sm:mb-8"
@@ -770,6 +770,6 @@ export default function EditEmployeePage() {
  </div>
  </div>
  ) : null}
- </div>
+ </DashboardPage>
  );
 }

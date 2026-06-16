@@ -114,7 +114,6 @@ export default function NewInsightPage() {
  </nav>
 
  <DashboardPageHeader
- icon={BookOpen}
  title="Add article"
  description="Add a new article to the public Insights page. Title, excerpt, and a featured image are recommended."
  className="mb-6 sm:mb-8"

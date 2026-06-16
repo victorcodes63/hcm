@@ -262,13 +262,15 @@ export function EssLoginForm({
             ) : null}
           </div>
 
-          <DemoLoginCredentialsHint
-            variant="ess"
-            visible={loginConfig.showDemoHint}
-            demoPassword={loginConfig.demoPassword}
-            staffDemoRows={loginConfig.staffDemoRows}
-            essDemoRow={loginConfig.essDemoRow}
-          />
+          {loginConfig.showDemoHint ? (
+            <DemoLoginCredentialsHint
+              variant="ess"
+              visible
+              demoPassword={loginConfig.demoPassword}
+              staffDemoRows={loginConfig.staffDemoRows}
+              essDemoRow={loginConfig.essDemoRow}
+            />
+          ) : null}
         </div>
 
         {/* Footer */}

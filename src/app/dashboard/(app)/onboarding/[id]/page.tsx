@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { UserCheck } from 'lucide-react';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type WorkflowDetail = {
@@ -68,7 +67,6 @@ export default function OnboardingDetailPage() {
  <div className="space-y-5">
  <div className="dashboard-surface rounded-lg p-4">
  <DashboardPageHeader
- icon={UserCheck}
  title={`${data.employee.firstName} ${data.employee.lastName}`}
  description={`${data.employee.department?.name ?? 'No department'} • ${data.type}`}
  meta={`${completed}/${data.tasks.length} complete`}

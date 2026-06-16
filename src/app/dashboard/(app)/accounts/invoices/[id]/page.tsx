@@ -14,7 +14,6 @@ import {
  CircleDashed,
  CircleOff,
  FileMinus2,
- FileText,
 } from 'lucide-react';
 import {
  InvoiceBankDisplay,
@@ -26,6 +25,7 @@ import {
 } from '@/lib/payment-accounts';
 import useEntityConfig, { useDisplayMoney } from '@/hooks/useEntityConfig';
 import { EntityContextBanner } from '@/components/EntityContextBanner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { DashboardPageHeader } from '@/components/dashboard/DashboardPageHeader';
 
 type Line = {
@@ -334,7 +334,7 @@ export default function AccountsInvoiceDetailPage() {
 
  if (error || !data) {
  return (
- <div className="page-shell">
+ <DashboardPage>
  <nav className="mb-4" aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
  <li>
@@ -354,12 +354,12 @@ export default function AccountsInvoiceDetailPage() {
  <AlertCircle className="w-5 h-5 shrink-0" />
  {error || 'Not found'}
  </div>
- </div>
+ </DashboardPage>
  );
  }
 
  return (
- <div className="page-shell">
+ <DashboardPage>
  <div className="print:hidden mb-6 space-y-4">
  <nav aria-label="Breadcrumb">
  <ol className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-500">
@@ -381,7 +381,6 @@ export default function AccountsInvoiceDetailPage() {
  </ol>
  </nav>
  <DashboardPageHeader
- icon={FileText}
  title={`Invoice #${data.invoiceNumber}`}
  description={
  <>
@@ -925,6 +924,6 @@ export default function AccountsInvoiceDetailPage() {
  </div>
  </div>
  </div>
- </div>
+ </DashboardPage>
  );
 }
